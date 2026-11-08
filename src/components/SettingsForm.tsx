@@ -42,8 +42,47 @@ export function SettingsForm({ initial }: { initial: Profile }) {
   const [copied, setCopied] = useState(false);
   const [deleteText, setDeleteText] = useState("");
   const zones = useMemo(timezones, []);
+  const [voices, setVoices] = useState<{ tts: boolean; stt: boolean; defaultVoice: string; voices: { id: string; name: string; category: string }[]; error?: string } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [word, setWord] = useState("");
+  const [sayAs, setSayAs] = useState("");
 
   const syncParam = params.get("sync");
+
+  useEffect(() => {
+    fetch("/api/voice/voices")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setVoices)
+      .catch(() => {});
+  }, []);
+
+  async function preview() {
+    setPreviewing(true);
+    try {
+      const res = await fetch("/api/voice/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: `Good morning, ${p.preferredName}. Sarah has served nine Sundays in a row. Want me to draft her a thank-you?`, voiceId: p.voice.voiceId || undefined, lang: p.voice.language.slice(0, 2) }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Preview didn't work.");
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      audio.playbackRate = p.voice.rate;
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Preview didn't work." });
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  function addPronunciation() {
+    if (!word.trim() || !sayAs.trim() || p.pronunciations.length >= 50) return;
+    setP({ ...p, pronunciations: [...p.pronunciations.filter((x) => x.word.toLowerCase() !== word.trim().toLowerCase()), { word: word.trim(), sayAs: sayAs.trim() }] });
+    setWord("");
+    setSayAs("");
+  }
 
   useEffect(() => {
     fetch("/api/calendar/sync")
@@ -67,6 +106,7 @@ export function SettingsForm({ initial }: { initial: Profile }) {
         timezone: p.timezone,
         replyLanguage: p.replyLanguage,
         voice: p.voice,
+        pronunciations: p.pronunciations,
         about: p.about,
       }),
     });
@@ -234,6 +274,64 @@ export function SettingsForm({ initial }: { initial: Profile }) {
               <input id="speakReplies" type="checkbox" checked={p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, speakReplies: e.target.checked } })} />
               Speak Barnabas&apos;s replies out loud
             </label>
+            <label className="check">
+              <input
+                id="handsFree"
+                type="checkbox"
+                checked={p.voice.handsFree}
+                disabled={!voices?.stt}
+                onChange={(e) => setP({ ...p, voice: { ...p.voice, handsFree: e.target.checked } })}
+              />
+              Start in hands-free mode (just talk; speak over Barnabas to interrupt)
+            </label>
+            {voices && !voices.stt && <span className="small muted">Hands-free needs the Deepgram listening service. Your administrator adds DEEPGRAM_API_KEY.</span>}
+
+            <div className="field">
+              <label htmlFor="voiceId">Barnabas&apos;s voice</label>
+              {voices?.tts ? (
+                <div className="copy-row">
+                  <select id="voiceId" value={p.voice.voiceId ?? ""} onChange={(e) => setP({ ...p, voice: { ...p.voice, voiceId: e.target.value } })}>
+                    <option value="">Church default{voices.defaultVoice ? "" : " (not set: pick one)"}</option>
+                    {voices.voices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                        {v.category && v.category !== "premade" ? ` (${v.category})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="btn" type="button" onClick={() => void preview()} disabled={previewing || (!p.voice.voiceId && !voices.defaultVoice)}>
+                    {previewing ? "Playing…" : "Preview"}
+                  </button>
+                </div>
+              ) : (
+                <span className="small muted">Using your device&apos;s built-in voice. For Barnabas&apos;s own natural voice, your administrator adds ELEVENLABS_API_KEY.</span>
+              )}
+              {voices?.error && <span className="small error">{voices.error}</span>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="pron-word">Pronunciations</label>
+              <span className="small muted">Teach Barnabas names it says wrong. Words listed here are also listened for more carefully.</span>
+              {p.pronunciations.length > 0 && (
+                <div className="row">
+                  {p.pronunciations.map((x) => (
+                    <span key={x.word} className="tag">
+                      {x.word} → {x.sayAs}
+                      <button type="button" aria-label={`Remove ${x.word}`} onClick={() => setP({ ...p, pronunciations: p.pronunciations.filter((y) => y.word !== x.word) })}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="copy-row">
+                <input id="pron-word" type="text" placeholder="Written as, e.g. Nguyen" value={word} maxLength={40} onChange={(e) => setWord(e.target.value)} />
+                <input id="pron-say" type="text" aria-label="Say it as" placeholder="Say it as, e.g. Win" value={sayAs} maxLength={60} onChange={(e) => setSayAs(e.target.value)} />
+                <button className="btn" type="button" onClick={addPronunciation} disabled={!word.trim() || !sayAs.trim()}>
+                  Add
+                </button>
+              </div>
+            </div>
           </section>
 
           <div className="row">

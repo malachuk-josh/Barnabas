@@ -2,31 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SentenceChunker } from "@/lib/speech/chunker";
-import { normalizeForSpeech } from "@/lib/speech/normalize";
-
-/* ---------- Browser speech types (Web Speech API) ---------- */
-type Recognition = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-};
-type RecognitionCtor = new () => Recognition;
-
-function recognitionCtor(): RecognitionCtor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
+import {
+  BrowserListener,
+  BrowserSpeaker,
+  CloudSpeaker,
+  DeepgramListener,
+  browserRecognitionAvailable,
+  type Listener,
+  type Speaker,
+} from "@/lib/voice/client";
 
 type Turn = { id: number; role: "leader" | "barnabas"; text: string; unheard: string; tools: string[] };
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type Lang = "en-US" | "es-US" | "ko-KR";
+
+type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean };
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: "en-US", label: "English" },
@@ -34,12 +24,12 @@ const LANGS: { value: Lang; label: string }[] = [
   { value: "ko-KR", label: "한국어" },
 ];
 
-const STATUS_TEXT: Record<Status, string> = {
-  idle: "Tap to talk",
-  listening: "Listening… tap when you're done",
-  thinking: "Thinking…",
-  speaking: "Speaking… tap to interrupt",
-};
+function statusText(status: Status, handsFree: boolean) {
+  if (status === "listening") return handsFree ? "Listening… just talk. Tap to stop." : "Listening… tap when you're done";
+  if (status === "thinking") return "Thinking…";
+  if (status === "speaking") return handsFree ? "Speaking… talk anytime to interrupt" : "Speaking… tap to interrupt";
+  return handsFree ? "Tap to start a hands-free conversation" : "Tap to talk";
+}
 
 function localDate() {
   const d = new Date();
@@ -50,18 +40,23 @@ function localTime() {
   return new Date().toLocaleString("en-US", { weekday: "long", hour: "numeric", minute: "2-digit" });
 }
 
-function pickVoice(lang: Lang): SpeechSynthesisVoice | null {
-  if (typeof speechSynthesis === "undefined") return null;
-  const voices = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2)));
-  const preferred = voices.find((v) => /natural|neural|premium|enhanced|samantha|google/i.test(v.name));
-  return preferred ?? voices[0] ?? null;
-}
-
 let nextId = 1;
 
-type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number };
-
-export function Talk({ greetingName, voice }: { greetingName: string; voice: VoicePrefs }) {
+export function Talk({
+  greetingName,
+  voice,
+  pronunciations,
+  cloudVoice,
+  cloudListening,
+}: {
+  greetingName: string;
+  voice: VoicePrefs;
+  pronunciations: { word: string; sayAs: string }[];
+  /** Barnabas's own ElevenLabs voice is set up. */
+  cloudVoice: boolean;
+  /** Deepgram listening is set up (needed for hands-free). */
+  cloudListening: boolean;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState<Status>("idle");
   const [interim, setInterim] = useState("");
@@ -71,46 +66,75 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
   const [offRecord, setOffRecord] = useState(false);
   const [speak, setSpeak] = useState(voice.speakReplies);
   const [lang, setLang] = useState<Lang>(voice.language);
+  const [handsFree, setHandsFree] = useState(voice.handsFree && cloudListening);
   const [voiceSupported, setVoiceSupported] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   const convRef = useRef<{ id: string; offRecord: boolean } | null>(null);
-  const recognitionRef = useRef<Recognition | null>(null);
-  const speakingQueue = useRef(0);
+  const creating = useRef<Promise<string> | null>(null);
+  const speaker = useRef<Speaker | null>(null);
+  const listener = useRef<Listener | null>(null);
   const streamOpen = useRef(false);
   const ignoreReply = useRef(false);
-  const lastHeard = useRef("");
   const pendingInterrupt = useRef<string | null>(null);
+  const pushBuffer = useRef<string[]>([]);
+  const handsFreeRef = useRef(handsFree);
   const transcriptEnd = useRef<HTMLDivElement | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  handsFreeRef.current = handsFree;
+
   useEffect(() => {
-    setVoiceSupported(Boolean(recognitionCtor()) && typeof speechSynthesis !== "undefined");
-    if (typeof speechSynthesis !== "undefined") speechSynthesis.getVoices();
-  }, []);
+    setVoiceSupported(cloudListening || browserRecognitionAvailable());
+  }, [cloudListening]);
 
   useEffect(() => {
     transcriptEnd.current?.scrollIntoView({ block: "end" });
   }, [turns, interim]);
 
   const settle = useCallback(() => {
-    if (speakingQueue.current === 0 && !streamOpen.current) setStatus((s) => (s === "listening" ? s : "idle"));
+    if (speaker.current?.busy() || streamOpen.current) return;
+    setStatus(listener.current && handsFreeRef.current ? "listening" : "idle");
   }, []);
 
-  const endConversation = useCallback(async (reason: "button" | "idle" | "toggle") => {
-    const conv = convRef.current;
-    convRef.current = null;
-    setConversationId(null);
-    if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
-    if (!conv) return;
-    try {
-      await fetch(`/api/conversations/${conv.id}/end`, { method: "POST" });
-    } catch {
-      /* best effort */
-    }
-    if (reason !== "toggle") setTurns([]);
-    setNotice(null);
+  // One speaker for the current voice settings: Barnabas's own voice when it's set up, the device voice otherwise.
+  useEffect(() => {
+    speaker.current?.stop();
+    const opts = {
+      lang,
+      rate: voice.rate,
+      pronunciations,
+      onStart: () => setStatus("speaking"),
+      onIdle: () => settle(),
+    };
+    speaker.current = cloudVoice ? new CloudSpeaker({ ...opts, onError: () => setError("Barnabas's voice didn't load for one sentence. The text is on screen.") }) : new BrowserSpeaker(opts);
+  }, [cloudVoice, lang, voice.rate, pronunciations, settle]);
+
+  const stopListening = useCallback(() => {
+    listener.current?.close();
+    listener.current = null;
+    setInterim("");
   }, []);
+
+  const endConversation = useCallback(
+    async (reason: "button" | "idle" | "toggle") => {
+      const conv = convRef.current;
+      convRef.current = null;
+      setConversationId(null);
+      speaker.current?.stop();
+      stopListening();
+      setStatus("idle");
+      if (!conv) return;
+      try {
+        await fetch(`/api/conversations/${conv.id}/end`, { method: "POST" });
+      } catch {
+        /* best effort */
+      }
+      if (reason !== "toggle") setTurns([]);
+      setNotice(null);
+    },
+    [stopListening],
+  );
 
   const touch = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
@@ -123,63 +147,39 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
       if (conv) navigator.sendBeacon?.(`/api/conversations/${conv.id}/end`);
     };
     window.addEventListener("pagehide", onHide);
-    return () => window.removeEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      listener.current?.close();
+    };
   }, []);
-
-  const creating = useRef<Promise<string> | null>(null);
 
   function ensureConversation(mode: "voice" | "text"): Promise<string> {
     if (convRef.current) return Promise.resolve(convRef.current.id);
     if (!creating.current) {
-      creating.current = createConversation(mode).finally(() => {
+      creating.current = (async () => {
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode, offRecord, localDate: localDate() }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Couldn't start a conversation.");
+        const data = (await res.json()) as { id: string; offRecord: boolean };
+        convRef.current = { id: data.id, offRecord: data.offRecord };
+        setConversationId(data.id);
+        return data.id;
+      })().finally(() => {
         creating.current = null;
       });
     }
     return creating.current;
   }
 
-  async function createConversation(mode: "voice" | "text") {
-    const res = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode, offRecord, localDate: localDate() }),
-    });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Couldn't start a conversation.");
-    const data = (await res.json()) as { id: string; offRecord: boolean };
-    convRef.current = { id: data.id, offRecord: data.offRecord };
-    setConversationId(data.id);
-    return data.id;
-  }
-
-  function speakSentence(sentence: string) {
-    if (!speak || typeof speechSynthesis === "undefined" || ignoreReply.current) return;
-    const text = normalizeForSpeech(sentence);
-    if (!text) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang;
-    const v = pickVoice(lang);
-    if (v) u.voice = v;
-    u.rate = voice.rate;
-    speakingQueue.current += 1;
-    setStatus("speaking");
-    u.onstart = () => {
-      lastHeard.current = sentence;
-    };
-    const done = () => {
-      speakingQueue.current = Math.max(0, speakingQueue.current - 1);
-      settle();
-    };
-    u.onend = done;
-    u.onerror = done;
-    speechSynthesis.speak(u);
-  }
-
   function interrupt() {
-    if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
-    speakingQueue.current = 0;
-    if (streamOpen.current || status === "speaking") {
+    const wasSpeaking = speaker.current?.busy() ?? false;
+    speaker.current?.stop();
+    if (streamOpen.current || wasSpeaking) {
       ignoreReply.current = true;
-      pendingInterrupt.current = lastHeard.current || "(nothing yet)";
+      pendingInterrupt.current = speaker.current?.lastHeard || "(nothing yet)";
     }
   }
 
@@ -196,18 +196,20 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
       setStatus("idle");
       return;
     }
-    const leaderTurn: Turn = { id: nextId++, role: "leader", text: clean, unheard: "", tools: [] };
     const reply: Turn = { id: nextId++, role: "barnabas", text: "", unheard: "", tools: [] };
-    setTurns((t) => [...t, leaderTurn, reply]);
+    setTurns((t) => [...t, { id: nextId++, role: "leader", text: clean, unheard: "", tools: [] }, reply]);
     setStatus("thinking");
     ignoreReply.current = false;
-    lastHeard.current = "";
+    if (speaker.current) speaker.current.lastHeard = "";
     const interruptedAfter = pendingInterrupt.current ?? undefined;
     pendingInterrupt.current = null;
 
     const update = (fn: (t: Turn) => Turn) => setTurns((all) => all.map((t) => (t.id === reply.id ? fn(t) : t)));
     const chunker = new SentenceChunker();
-    const voiceReply = via === "voice";
+    const voiced = via === "voice" && speak;
+    const say = (s: string) => {
+      if (voiced && !ignoreReply.current) speaker.current?.speak(s);
+    };
     streamOpen.current = true;
     try {
       const res = await fetch("/api/chat", {
@@ -245,11 +247,11 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
             if (ignoreReply.current) update((t) => ({ ...t, unheard: t.unheard + event.text }));
             else {
               update((t) => ({ ...t, text: t.text + event.text }));
-              if (voiceReply) chunker.push(event.text).forEach(speakSentence);
+              chunker.push(event.text).forEach(say);
             }
           } else if (event.type === "tool") {
             update((t) => ({ ...t, tools: [...t.tools, event.name] }));
-            if (voiceReply && event.phrase && speakingQueue.current === 0) speakSentence(event.phrase);
+            if (event.phrase && !speaker.current?.busy()) say(event.phrase);
           } else if (event.type === "notice") {
             setNotice(event.text);
           } else if (event.type === "error") {
@@ -257,7 +259,7 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
           }
         }
       }
-      if (voiceReply) chunker.flush().forEach(speakSentence);
+      chunker.flush().forEach(say);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Barnabas couldn't answer just now.");
     } finally {
@@ -267,56 +269,72 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
     }
   }
 
-  function startListening() {
-    const Ctor = recognitionCtor();
-    if (!Ctor) {
-      setError("Voice isn't available in this browser. Try Chrome, Edge or Safari, or type below.");
-      return;
-    }
-    // Prime speech output on iOS, which only allows it after a tap.
-    if (typeof speechSynthesis !== "undefined" && speechSynthesis.getVoices().length === 0) speechSynthesis.getVoices();
-    const rec = new Ctor();
-    rec.lang = lang;
-    rec.interimResults = true;
-    rec.continuous = false;
-    let finalText = "";
-    rec.onresult = (e) => {
-      let interimText = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalText += r[0].transcript;
-        else interimText += r[0].transcript;
-      }
-      setInterim(finalText + interimText);
-    };
-    rec.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setError("Microphone access is blocked. Allow it in your browser settings, or type below.");
-      } else if (e.error !== "no-speech" && e.error !== "aborted") {
-        setError("I couldn't hear that. Try again.");
-      }
-    };
-    rec.onend = () => {
-      recognitionRef.current = null;
-      setInterim("");
-      if (finalText.trim()) void send(finalText, "voice");
-      else setStatus((s) => (s === "listening" ? "idle" : s));
-    };
-    recognitionRef.current = rec;
-    setStatus("listening");
+  async function startListening(continuous: boolean) {
     setError(null);
-    // Warm the conversation (and Claude's cache) while the leader is still talking.
+    speaker.current?.unlock();
+    pushBuffer.current = [];
+    const events = {
+      onInterim: (text: string) => {
+        setInterim(text);
+        // Hands-free: speaking over Barnabas interrupts it (two words, so a cough doesn't).
+        if (continuous && text.split(/\s+/).filter(Boolean).length >= 2 && (speaker.current?.busy() || streamOpen.current) && !ignoreReply.current) {
+          interrupt();
+          setStatus("listening");
+        }
+      },
+      onUtterance: (text: string) => {
+        if (continuous) {
+          if (speaker.current?.busy() || streamOpen.current) interrupt();
+          void send(text, "voice");
+        } else {
+          pushBuffer.current.push(text);
+        }
+      },
+      onError: (message: string) => setError(message),
+      onClose: () => {
+        listener.current = null;
+        setInterim("");
+        if (!continuous) {
+          const text = pushBuffer.current.join(" ").trim();
+          pushBuffer.current = [];
+          if (text) void send(text, "voice");
+          else setStatus((s) => (s === "listening" ? "idle" : s));
+        } else {
+          setStatus((s) => (s === "listening" ? "idle" : s));
+        }
+      },
+    };
+    const l: Listener = cloudListening ? new DeepgramListener(lang, events) : new BrowserListener(lang, events);
+    listener.current = l;
+    setStatus("listening");
+    // Start the conversation (and warm Claude's cache) while the leader is still talking.
     void ensureConversation("voice").catch(() => {});
-    rec.start();
+    try {
+      await l.start();
+    } catch (err) {
+      listener.current = null;
+      setStatus("idle");
+      setError(err instanceof Error ? err.message : "Couldn't start listening.");
+    }
   }
 
   function onOrb() {
+    if (handsFree) {
+      if (listener.current) {
+        interrupt();
+        stopListening();
+        setStatus("idle");
+      } else {
+        void startListening(true);
+      }
+      return;
+    }
     if (status === "listening") {
-      recognitionRef.current?.stop();
+      listener.current?.finish();
       return;
     }
     if (status === "speaking" || status === "thinking") interrupt();
-    startListening();
+    void startListening(false);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -333,13 +351,10 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
     setOffRecord(next);
   }
 
-  function changeLang(next: Lang) {
-    setLang(next);
-  }
-
-  function toggleSpeak(next: boolean) {
-    setSpeak(next);
-    if (!next && typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+  function toggleHandsFree(next: boolean) {
+    stopListening();
+    setStatus("idle");
+    setHandsFree(next);
   }
 
   return (
@@ -347,27 +362,20 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
       <div className="stack" style={{ gap: 6 }}>
         <h1>How can I encourage you today{greetingName ? `, ${greetingName}` : ""}?</h1>
         <p className="sub">
-          Ask who needs a call, get ready for a visit, check on your volunteers, or draft a message.
+          Ask who needs a call, get ready for a visit, check on your volunteers, or plan your week.
           {offRecord ? " This conversation is off the record: nothing will be saved." : ""}
         </p>
       </div>
 
       <div className="orb-row">
-        <button
-          type="button"
-          className="orb"
-          data-state={status}
-          onClick={onOrb}
-          disabled={!voiceSupported}
-          aria-label={STATUS_TEXT[status]}
-        >
+        <button type="button" className="orb" data-state={status} onClick={onOrb} disabled={!voiceSupported} aria-label={statusText(status, handsFree)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="9" y="3" width="6" height="11" rx="3" />
             <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
           </svg>
         </button>
         <p className="orb-status" aria-live="polite">
-          {voiceSupported ? STATUS_TEXT[status] : "Voice isn't available in this browser. You can type below."}
+          {voiceSupported ? statusText(status, handsFree) : "Voice isn't available in this browser. You can type below."}
         </p>
       </div>
 
@@ -395,17 +403,10 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
       </div>
 
       <form className="composer" onSubmit={onSubmit}>
-        <label htmlFor="message" className="sr-only" style={{ position: "absolute", left: -9999 }}>
+        <label htmlFor="message" style={{ position: "absolute", left: -9999 }}>
           Message Barnabas
         </label>
-        <input
-          id="message"
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Or type to Barnabas…"
-          autoComplete="off"
-        />
+        <input id="message" type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Or type to Barnabas…" autoComplete="off" />
         <button type="submit" className="btn btn-send" disabled={!draft.trim()}>
           Send
         </button>
@@ -417,12 +418,18 @@ export function Talk({ greetingName, voice }: { greetingName: string; voice: Voi
           Off the record
         </label>
         <label>
-          <input id="speak-replies" type="checkbox" checked={speak} onChange={(e) => toggleSpeak(e.target.checked)} />
+          <input id="speak-replies" type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); if (!e.target.checked) speaker.current?.stop(); }} />
           Speak replies
         </label>
+        {cloudListening && (
+          <label>
+            <input id="hands-free" type="checkbox" checked={handsFree} onChange={(e) => toggleHandsFree(e.target.checked)} />
+            Hands-free
+          </label>
+        )}
         <label>
           Language
-          <select id="voice-language" value={lang} onChange={(e) => changeLang(e.target.value as Lang)}>
+          <select id="voice-language" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
             {LANGS.map((l) => (
               <option key={l.value} value={l.value}>
                 {l.label}

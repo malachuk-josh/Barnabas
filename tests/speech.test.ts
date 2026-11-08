@@ -30,3 +30,12 @@ describe("sentence chunker", () => {
     expect(c.push("Dr. Okafor called. ")).toEqual(["Dr. Okafor called."]);
   });
 });
+
+describe("pronunciations", () => {
+  it("replaces whole words only, case-insensitively", () => {
+    const list = [{ word: "Nguyen", sayAs: "Win" }];
+    expect(normalizeForSpeech("Call Mrs. Nguyen today.", list)).toBe("Call Mrs. Win today.");
+    expect(normalizeForSpeech("NGUYEN family", list)).toBe("Win family");
+    expect(normalizeForSpeech("Nguyenville", list)).toBe("Nguyenville");
+  });
+});

@@ -14,7 +14,17 @@ export type Profile = {
   /** IANA time zone, e.g. "America/Chicago". */
   timezone: string;
   replyLanguage: ReplyLanguage;
-  voice: { speakReplies: boolean; language: VoiceLang; rate: number };
+  voice: {
+    speakReplies: boolean;
+    language: VoiceLang;
+    rate: number;
+    /** ElevenLabs voice for Barnabas; empty means the church default. */
+    voiceId?: string;
+    /** Keep listening between turns and allow interrupting by speaking. */
+    handsFree: boolean;
+  };
+  /** How Barnabas should say names it gets wrong, e.g. Nguyen -> "Win". */
+  pronunciations: { word: string; sayAs: string }[];
   /** Anything the leader wants Barnabas to always know about them. */
   about: string;
   updatedAt: number;
@@ -42,7 +52,8 @@ export function defaultProfile(leader: Leader): Profile {
     ministries: [],
     timezone: DEFAULT_TIMEZONE,
     replyLanguage: "en",
-    voice: { speakReplies: true, language: "en-US", rate: 1 },
+    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: false },
+    pronunciations: [],
     about: "",
     updatedAt: Date.now(),
   };

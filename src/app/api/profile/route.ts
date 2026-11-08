@@ -23,7 +23,10 @@ const Body = z.object({
     speakReplies: z.boolean(),
     language: z.enum(["en-US", "es-US", "ko-KR"]),
     rate: z.number().min(0.7).max(1.4),
+    voiceId: z.string().regex(/^[A-Za-z0-9]{8,40}$/).optional().or(z.literal("")),
+    handsFree: z.boolean(),
   }),
+  pronunciations: z.array(z.object({ word: z.string().trim().min(1).max(40), sayAs: z.string().trim().min(1).max(60) })).max(50),
   about: z.string().max(1500),
 });
 

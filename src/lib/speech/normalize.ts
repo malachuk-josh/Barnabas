@@ -55,7 +55,14 @@ function money(_m: string, whole: string, cents?: string) {
   return cents && +cents > 0 ? `${words} and ${numberWords(+cents)} cents` : words;
 }
 
-export function normalizeForSpeech(text: string): string {
+function escapeRe(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function normalizeForSpeech(text: string, pronunciations: { word: string; sayAs: string }[] = []): string {
+  for (const { word, sayAs } of pronunciations) {
+    if (word.trim()) text = text.replace(new RegExp(`(^|[^\\p{L}])${escapeRe(word.trim())}(?=$|[^\\p{L}])`, "giu"), `$1${sayAs}`);
+  }
   return text
     .replace(/\*\*|__|`|#+\s/g, "")
     .replace(/https?:\/\/\S+/g, "the link on your screen")
