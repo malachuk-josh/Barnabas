@@ -22,6 +22,7 @@ export default function SignIn() {
         email: form.get("email"),
         role: form.get("role"),
         code: form.get("code"),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     });
     setBusy(false);

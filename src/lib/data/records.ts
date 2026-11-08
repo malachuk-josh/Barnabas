@@ -88,29 +88,16 @@ export async function completeCare(leader: Leader, id: string) {
   return item ?? null;
 }
 
-/* ---------- Calendar holds (rest and sabbath) ---------- */
-
-export type Hold = { id: string; date: string; start: string; end: string; label: string; createdAt: number };
-
-const holdKey = (l: Leader) => `holds:${l.churchId}:${l.leaderId}`;
-
-export async function listHolds(leader: Leader) {
-  return (await getJSON<Hold[]>(holdKey(leader))) ?? [];
-}
-
-export async function addHold(leader: Leader, hold: Omit<Hold, "id" | "createdAt">) {
-  const all = await listHolds(leader);
-  const record: Hold = { ...hold, id: newId("hold"), createdAt: Date.now() };
-  all.push(record);
-  await setJSON(holdKey(leader), all.slice(-200));
-  return record;
-}
-
 /* ---------- Audit log ---------- */
 
 export type AuditEntry = { at: number; conversationId?: string; action: string; detail: string };
 
 const auditKey = (l: Leader) => `audit:${l.churchId}:${l.leaderId}`;
+
+/** Every per-leader record key, for deleting a leader's data. */
+export function leaderRecordKeys(l: Leader) {
+  return [careKey(l), auditKey(l), draftIndex(l), `holds:${l.churchId}:${l.leaderId}`];
+}
 
 export async function audit(leader: Leader, entry: Omit<AuditEntry, "at">) {
   const all = (await getJSON<AuditEntry[]>(auditKey(leader))) ?? [];

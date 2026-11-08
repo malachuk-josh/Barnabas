@@ -59,7 +59,9 @@ function pickVoice(lang: Lang): SpeechSynthesisVoice | null {
 
 let nextId = 1;
 
-export function Talk() {
+type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number };
+
+export function Talk({ greetingName, voice }: { greetingName: string; voice: VoicePrefs }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState<Status>("idle");
   const [interim, setInterim] = useState("");
@@ -67,8 +69,8 @@ export function Talk() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [offRecord, setOffRecord] = useState(false);
-  const [speak, setSpeak] = useState(true);
-  const [lang, setLang] = useState<Lang>("en-US");
+  const [speak, setSpeak] = useState(voice.speakReplies);
+  const [lang, setLang] = useState<Lang>(voice.language);
   const [voiceSupported, setVoiceSupported] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
@@ -84,13 +86,6 @@ export function Talk() {
 
   useEffect(() => {
     setVoiceSupported(Boolean(recognitionCtor()) && typeof speechSynthesis !== "undefined");
-    try {
-      const saved = localStorage.getItem("barnabas.lang") as Lang | null;
-      if (saved && LANGS.some((l) => l.value === saved)) setLang(saved);
-      if (localStorage.getItem("barnabas.speak") === "off") setSpeak(false);
-    } catch {
-      /* storage unavailable */
-    }
     if (typeof speechSynthesis !== "undefined") speechSynthesis.getVoices();
   }, []);
 
@@ -164,7 +159,7 @@ export function Talk() {
     u.lang = lang;
     const v = pickVoice(lang);
     if (v) u.voice = v;
-    u.rate = 1.02;
+    u.rate = voice.rate;
     speakingQueue.current += 1;
     setStatus("speaking");
     u.onstart = () => {
@@ -340,27 +335,17 @@ export function Talk() {
 
   function changeLang(next: Lang) {
     setLang(next);
-    try {
-      localStorage.setItem("barnabas.lang", next);
-    } catch {
-      /* ignore */
-    }
   }
 
   function toggleSpeak(next: boolean) {
     setSpeak(next);
     if (!next && typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
-    try {
-      localStorage.setItem("barnabas.speak", next ? "on" : "off");
-    } catch {
-      /* ignore */
-    }
   }
 
   return (
     <section className="talk" aria-label="Talk with Barnabas">
       <div className="stack" style={{ gap: 6 }}>
-        <h1>How can I encourage you today?</h1>
+        <h1>How can I encourage you today{greetingName ? `, ${greetingName}` : ""}?</h1>
         <p className="sub">
           Ask who needs a call, get ready for a visit, check on your volunteers, or draft a message.
           {offRecord ? " This conversation is off the record: nothing will be saved." : ""}

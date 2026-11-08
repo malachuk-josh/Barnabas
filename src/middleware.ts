@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/signin", "/api/auth/signin", "/manifest.webmanifest", "/icon.svg"];
+const PUBLIC_PATHS = ["/signin", "/api/auth/signin", "/api/calendar/ics", "/manifest.webmanifest", "/icon.svg"];
 
 function secret(): Uint8Array | null {
   const value = process.env.SESSION_SECRET;

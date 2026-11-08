@@ -7,7 +7,11 @@ import { addDays, friendlyDate, today } from "../dates";
 import type { ConversationMeta } from "../data/conversations";
 import { provenanceKey } from "../data/conversations";
 import { newId } from "../data/ids";
-import { addCare, addHold, audit, getDraft, queueDraft, saveDraft, type Draft } from "../data/records";
+import { calendarRange, createEvent, deleteEvent, updateEvent } from "../calendar/service";
+import { EventInputSchema, getEvent } from "../calendar/store";
+import { addDaysIso, time12, todayIn } from "../calendar/time";
+import { addCare, audit, getDraft, queueDraft, saveDraft, type Draft } from "../data/records";
+import { getProfile } from "../profile";
 import { MemoryFS } from "../memory/fs";
 import { slug } from "../memory/paths";
 import { isAffirmative } from "../policy/confirm";
@@ -413,43 +417,143 @@ const logCareEvent = tool({
   },
 });
 
-const blockTime = tool({
+const EVENT_KIND = ["meeting", "visit", "rest", "service", "prep", "event", "other"] as const;
+
+const listCalendar = tool({
+  phrase: "Let me check your calendar.",
   def: {
-    name: "block_time",
-    description: "Hold time on the leader's calendar for rest, sabbath, prayer or preparation. First call proposes it; call again with the same values after the leader says yes.",
+    name: "list_calendar",
+    description:
+      "The leader's calendar between two dates (default: today through the next 7 days): Barnabas events (editable, with event_id), events from their connected Google or Outlook calendars (read-only), and church events (read-only). Dates are yyyy-mm-dd; times are 24-hour in the leader's time zone.",
     eager_input_streaming: true,
-    input_schema: {
-      type: "object",
-      properties: {
-        date: { type: "string", description: "yyyy-mm-dd" },
-        start: { type: "string", description: "e.g. 09:00" },
-        end: { type: "string", description: "e.g. 12:00" },
-        label: { type: "string" },
-      },
-      required: ["date", "start", "end", "label"],
-    },
+    input_schema: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } } },
+  },
+  schema: z.object({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
+  async run({ from, to }, ctx) {
+    const { timezone } = await getProfile(ctx.leader);
+    const start = from ?? todayIn(timezone);
+    const end = to ?? addDaysIso(start, 7);
+    if (end < start || end > addDaysIso(start, 62)) return fail("Use a range of up to two months.");
+    const range = await calendarRange(ctx.leader, start, end);
+    return ok({
+      time_zone: timezone,
+      barnabas_events: range.events.map((e) => ({ event_id: e.id, title: e.title, date: e.date, start: e.start ?? null, end: e.end ?? null, all_day: e.allDay, location: e.location ?? null, kind: e.kind, added_by: e.createdBy })),
+      other_events: range.outside.map((e) => ({ source: e.source === "church" ? "church calendar" : e.source === "google" ? "Google Calendar" : "Outlook", title: e.title, date: e.date, start: e.start ?? null, end: e.end ?? null, all_day: e.allDay, location: e.location ?? null })),
+      sync_problems: range.problems,
+    });
+  },
+});
+
+const eventFields = {
+  title: { type: "string" },
+  date: { type: "string", description: "yyyy-mm-dd" },
+  start: { type: "string", description: "HH:MM, 24-hour, leader's time zone" },
+  end: { type: "string", description: "HH:MM, 24-hour" },
+  all_day: { type: "boolean" },
+  location: { type: "string" },
+  notes: { type: "string", description: "Private to Barnabas; keep minimal" },
+  kind: { type: "string", enum: [...EVENT_KIND] },
+} as const;
+
+function toInput(i: { title: string; date: string; start?: string; end?: string; all_day?: boolean; location?: string; notes?: string; kind?: string }) {
+  return { title: i.title, date: i.date, start: i.start, end: i.end, allDay: Boolean(i.all_day), location: i.location, notes: i.notes, kind: i.kind ?? "other" };
+}
+
+function secretsOnly(text: string | undefined) {
+  if (!text) return null;
+  const problem = checkMemoryText(text, { allowSensitive: true });
+  return problem ? problem.replace("Not saved", "Not added") : null;
+}
+
+const addCalendarEvent = tool({
+  def: {
+    name: "add_calendar_event",
+    description:
+      "Add an event to the leader's Barnabas calendar (it is also copied to their connected Google or Outlook calendar). Use when the leader asks to add something. For something you are suggesting yourself, such as rest time, ask first.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: eventFields, required: ["title", "date"] },
   },
   schema: z.object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    start: z.string().regex(/^\d{1,2}:\d{2}$/),
-    end: z.string().regex(/^\d{1,2}:\d{2}$/),
-    label: z.string().min(1).max(80),
+    title: z.string().min(1).max(120),
+    date: z.string(),
+    start: z.string().optional(),
+    end: z.string().optional(),
+    all_day: z.boolean().optional(),
+    location: z.string().max(200).optional(),
+    notes: z.string().max(1000).optional(),
+    kind: z.enum(EVENT_KIND).optional(),
   }),
   async run(input, ctx) {
-    const key = JSON.stringify([input.date, input.start, input.end, input.label.trim().toLowerCase()]);
+    const problem = secretsOnly(`${input.title} ${input.notes ?? ""} ${input.location ?? ""}`);
+    if (problem) return fail(problem);
+    const parsed = EventInputSchema.safeParse(toInput(input));
+    if (!parsed.success) return fail(parsed.error.issues.map((i) => i.message).join("; "));
+    const event = await createEvent(ctx.leader, parsed.data, "barnabas", ctx.meta.id);
+    return ok({ event_id: event.id, added: `${event.title}, ${friendlyDate(event.date)}${event.start ? ` ${time12(event.start)} to ${time12(event.end!)}` : " (all day)"}`, sync: event.syncError ?? "ok" });
+  },
+});
+
+const updateCalendarEvent = tool({
+  def: {
+    name: "update_calendar_event",
+    description: "Change a Barnabas calendar event (by event_id from list_calendar). Send only the fields that change. Events from Google, Outlook or the church calendar can't be changed here.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { event_id: { type: "string" }, ...eventFields }, required: ["event_id"] },
+  },
+  schema: z.object({
+    event_id: z.string().min(1).max(60),
+    title: z.string().min(1).max(120).optional(),
+    date: z.string().optional(),
+    start: z.string().optional(),
+    end: z.string().optional(),
+    all_day: z.boolean().optional(),
+    location: z.string().max(200).optional(),
+    notes: z.string().max(1000).optional(),
+    kind: z.enum(EVENT_KIND).optional(),
+  }),
+  async run(input, ctx) {
+    const current = await getEvent(ctx.leader, input.event_id);
+    if (!current) return fail(`No Barnabas event ${input.event_id}. Use list_calendar to find it.`);
+    const merged = {
+      title: input.title ?? current.title,
+      date: input.date ?? current.date,
+      start: input.start ?? current.start,
+      end: input.end ?? current.end,
+      all_day: input.all_day ?? current.allDay,
+      location: input.location ?? current.location,
+      notes: input.notes ?? current.notes,
+      kind: input.kind ?? current.kind,
+    };
+    const problem = secretsOnly(`${merged.title} ${merged.notes ?? ""} ${merged.location ?? ""}`);
+    if (problem) return fail(problem);
+    const parsed = EventInputSchema.safeParse(toInput(merged));
+    if (!parsed.success) return fail(parsed.error.issues.map((i) => i.message).join("; "));
+    const event = await updateEvent(ctx.leader, input.event_id, parsed.data, "barnabas", ctx.meta.id);
+    if (!event) return fail("That event no longer exists.");
+    return ok({ event_id: event.id, now: `${event.title}, ${friendlyDate(event.date)}${event.start ? ` ${time12(event.start)} to ${time12(event.end!)}` : " (all day)"}`, sync: event.syncError ?? "ok" });
+  },
+});
+
+const deleteCalendarEvent = tool({
+  def: {
+    name: "delete_calendar_event",
+    description: "Delete a Barnabas calendar event. First call proposes it; call again with the same event_id after the leader says yes.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { event_id: { type: "string" } }, required: ["event_id"] },
+  },
+  schema: z.object({ event_id: z.string().min(1).max(60) }),
+  async run({ event_id }, ctx) {
+    const event = await getEvent(ctx.leader, event_id);
+    if (!event) return fail(`No Barnabas event ${event_id}.`);
     const pending = ctx.meta.pending;
-    const confirmed =
-      pending?.tool === "block_time" && pending.key === key && pending.turn < ctx.meta.turns && isAffirmative(ctx.lastUserText);
+    const confirmed = pending?.tool === "delete_calendar_event" && pending.key === event_id && pending.turn < ctx.meta.turns && isAffirmative(ctx.lastUserText);
     if (!confirmed) {
-      ctx.meta.pending = { tool: "block_time", key, turn: ctx.meta.turns };
-      return fail(
-        `Not confirmed yet. Ask the leader: hold ${friendlyDate(input.date)} from ${input.start} to ${input.end} for "${input.label}"? Call block_time again with the same values after they say yes.`,
-      );
+      ctx.meta.pending = { tool: "delete_calendar_event", key: event_id, turn: ctx.meta.turns };
+      return fail(`Not confirmed yet. Ask the leader: delete "${event.title}" on ${friendlyDate(event.date)}? Call delete_calendar_event again after they say yes.`);
     }
     ctx.meta.pending = undefined;
-    await addHold(ctx.leader, input);
-    await audit(ctx.leader, { conversationId: ctx.meta.id, action: "calendar.hold", detail: `${input.date} ${input.start}-${input.end}` });
-    return ok("Held on the Barnabas calendar. Calendar sync isn't connected in this version, so remind the leader to add it to their own calendar.");
+    await deleteEvent(ctx.leader, event_id, "barnabas", ctx.meta.id);
+    return ok(`Deleted "${event.title}".`);
   },
 });
 
@@ -465,7 +569,10 @@ const ALL: ToolSpec<any>[] = [
   draftMessage,
   sendDraft,
   logCareEvent,
-  blockTime,
+  listCalendar,
+  addCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */

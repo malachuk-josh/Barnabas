@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { accessCode, config } from "@/lib/config";
 import { SESSION_COOKIE, leaderIdFor, sessionCookieOptions, signSession } from "@/lib/auth/session";
+import { ensureProfile } from "@/lib/profile";
 import { setJSON } from "@/lib/store";
 
 const Body = z.object({
@@ -9,6 +10,7 @@ const Body = z.object({
   email: z.string().trim().email().max(200),
   role: z.string().trim().max(80).optional().default(""),
   code: z.string().min(1).max(200),
+  timezone: z.string().max(80).optional(),
 });
 
 function sameText(a: string, b: string) {
@@ -35,6 +37,10 @@ export async function POST(request: Request) {
   const leaderId = await leaderIdFor(config.churchId, email);
   const leader = { churchId: config.churchId, leaderId, name, email: email.toLowerCase(), role };
   await setJSON(`leader:${config.churchId}:${leaderId}`, { ...leader, signedInAt: Date.now() });
+  const profile = await ensureProfile(leader, parsed.data.timezone);
+  // A returning leader keeps the name and role they set in Settings.
+  leader.name = profile.name;
+  leader.role = profile.role;
   const token = await signSession(leader);
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);

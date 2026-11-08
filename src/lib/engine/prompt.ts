@@ -3,6 +3,9 @@ import type { Leader } from "../auth/session";
 import { friendlyDate } from "../dates";
 import type { Mode } from "../data/conversations";
 import { MemoryFS } from "../memory/fs";
+import type { CalendarEvent, OutsideEvent } from "../calendar/types";
+import { time12 } from "../calendar/time";
+import type { Profile } from "../profile";
 import type { Briefing } from "./briefing";
 
 export const CORE_PATH = "/memories/core.md";
@@ -33,8 +36,14 @@ Church data and tools
 
 Sending and scheduling (always confirm first)
 - To message anyone, call draft_message first. Then briefly tell the leader who it goes to and what it says (in voice, a one-sentence summary is enough), and ask "Want me to send it?" Only after the leader says yes in their next turn, call send_draft. If they change anything, make a new draft.
-- block_time works the same way: propose the time, wait for a yes, then call it with exactly what you proposed.
 - The app checks these confirmations in code. If a tool says the action isn't confirmed, ask the leader.
+
+Calendar
+- list_calendar shows the leader's Barnabas calendar together with their connected Google or Outlook calendar and church events. Check it before suggesting times, and avoid conflicts.
+- When the leader asks you to add or change something on their calendar, do it with add_calendar_event or update_calendar_event, then say in one short sentence what you did.
+- Ask before adding anything the leader didn't ask for (such as rest time you suggest), and before deleting anything. Deleting is confirmed in code: propose, wait for a yes, then call delete_calendar_event again.
+- You can only change Barnabas events. Google, Outlook and church events are read-only to you; offer to add a Barnabas event instead.
+- Keep event titles plain and minimal ("Visit with Grace Lee"), with no sensitive details.
 
 Languages
 - Every person has a preferred written language on file (English, Spanish or Korean). Use the language the tools report. Never guess a language from someone's name.
@@ -61,7 +70,16 @@ export type ContextOptions = {
   offRecord: boolean;
   localDate: string;
   briefing: Briefing;
+  profile: Profile;
+  calendar: { events: CalendarEvent[]; outside: OutsideEvent[] };
 };
+
+const REPLY_LANGUAGE: Record<Profile["replyLanguage"], string> = { en: "English", es: "Spanish", ko: "Korean" };
+
+function eventLine(e: { title: string; date: string; start?: string; end?: string; allDay: boolean; location?: string }, label: string) {
+  const when = e.allDay || !e.start ? "all day" : `${time12(e.start)}${e.end ? `-${time12(e.end)}` : ""}`;
+  return `- ${friendlyDate(e.date)}, ${when}: ${e.title}${e.location ? ` (${e.location})` : ""} [${label}]`;
+}
 
 function trimTo(text: string, max: number) {
   return text.length > max ? `${text.slice(0, max)}\n[truncated; use recall_memory to read the rest]` : text;
@@ -87,9 +105,15 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
     `Memory policy: ${config.allowSensitiveMemory ? "the church's written policy allows remembering sensitive pastoral details when the leader asks; still keep them minimal" : "do not remember sensitive pastoral details (health, counseling, family conflict, addiction, legal or immigration status, finances)"}`,
   );
   lines.push("");
-  lines.push("# Leader");
-  lines.push(`Name: ${opts.leader.name}`);
-  if (opts.leader.role) lines.push(`Role: ${opts.leader.role}`);
+  const p = opts.profile;
+  lines.push("# Leader (from their profile)");
+  lines.push(`Name: ${p.name}`);
+  lines.push(`Call them: ${p.preferredName}`);
+  if (p.role) lines.push(`Role: ${p.role}`);
+  if (p.ministries.length) lines.push(`Ministries: ${p.ministries.join(", ")}`);
+  lines.push(`Time zone: ${p.timezone}`);
+  lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);
+  if (p.about.trim()) lines.push(`What they want you to know: ${p.about.trim().slice(0, 1500)}`);
   lines.push("");
   lines.push("# What you remember about this leader");
   lines.push(core.trim() ? trimTo(core.trim(), 6000) : "(Nothing yet. This may be your first conversation; get to know them.)");
@@ -103,6 +127,14 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
     lines.push("## Other memory files (open with recall_memory)");
     for (const p of others.slice(0, 60)) lines.push(`- ${p}`);
   }
+  lines.push("");
+  lines.push("# Calendar for today and the next two days (as of the start of this conversation)");
+  const cal = [
+    ...opts.calendar.events.map((e) => ({ e, label: `Barnabas event ${e.id}` })),
+    ...opts.calendar.outside.map((e) => ({ e, label: e.source === "church" ? "church calendar" : e.source === "google" ? "Google" : "Outlook" })),
+  ].sort((a, b) => (a.e.date + (a.e.start ?? "")).localeCompare(b.e.date + (b.e.start ?? "")));
+  if (cal.length) for (const { e, label } of cal.slice(0, 20)) lines.push(eventLine(e, label));
+  else lines.push("Nothing scheduled.");
   lines.push("");
   lines.push("# Today's briefing (from church data, as of the start of this conversation)");
   if (b.radar.length) {

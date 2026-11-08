@@ -1,0 +1,362 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import type { Profile } from "@/lib/profile";
+import { CalendarIcon } from "./icons";
+
+type ProviderStatus = {
+  id: "google" | "microsoft";
+  label: string;
+  configured: boolean;
+  connection: { account: string; connectedAt: number; push: boolean; lastError?: string } | null;
+};
+type SyncStatus = { providers: ProviderStatus[]; feed: { https: string; webcal: string } | null };
+
+const SYNC_MESSAGES: Record<string, string> = {
+  connected: "Connected. Barnabas will copy its events there and show your events on the Calendar tab.",
+  declined: "The connection was cancelled. Nothing was changed.",
+  expired: "That sign-in took too long. Try connecting again.",
+  failed: "The connection didn't work. Try again, or check with your administrator.",
+  "not-configured": "Your administrator hasn't set up this connection yet. See the setup notes below.",
+  unknown: "Unknown calendar provider.",
+};
+
+function timezones(): string[] {
+  try {
+    return (Intl as unknown as { supportedValuesOf(k: string): string[] }).supportedValuesOf("timeZone");
+  } catch {
+    return ["America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"];
+  }
+}
+
+export function SettingsForm({ initial }: { initial: Profile }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const [p, setP] = useState<Profile>(initial);
+  const [ministry, setMinistry] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [sync, setSync] = useState<SyncStatus | null>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const zones = useMemo(timezones, []);
+
+  const syncParam = params.get("sync");
+
+  useEffect(() => {
+    fetch("/api/calendar/sync")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setSync)
+      .catch(() => {});
+  }, []);
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: p.name,
+        preferredName: p.preferredName,
+        role: p.role,
+        ministries: p.ministries,
+        timezone: p.timezone,
+        replyLanguage: p.replyLanguage,
+        voice: p.voice,
+        about: p.about,
+      }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setMessage({ ok: true, text: "Saved. Barnabas will use this from your next conversation." });
+      router.refresh();
+    } else {
+      setMessage({ ok: false, text: (await res.json().catch(() => ({}))).error ?? "Couldn't save your settings." });
+    }
+  }
+
+  function addMinistry() {
+    const value = ministry.trim();
+    if (value && !p.ministries.includes(value) && p.ministries.length < 12) setP({ ...p, ministries: [...p.ministries, value] });
+    setMinistry("");
+  }
+
+  async function syncAction(body: Record<string, unknown>) {
+    setSyncBusy(true);
+    const res = await fetch("/api/calendar/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setSyncBusy(false);
+    if (res.ok) setSync(await res.json());
+  }
+
+  async function copy(text: string, input: HTMLInputElement | null) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      input?.select();
+    }
+  }
+
+  async function deleteEverything() {
+    const res = await fetch("/api/account", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: deleteText }) });
+    if (res.ok) {
+      router.push("/signin");
+      router.refresh();
+    } else {
+      setMessage({ ok: false, text: (await res.json().catch(() => ({}))).error ?? "Couldn't delete your data." });
+    }
+  }
+
+  return (
+    <div className="settings">
+      <nav className="settings-nav" aria-label="Settings sections">
+        <a href="#profile">Profile</a>
+        <a href="#barnabas">Barnabas and voice</a>
+        <a href="#calendars">Calendars</a>
+        <a href="#privacy">Privacy and data</a>
+      </nav>
+
+      <div className="stack" style={{ gap: 24 }}>
+        {message && (
+          <div className={`notice ${message.ok ? "success" : "notice-danger"}`} role="status">
+            {message.text}
+          </div>
+        )}
+
+        <form className="stack" style={{ gap: 24 }} onSubmit={saveProfile}>
+          <section id="profile" className="card">
+            <h2>Profile</h2>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="name">Full name</label>
+                <input id="name" type="text" required maxLength={80} value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} />
+              </div>
+              <div className="field">
+                <label htmlFor="preferredName">What Barnabas calls you</label>
+                <input id="preferredName" type="text" required maxLength={80} value={p.preferredName} onChange={(e) => setP({ ...p, preferredName: e.target.value })} placeholder="e.g. Pastor Dana" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="role">Role</label>
+                <input id="role" type="text" maxLength={80} value={p.role} onChange={(e) => setP({ ...p, role: e.target.value })} placeholder="e.g. Associate pastor" />
+              </div>
+              <div className="field">
+                <label htmlFor="email">Email</label>
+                <input id="email" type="email" value={p.email} readOnly aria-describedby="email-note" />
+                <span id="email-note" className="small muted">Your sign-in email. Ask your administrator to change it.</span>
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="ministry-input">Ministries you lead</label>
+              <div className="chips-input">
+                {p.ministries.map((m) => (
+                  <span key={m} className="tag">
+                    {m}
+                    <button type="button" aria-label={`Remove ${m}`} onClick={() => setP({ ...p, ministries: p.ministries.filter((x) => x !== m) })}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  id="ministry-input"
+                  type="text"
+                  value={ministry}
+                  maxLength={60}
+                  placeholder={p.ministries.length ? "Add another" : "e.g. Youth, Kids, Worship"}
+                  onChange={(e) => setMinistry(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      addMinistry();
+                    }
+                  }}
+                  onBlur={addMinistry}
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="about">What Barnabas should always know about you</label>
+              <textarea
+                id="about"
+                className="plain"
+                maxLength={1500}
+                value={p.about}
+                onChange={(e) => setP({ ...p, about: e.target.value })}
+                placeholder="e.g. I'm bivocational and only available evenings. I prefer short answers. Our church is a bilingual congregation."
+              />
+            </div>
+          </section>
+
+          <section id="barnabas" className="card">
+            <h2>Barnabas and voice</h2>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="timezone">Time zone</label>
+                <select id="timezone" value={p.timezone} onChange={(e) => setP({ ...p, timezone: e.target.value })}>
+                  {!zones.includes(p.timezone) && <option value={p.timezone}>{p.timezone}</option>}
+                  {zones.map((z) => (
+                    <option key={z} value={z}>
+                      {z.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="replyLanguage">Barnabas replies in</label>
+                <select id="replyLanguage" value={p.replyLanguage} onChange={(e) => setP({ ...p, replyLanguage: e.target.value as Profile["replyLanguage"] })}>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                  <option value="ko">한국어</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="voiceLang">Language you speak to Barnabas</label>
+                <select id="voiceLang" value={p.voice.language} onChange={(e) => setP({ ...p, voice: { ...p.voice, language: e.target.value as Profile["voice"]["language"] } })}>
+                  <option value="en-US">English</option>
+                  <option value="es-US">Español</option>
+                  <option value="ko-KR">한국어</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="rate">Speaking speed: {p.voice.rate.toFixed(1)}×</label>
+                <input id="rate" type="range" min={0.7} max={1.4} step={0.1} value={p.voice.rate} onChange={(e) => setP({ ...p, voice: { ...p.voice, rate: Number(e.target.value) } })} />
+              </div>
+            </div>
+            <label className="check">
+              <input id="speakReplies" type="checkbox" checked={p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, speakReplies: e.target.checked } })} />
+              Speak Barnabas&apos;s replies out loud
+            </label>
+          </section>
+
+          <div className="row">
+            <button className="btn btn-primary" type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+          </div>
+        </form>
+
+        <section id="calendars" className="card">
+          <h2>Calendars</h2>
+          <p className="muted">
+            Connect your calendar so Barnabas plans around your real schedule and puts its events where you already look. Barnabas only copies the title, time and place of its own events.
+          </p>
+          {syncParam && SYNC_MESSAGES[syncParam] && (
+            <div className={`notice ${syncParam === "connected" ? "success" : ""}`} role="status">
+              {SYNC_MESSAGES[syncParam]}
+            </div>
+          )}
+          {!sync && <p className="muted">Loading…</p>}
+          {sync?.providers.map((prov) => (
+            <div key={prov.id} className="provider">
+              <span className="logo" aria-hidden="true" style={{ color: prov.id === "google" ? "#1a73e8" : "#6264a7" }}>
+                {prov.id === "google" ? "G" : "O"}
+              </span>
+              <div className="stack" style={{ gap: 2 }}>
+                <strong>{prov.label}</strong>
+                {prov.connection ? (
+                  <>
+                    <span className="small muted">Connected as {prov.connection.account}. Two-way: your events show in Barnabas, and Barnabas&apos;s events are copied there.</span>
+                    {prov.connection.lastError && <span className="small error">{prov.connection.lastError}</span>}
+                    <label className="check small">
+                      <input
+                        id={`push-${prov.id}`}
+                        type="checkbox"
+                        checked={prov.connection.push}
+                        disabled={syncBusy}
+                        onChange={(e) => void syncAction({ action: "set-push", provider: prov.id, push: e.target.checked })}
+                      />
+                      Copy Barnabas events to {prov.label}
+                    </label>
+                  </>
+                ) : (
+                  <span className="small muted">
+                    {prov.configured ? "Two-way sync with your account." : "Not available yet: your administrator needs to register Barnabas with " + (prov.id === "google" ? "Google" : "Microsoft") + "."}
+                  </span>
+                )}
+              </div>
+              <div className="actions row">
+                {prov.connection ? (
+                  <button className="btn btn-danger" type="button" disabled={syncBusy} onClick={() => void syncAction({ action: "disconnect", provider: prov.id })}>
+                    Disconnect
+                  </button>
+                ) : (
+                  <a className={`btn ${prov.configured ? "btn-primary" : ""}`} href={`/api/calendar/connect/${prov.id}`} aria-disabled={!prov.configured}>
+                    Connect
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {sync && (
+            <div className="provider">
+              <span className="logo" aria-hidden="true">
+                <CalendarIcon />
+              </span>
+              <div className="stack" style={{ gap: 6 }}>
+                <strong>Apple Calendar (and any calendar app)</strong>
+                <span className="small muted">
+                  Subscribe with a private link. Barnabas&apos;s events appear in Apple Calendar on your iPhone and Mac, and update about every hour. One-way: change events in Barnabas. The same link works in Google
+                  Calendar (Add calendar → From URL) and Outlook (Add calendar → Subscribe from web).
+                </span>
+                {sync.feed ? (
+                  <>
+                    <div className="copy-row">
+                      <input id="feed-url" type="text" readOnly value={sync.feed.https} aria-label="Private calendar link" onFocus={(e) => e.target.select()} />
+                      <button className="btn" type="button" onClick={(e) => void copy(sync.feed!.https, (e.currentTarget.previousElementSibling as HTMLInputElement) ?? null)}>
+                        {copied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    <span className="small muted">Anyone with this link can see your Barnabas event titles and times. Reset it if it&apos;s shared by mistake.</span>
+                    <div className="row">
+                      <a className="btn btn-primary" href={sync.feed.webcal}>
+                        Add to Apple Calendar
+                      </a>
+                      <button className="btn" type="button" disabled={syncBusy} onClick={() => void syncAction({ action: "rotate-feed" })}>
+                        Reset link
+                      </button>
+                      <button className="btn btn-danger" type="button" disabled={syncBusy} onClick={() => void syncAction({ action: "stop-feed" })}>
+                        Stop sharing
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <button className="btn btn-primary" type="button" disabled={syncBusy} onClick={() => void syncAction({ action: "create-feed" })}>
+                      Create private link
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section id="privacy" className="card danger-zone">
+          <h2>Privacy and data</h2>
+          <p className="muted">
+            Review or delete what Barnabas remembers on the <a href="/memory">Memory</a> tab. To start over completely, delete all your data: memory, conversations, drafts, calendar events and calendar connections. This
+            can&apos;t be undone.
+          </p>
+          <div className="field" style={{ maxWidth: 360 }}>
+            <label htmlFor="delete-confirm">Type DELETE to confirm</label>
+            <input id="delete-confirm" type="text" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} autoComplete="off" />
+          </div>
+          <div>
+            <button className="btn btn-danger" type="button" disabled={deleteText !== "DELETE"} onClick={() => void deleteEverything()}>
+              Delete all my data
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

@@ -1,23 +1,17 @@
-import { redirect } from "next/navigation";
+import { AppShell, requirePageLeader } from "@/components/AppShell";
 import { Briefing } from "@/components/Briefing";
 import { Talk } from "@/components/Talk";
-import { TopBar } from "@/components/TopBar";
-import { currentLeader } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const leader = await currentLeader();
-  if (!leader) redirect("/signin");
+  const { profile } = await requirePageLeader();
   return (
-    <>
-      <TopBar name={leader.name} />
-      <main className="wrap">
-        <div className="home">
-          <Talk />
-          <Briefing />
-        </div>
-      </main>
-    </>
+    <AppShell profile={profile}>
+      <div className="home">
+        <Talk greetingName={profile.preferredName} voice={profile.voice} />
+        <Briefing />
+      </div>
+    </AppShell>
   );
 }
