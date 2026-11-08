@@ -20,7 +20,7 @@ export async function GET() {
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) {
-    console.error("[barnabas] deepgram token failed", res.status);
+    console.error("[barnabas] deepgram token failed", res.status, res.status === 403 ? "(the API key needs the Member role or higher)" : "");
     return NextResponse.json({ error: "Couldn't start listening." }, { status: 502 });
   }
   const { access_token } = (await res.json()) as { access_token: string };

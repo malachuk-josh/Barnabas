@@ -270,6 +270,7 @@ export function Talk({
   }
 
   async function startListening(continuous: boolean) {
+    let continuousFallback = false;
     setError(null);
     speaker.current?.unlock();
     pushBuffer.current = [];
@@ -294,7 +295,7 @@ export function Talk({
       onClose: () => {
         listener.current = null;
         setInterim("");
-        if (!continuous) {
+        if (!continuous || continuousFallback) {
           const text = pushBuffer.current.join(" ").trim();
           pushBuffer.current = [];
           if (text) void send(text, "voice");
@@ -312,6 +313,20 @@ export function Talk({
     try {
       await l.start();
     } catch (err) {
+      l.close();
+      // If the listening service is unavailable, fall back to the browser's own recognition (push-to-talk).
+      if (cloudListening && browserRecognitionAvailable()) {
+        const fallback = new BrowserListener(lang, { ...events, onUtterance: (t: string) => pushBuffer.current.push(t), onClose: () => events.onClose() });
+        continuousFallback = true;
+        listener.current = fallback;
+        try {
+          await fallback.start();
+          setError("Hands-free listening isn't available right now, so Barnabas is using your device's speech recognition. Tap when you're done.");
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
       listener.current = null;
       setStatus("idle");
       setError(err instanceof Error ? err.message : "Couldn't start listening.");
