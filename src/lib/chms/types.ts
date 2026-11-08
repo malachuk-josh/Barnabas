@@ -1,0 +1,69 @@
+/** The church-data surface Barnabas reads. Each ChMS (Planning Center, Rock, Breeze...) gets an adapter. */
+
+export type Language = "en" | "es" | "ko";
+
+export const LANGUAGE_NAMES: Record<Language, string> = {
+  en: "English",
+  es: "Spanish",
+  ko: "Korean",
+};
+
+export type Person = {
+  id: string;
+  name: string;
+  firstName: string;
+  household?: string;
+  /** Preferred language for written communication. */
+  language: Language;
+  phone?: string;
+  email?: string;
+  smallGroup?: string;
+  /** Last time a leader recorded a thank-you or appreciation (ISO date). */
+  lastThanked?: string;
+};
+
+export type Team = { id: string; name: string };
+
+export type ServingStatus = "served" | "declined" | "scheduled";
+
+export type ServingRecord = {
+  personId: string;
+  teamId: string;
+  /** ISO date (yyyy-mm-dd) of the service. */
+  date: string;
+  status: ServingStatus;
+};
+
+export type AttendanceRecord = {
+  personId: string;
+  date: string;
+  kind: "worship" | "group";
+  present: boolean;
+};
+
+export type ChurchEvent = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+};
+
+export type Roster = {
+  date: string;
+  teamId: string;
+  teamName: string;
+  people: { personId: string; name: string; status: ServingStatus }[];
+};
+
+export interface ChurchData {
+  readonly source: string;
+  listPeople(): Promise<Person[]>;
+  getPerson(id: string): Promise<Person | null>;
+  findPeople(query: string): Promise<Person[]>;
+  teams(): Promise<Team[]>;
+  serving(sinceISO: string): Promise<ServingRecord[]>;
+  attendance(sinceISO: string): Promise<AttendanceRecord[]>;
+  rosters(fromISO: string, toISO: string): Promise<Roster[]>;
+  events(fromISO: string, toISO: string): Promise<ChurchEvent[]>;
+}

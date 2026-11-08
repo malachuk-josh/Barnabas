@@ -258,3 +258,14 @@ Re-run the set before every change to the model, effort, prompt or tools.
 | 3. Features on the engine | Burnout radar briefings, care-load tracking, multilingual drafts with a review queue, then the church-to-church network | The differentiated features from the market research |
 
 Vendor choices for speech-to-text and text-to-speech (for example Deepgram, AssemblyAI, ElevenLabs, Cartesia, or Azure and Google speech) belong in the Phase 1 spike. Compare them on latency, accuracy with church vocabulary, Spanish and Korean support, the warmth of the Barnabas voice, and data-retention terms.
+
+## 12. Implementation notes: the Vercel build (v0.1)
+
+The first build runs entirely on Vercel, so the voice layer differs from sections 2–3:
+
+- **The voice loop runs in the leader's browser, not a server worker.** Vercel Functions handle requests rather than holding open WebRTC sessions. Speech-to-text and text-to-speech use the browser's Web Speech API, and each turn is one streaming `POST /api/chat` request. The conversation engine, tools, memory and privacy rules are the same as designed.
+- **Push-to-talk and tap-to-interrupt in v0.1.** Hands-free voice with barge-in needs echo cancellation and a streaming speech service (Deepgram or AssemblyAI). Plug it in on the client; the server contract stays the same.
+- **Interruptions:** the client stops speaking and lets the server finish and save the full reply. The next turn carries `interruptedAfter`, which the engine records as a mid-conversation system message. A per-conversation Redis lock keeps turns in order.
+- **Cache warming** happens when the conversation is created, the moment the leader taps the mic, using `after()` so it doesn't delay the response.
+- **Memory consolidation** runs in `after()` when the conversation ends, with Claude's memory tool against the leader's Redis namespace.
+- **Storage:** Upstash Redis over REST (Vercel Marketplace), node-redis for `REDIS_URL`, or in-memory for local development.

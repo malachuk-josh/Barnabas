@@ -1,0 +1,212 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { createConversation, getMessages, type ConversationMeta } from "@/lib/data/conversations";
+import { getDraft } from "@/lib/data/records";
+import { historyContent, setClaude, turnParams, type ClaudeClient } from "@/lib/engine/claude";
+import { runTurn, type TurnEvent } from "@/lib/engine/turn";
+import { freshStore, leader } from "./helpers";
+
+type Step = (params: { messages: unknown[] }) => { content: unknown[]; stop_reason: string };
+
+/** A stand-in for the Claude API that plays scripted responses as stream events. */
+function scripted(steps: Step[]) {
+  const calls: { messages: unknown[]; system: unknown; tools: unknown[] }[] = [];
+  const client = {
+    beta: {
+      messages: {
+        stream(params: { messages: unknown[]; system: unknown; tools: unknown[] }) {
+          calls.push(JSON.parse(JSON.stringify(params)));
+          const step = steps.shift();
+          if (!step) throw new Error("no more scripted steps");
+          const message = { id: "msg", role: "assistant", model: "test", ...step(params) };
+          const events: unknown[] = [];
+          for (const block of message.content as { type: string; text?: string; name?: string }[]) {
+            events.push({ type: "content_block_start", content_block: block });
+            if (block.type === "text") events.push({ type: "content_block_delta", delta: { type: "text_delta", text: block.text } });
+          }
+          return {
+            async *[Symbol.asyncIterator]() {
+              yield* events;
+            },
+            finalMessage: async () => message,
+          };
+        },
+        async create() {
+          return { content: [], stop_reason: "end_turn" };
+        },
+      },
+    },
+  };
+  setClaude(client as unknown as ClaudeClient);
+  return calls;
+}
+
+async function collect(gen: AsyncGenerator<TurnEvent>) {
+  const out: TurnEvent[] = [];
+  for await (const e of gen) out.push(e);
+  return out;
+}
+
+function lastToolResult(params: { messages: unknown[] }) {
+  const last = params.messages[params.messages.length - 1] as { content: { type: string; content: string }[] };
+  return last.content.find((b) => b.type === "tool_result")!.content;
+}
+
+async function newMeta(): Promise<ConversationMeta> {
+  const meta: ConversationMeta = {
+    id: `conv_${Math.random().toString(36).slice(2)}`,
+    title: "New conversation",
+    mode: "voice",
+    offRecord: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    context: "# Conversation\nMode: voice",
+    turns: 0,
+  };
+  await createConversation(leader, meta);
+  return meta;
+}
+
+describe("turn loop", () => {
+  beforeEach(() => freshStore());
+
+  it("streams text, runs tools, and keeps history append-only", async () => {
+    const meta = await newMeta();
+    const calls = scripted([
+      () => ({
+        content: [
+          { type: "text", text: "Let me check." },
+          { type: "tool_use", id: "tu1", name: "get_volunteer_load", input: {} },
+        ],
+        stop_reason: "tool_use",
+      }),
+      (params) => {
+        expect(lastToolResult(params)).toContain("Sarah Kim");
+        return { content: [{ type: "text", text: "Sarah could use a call this week." }], stop_reason: "end_turn" };
+      },
+    ]);
+
+    const events = await collect(runTurn({ leader, meta, text: "Who should I check on?", localTime: "Sunday 9:42 AM" }));
+    expect(events.filter((e) => e.type === "text").map((e) => (e as { text: string }).text).join(" ")).toContain("Sarah could use a call");
+    expect(events.find((e) => e.type === "tool")).toMatchObject({ name: "get_volunteer_load", phrase: "Let me check how the teams are doing." });
+    expect(events[events.length - 1]).toMatchObject({ type: "done", stopReason: "end_turn" });
+
+    const history = await getMessages(leader, meta.id);
+    expect(history.map((m) => m.role)).toEqual(["user", "system", "assistant", "user", "assistant"]);
+    expect((history[1] as { content: string }).content).toContain("Sunday 9:42 AM");
+
+    // The second request's history starts with the first request's history, unchanged.
+    expect(JSON.stringify(calls[1].messages).startsWith(JSON.stringify(calls[0].messages).slice(0, -1))).toBe(true);
+    // The two system blocks carry cache breakpoints.
+    expect(JSON.stringify(calls[0].system)).toContain("ephemeral");
+  });
+
+  it("won't send a draft in the same turn it was written, and sends after a yes", async () => {
+    const meta = await newMeta();
+    let draftId = "";
+    scripted([
+      () => ({
+        content: [
+          {
+            type: "tool_use",
+            id: "tu1",
+            name: "draft_message",
+            input: { person_ids: ["p01", "p03"], channel: "sms", text: "Thank you for serving!", translations: { es: "¡Gracias por servir!" } },
+          },
+        ],
+        stop_reason: "tool_use",
+      }),
+      (params) => {
+        draftId = JSON.parse(lastToolResult(params)).draft_id;
+        return { content: [{ type: "tool_use", id: "tu2", name: "send_draft", input: { draft_id: draftId } }], stop_reason: "tool_use" };
+      },
+      (params) => {
+        expect(lastToolResult(params)).toContain("Not confirmed");
+        return { content: [{ type: "text", text: "It goes to Sarah and Ana. Want me to send it?" }], stop_reason: "end_turn" };
+      },
+    ]);
+    await collect(runTurn({ leader, meta, text: "Thank Sarah and Ana for serving." }));
+    expect((await getDraft(leader, draftId))?.status).toBe("needs_review");
+    expect((await getDraft(leader, draftId))?.recipients.find((r) => r.personId === "p03")?.text).toBe("¡Gracias por servir!");
+
+    scripted([
+      () => ({ content: [{ type: "tool_use", id: "tu3", name: "send_draft", input: { draft_id: draftId } }], stop_reason: "tool_use" }),
+      (params) => {
+        expect(lastToolResult(params)).toContain("Queued 2 messages");
+        return { content: [{ type: "text", text: "Queued." }], stop_reason: "end_turn" };
+      },
+    ]);
+    await collect(runTurn({ leader, meta, text: "Yes, send it." }));
+    expect((await getDraft(leader, draftId))?.status).toBe("queued");
+  });
+
+  it("requires translations for recipients who read another language", async () => {
+    const meta = await newMeta();
+    scripted([
+      () => ({
+        content: [{ type: "tool_use", id: "tu1", name: "draft_message", input: { person_ids: ["p03", "p06"], channel: "sms", text: "See you Saturday!" } }],
+        stop_reason: "tool_use",
+      }),
+      (params) => {
+        const result = lastToolResult(params);
+        expect(result).toContain("Spanish (es) for 1 recipient");
+        expect(result).toContain("Korean (ko) for 1 recipient");
+        return { content: [{ type: "text", text: "Let me add translations." }], stop_reason: "end_turn" };
+      },
+    ]);
+    await collect(runTurn({ leader, meta, text: "Remind Ana and Jin-woo about Saturday." }));
+  });
+
+  it("notes interruptions and crisis turns as operator messages", async () => {
+    const meta = await newMeta();
+    scripted([() => ({ content: [{ type: "text", text: "Please call 911 if he's in danger." }], stop_reason: "end_turn" })]);
+    const events = await collect(
+      runTurn({ leader, meta, text: "I'm worried he might hurt himself", interruptedAfter: "Sarah has served nine weeks." }),
+    );
+    expect(events.find((e) => e.type === "notice")).toBeTruthy();
+    const history = await getMessages(leader, meta.id);
+    const note = (history[1] as { content: string }).content;
+    expect(note).toContain("interrupted");
+    expect(note).toContain("988");
+  });
+
+  it("refuses to save memory off the record", async () => {
+    const meta = await newMeta();
+    meta.offRecord = true;
+    scripted([
+      () => ({ content: [{ type: "tool_use", id: "tu1", name: "save_memory", input: { note: "Prefers calls" } }], stop_reason: "tool_use" }),
+      (params) => {
+        expect(lastToolResult(params)).toContain("off the record");
+        return { content: [{ type: "text", text: "I can't save that right now." }], stop_reason: "end_turn" };
+      },
+    ]);
+    await collect(runTurn({ leader, meta, text: "Remember I prefer calls" }));
+  });
+});
+
+describe("request shape", () => {
+  it("uses adaptive thinking, effort, fallbacks and cache breakpoints", async () => {
+    freshStore();
+    const meta = await newMeta();
+    const params = turnParams(meta, []);
+    expect(params.thinking).toEqual({ type: "adaptive" });
+    expect(params.output_config).toEqual({ effort: "low" });
+    expect(params.fallbacks).toBe("default");
+    expect(params.betas).toEqual(["server-side-fallback-2026-07-01"]);
+    expect(params.cache_control).toEqual({ type: "ephemeral" });
+    expect(params.tools?.every((t) => "eager_input_streaming" in t && t.eager_input_streaming)).toBe(true);
+  });
+
+  it("drops declined-model blocks before a fallback boundary", () => {
+    const content = [
+      { type: "thinking", thinking: "", signature: "a" },
+      { type: "text", text: "Partial " },
+      { type: "tool_use", id: "x", name: "find_person", input: {} },
+      { type: "fallback", from: { model: "a" }, to: { model: "b" } },
+      { type: "thinking", thinking: "", signature: "b" },
+      { type: "text", text: "rest" },
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const kept = historyContent(content as any).map((b) => b.type);
+    expect(kept).toEqual(["text", "fallback", "thinking", "text"]);
+  });
+});
