@@ -1,6 +1,6 @@
 # AI Chat and Persistent Memory in Church Management Software and Church AI Products (as of Nov 8, 2026)
 
-Research note scope: in-product AI chat and conversational assistants, and whether any product keeps memory across sessions and learns a ministry leader's context. Field-level AI privacy controls and audit logs are covered by another researcher and appear here only where they bear on memory.
+Research note scope: in-product AI chat and conversational assistants, whether any product keeps memory across sessions and learns a ministry leader's context, and voice conversation support (Q6). Field-level AI privacy controls and audit logs are covered by another researcher and appear here only where they bear on memory.
 
 Labeling used below: **SHIPPED** = vendor documentation or changelog shows it live. **PILOT/BETA** = limited availability. **ANNOUNCED** = promised, not live. **3P** = claim found only on a third-party site (mostly the faith.tools directory) and not confirmed on a vendor page.
 
@@ -409,3 +409,100 @@ Data privacy is the single most cited concern among church leaders: 83% in Pushp
 - No survey was found that asks specifically about AI **remembering** conversations or pastoral information. Concern figures are about privacy generally.
 - The AiForChurchLeaders/Exponential figures (theological misalignment 29%, human connection 23%, privacy and data security 20%) and Lifeway's Sept 2025 figures (n=1,003; 10% use AI regularly, 32% are experimenting) appeared only in a search summary without retrievable source URLs. They are unverified.
 - The 65% "displace spiritual guidance" figure and the 6% counseling comfort figure come from search excerpts. The full articles were not fetched.
+
+---
+
+## Q6. Voice: does any product's AI assistant take spoken input, answer aloud, or hold real-time two-way voice conversation? On which platforms, and is it shipped or only announced? How do mainstream assistants combine voice with memory?
+
+### Takeaway
+**Only 1 of the 6 core products has AI voice conversation: Rock RMS.** Rock has a real-time, two-way **Voice Agent** block in the **Rock Mobile app** (iOS/Android shell). It opens a live audio session with a realtime AI provider such as OpenAI's gpt-realtime-2 and shows a live transcript. It was SHIPPED in Rock Mobile v19.2 (Jul 6, 2026, per a search excerpt of the release notes). In Rock 19.4.4 a bug stopped it from using Rock MCP tools with OpenAI's realtime model. A fix landed in pre-alpha 21.0.2 (Oct 14, 2026), and it is unclear whether the fix has been backported.
+- **Text only:** Planning Center Ask AI, Pushpay, Tithely, Realm and ChurchTrac have no AI voice features documented.
+- **Broader market:** no voice found for MinistryPlatform, Subsplash, Gloo Ministry Chat, ChMeetings, ChurchSuite, Logos, Church Assistant (Verble) or AlignedAI. Two sermon tools (SermonBuild, Sermon AI) reportedly offer voice *input* only, which is unverified.
+- **Mainstream assistants:** voice is mostly mobile-first, and memory increasingly applies to voice. ChatGPT and M365 Copilot apply memory to voice, and Gemini Live gained memory on Jun 18, 2026 (US English only). Claude's voice docs say transcripts go to chat history but do not state whether memory applies.
+
+### Summary table
+
+| Product | Spoken input | Spoken reply | Real-time two-way | Platform | Status |
+|---|---|---|---|---|---|
+| Rock RMS: Voice Agent block | Yes | Yes | **Yes** (push-to-talk option, live transcript) | Rock Mobile app (iOS/Android). Not web. Not phone/IVR. | SHIPPED (Mobile v19.2, Jul 6, 2026). MCP-tool bug in 19.4.4, fixed in pre-alpha 21.0.2. |
+| Planning Center Ask AI | Not documented | Not documented | No | Web/app sidebar (text) | Text only |
+| Pushpay (Profile Summaries, AI search; Giving Data chat announced) | No | No | No | Web | Text only |
+| Tithely / Breeze (TithelyAI pilot) | No | No | No | Web dashboard | Text only (pilot) |
+| Realm | — | — | — | — | No AI |
+| ChurchTrac | No AI voice. Has TTS voice *broadcasts*, see separate notes. | — | No | — | No AI voice chat |
+| MinistryPlatform AI / MP-MCP, ChMeetings MCP, Planning Center MCP | Only through the external AI client's own voice mode, if used | Same | Same | Same as the client app | Not a vendor feature (inference) |
+| Gloo Ministry Chat (Beta) | Not documented | Not documented | No | Web | Text only. XRI voice tech not tied to it. |
+| SermonBuild / Sermon AI | Reportedly yes (voice input) | Unverified | Unverified | Unverified | Unverified (search summary only) |
+| Church Assistant (Verble), AlignedAI, Pastors.ai, Pulpit AI | No voice found | No | No | Web | Text only. Aligned's "voice training" = writing style. |
+
+### Cited Findings
+
+**Rock RMS Voice Agent (the only ChMS voice assistant found)**
+- The block "opens a live audio session with an AI provider, sends microphone input, plays the spoken reply, and can show a running transcript." It lets people "ask hands-free questions about themselves, their giving, events, or anything exposed through an MCP agent."
+  - It supports two realtime providers, chosen by API-key prefix, and requires an authenticated person.
+  - It was added in **Rock Mobile v19.2 (July 6, 2026)**, which "can read Rock data and perform actions hands-free," and includes push-to-talk, Bluetooth playback and a live transcript.
+  - v19.3 fixed echo cancellation, and v19.4 fixed transcript auto-scroll. — [Rock Mobile Release Notes (search excerpt; page requires login)](https://www.rockrms.com/mobilereleasenotes); [Rock Voice Agent docs (search excerpt; page now returns "Article was not found")](https://community.rockrms.com/developer/mobile-docs/essentials/features/voice-agent)
+- An earlier search excerpt described it as tied to a Rock-hosted agent and "scoped to the staff member's own permissions." — [Rock Voice Agent docs (search excerpt)](https://community.rockrms.com/developer/mobile-docs/essentials/features/voice-agent)
+- GitHub issue #7039 (opened Sep 14, 2026, Rock 19.4.4, OpenAI `gpt-realtime-2` and `gpt-realtime-2.1`):
+  - Title: "Mobile Voice Agent block talks fine but never gets any tools from our Rock MCP agent," so it "cannot look up people or groups."
+  - Cause: the MCP endpoint rejected OpenAI's string JSON-RPC `id`.
+  - A fix commit was linked Sep 15, 2026. — [GitHub: SparkDevNetwork/Rock #7039](https://github.com/SparkDevNetwork/Rock/issues/7039)
+- The matching fix appears in **Pre-Alpha 21.0.2 (Oct 14, 2026)**: "Fixed the MCP endpoint failing when a client sends a string JSON-RPC identifier instead of a number" (#7039). — [Rock Pre-Alpha Release Notes](https://www.rockrms.com/prealpharelease)
+- faith.tools lists "a voice agent" as part of the v19.4 AI Agents release (3P). — [faith.tools Rock RMS](https://faith.tools/app/rock-rms)
+
+**Other core and broader products (no AI voice found)**
+- Planning Center:
+  - Ask AI is described as a sidebar and help-center chat. Neither changelog mentions voice. — [PC changelog, Jul 27, 2026](https://www.planningcenter.com/changelog/global/new-ask-ai-for-instant-answers); [PC changelog, Oct 20, 2026](https://www.planningcenter.com/changelog/global/new-ask-ai); [Planning Center AI page](https://www.planningcenter.com/ai)
+  - A search of Planning Center, Pushpay, Tithely and Subsplash with voice terms turned up no voice or speech features. — [search results incl. Subsplash products page](https://www.subsplash.com/products)
+- Subsplash pages list a "24/7 AI Assistant" with an "83% resolution rate," apparently a support or help assistant, plus People Assistant. Neither mentions spoken input. — [Subsplash products (search excerpt)](https://www.subsplash.com/products)
+- An Aligned comparison page (updated Oct 26, 2026) mentions no voice interaction for any tool. "Voice training: learns from your past sermons" refers to writing style, and Verble's Basic plan includes unexplained "narrations." — [Aligned comparison 2026](https://aligned.church/blog/best-ai-for-pastors-comparison-2026)
+- A search summary attributed an "AI Theological Assistant with voice enabled" to **SermonBuild** and a "research assistant with voice input" to **Sermon AI**, both from Aligned-published pages. The fetched Aligned comparison page did not contain these claims, so they are **unverified**. — [Aligned blog (search summary)](https://aligned.church/blog/best-ai-for-pastors-comparison-2026)
+
+**Not AI voice chat (noted separately, per instructions)**
+- **ChurchTrac voice broadcasts:**
+  - Recipients "get a phone call that plays your message when they answer," with messages up to 90 seconds.
+  - Browser recording, uploads and **text-to-speech** require Enhanced Messaging, while legacy and Twilio setups get Call to Record only.
+  - Pricing sources conflict (6¢ per recipient, credits, or a $7/mo add-on with 250 messages). — [ChurchTrac: How to send voice messages](https://www.churchtrac.com/support/people/how-to-send-voice-messages); [ChurchTrac Enhanced Messaging](https://www.churchtrac.com/support/people/enhanced-messaging); [ChurchTrac Church Phone Tree](https://www.churchtrac.com/features/church-phone-tree)
+- **Gloo / XRI Global:**
+  - Gloo acquired XRI Global (announced Nov 25, 2025), "an AI company specializing in multilingual and low-resource language technologies," to strengthen Gloo AI and Gloo360. On its Q3 2025 call, Gloo described XRI as delivering "advanced voice and language translation tech."
+  - No evidence was found that XRI powers a voice assistant in Gloo Ministry Chat or Workspace. The Workspace and Ministry Chat pages mention no voice. — [Pulse 2.0 on the acquisition](https://pulse2.com/gloo-buys-xri-global-to-expand-multilingual-and-voice-ai-capabilities/amp/); [Gloo Q3 2025 earnings call transcript (search excerpt)](https://www.insidermonkey.com/blog/gloo-holdings-inc-nasdaqgloo-q3-2025-earnings-call-transcript-1739401/); [Gloo Workspace](https://gloo.com/workspace); [Gloo Ministry Chat](https://gloo.com/workspace/ministry-chat)
+- **Church phone answering bots and AI receptionists (caller-facing):**
+  - Vendors include ElevenLabs, Frontdesk AI, Dialzara, NextPhone, ChurchWiseAI and Missional Agents.
+  - They answer calls 24/7, share service times, take prayer requests and route urgent pastoral calls. Dialzara says it handles "prayer requests, crisis calls, and pastoral care needs."
+  - All of this is vendor marketing. — [ElevenLabs for churches](https://elevenlabs.io/ai-answering-service/churches); [Frontdesk AI churches](https://www.myaifrontdesk.com/industries/churches); [Dialzara churches](https://dialzara.com/industries/churches); [NextPhone churches](https://www.getnextphone.com/answering-service-for-churches)
+
+**Mainstream assistants: voice and memory**
+- **ChatGPT Voice:**
+  - Voice can run inside the chat page, as a floating orb, or as a separate full-screen mode. Some tools are unavailable in voice. — [OpenAI Voice Mode FAQ (search excerpt)](https://help.openai.com/articles/8400625)
+  - TechCrunch (Apr 10, 2025) reported the chat-history memory upgrade applies to ChatGPT's "text, voice, and image-generation features."
+  - Temporary Chat does not use or update memory. — [TechCrunch via reader mirror](https://hn.jakechampion.name/reader/https://techcrunch.com/2025/04/10/openai-updates-chatgpt-to-reference-your-other-chats); [OpenAI Memory FAQ (search excerpt)](https://help.openai.com/en/articles/8590148-memory-faq)
+  - A user forum report says Advanced Voice in custom GPTs did not follow the GPT's instructions. This is an unofficial report and may be dated. — [OpenAI community thread](https://community.openai.com/t/custom-gpt-not-working-with-blue-wave-voice/1232846)
+- **Claude voice mode:**
+  - It is a "beta feature" on iOS, Android, Desktop and web, on all plans, and "built to work best from your phone."
+  - It offers hands-free mode (Claude replies on a pause) or push-to-talk, and it stops when interrupted.
+  - "Connected tools work the same way in voice mode as they do in text chat" (examples: Gmail, Google Calendar, Docs, Slack).
+  - "Textual transcripts of your audio conversations are saved in your chat history just like text conversations."
+  - The article does not say whether memory or projects apply in voice. — [Claude Help Center: voice mode](https://support.claude.com/en/articles/11101966)
+- **Gemini Live:**
+  - As of **Jun 18, 2026**, Live can "use memories of your past chats and info from some Connected Apps" and "securely remember key details you mention across different sessions."
+  - It is "currently available in English in the US." "Gemini Live follows the same permissions that you choose when you chat with Gemini."
+  - Android settings still showed Memory as "coming soon to Live." — [9to5Google, Jun 18, 2026](https://9to5google.com/2026/06/18/gemini-live-memory)
+  - Earlier guidance said memory did not apply to Live. — [MSPowerUser](https://mspoweruser.com/too-bad-gemini-live-isnt-yet-able-to-reference-your-past-chats)
+- **Microsoft 365 Copilot voice:**
+  - Roadmap item RM523204, "Voice chats can reference Memory": "Copilot can respond using existing memories already stored in user personalization settings."
+  - Platforms: Android, Desktop, iOS, Mac and Web. Status: "Rolling out," with preview Nov 2025 and GA Jan 2026. — [M365 Roadmap RM523204 (mirror)](https://mc.merill.net/message/RM523204)
+  - Voice transcripts are kept in conversation history and can be deleted. — [The Register, Apr 8, 2025 (search excerpt)](https://www.theregister.com/2025/04/08/microsoft_new_copilot_features/)
+  - In consumer Copilot, a training opt-out for voice is separate from personalization. — [Microsoft Copilot privacy controls (search excerpt)](https://support.microsoft.com/en-US/Microsoft-Copilot/microsoft-copilot-privacy-controls)
+
+### Inferences
+- Voice for ministry leaders is nearly unoccupied ground in church software. Rock is the only ChMS with a real-time voice agent, and it is mobile-only, self-configured (bring your own realtime-provider API key) and had a tool-calling bug through at least Sep 2026. No vendor pairs voice with memory.
+- Churches using MCP connectors (Planning Center, MinistryPlatform, ChMeetings) can likely already reach church data by voice through Claude's or ChatGPT's voice modes, since Claude says connected tools work the same in voice. Memory would then sit in those third-party apps. Whether custom MCP connectors (as opposed to built-in Gmail/Calendar) work in Claude voice was not verified.
+- Mainstream pattern: voice is a *mode of the same conversation*. Transcripts are saved to chat history, so voice feeds the same memory pipeline. Voice therefore needs the same view, delete and temporary-mode controls, and an app for ministry leaders should apply its "pastoral/incognito" mode to voice too. Spoken asides (e.g., after a hospital visit) are an easy way for sensitive details to end up in memory.
+- Real-time voice depends on third-party realtime model APIs (Rock uses OpenAI's gpt-realtime models), which adds a data processor and audio-retention questions alongside the memory questions.
+
+### Gaps
+- Rock Voice Agent official docs now return "Article was not found," and the mobile release notes require login. The v19.2 date and feature list come from a search excerpt. Whether the #7039 fix is in a v19.x stable release is not confirmed.
+- The voice status of Planning Center Ask AI on its mobile apps (e.g., device dictation) was not found. "Not documented" does not prove absence.
+- SermonBuild and Sermon AI voice claims are unverified.
+- Whether Claude voice mode uses saved memory, and whether temporary/incognito modes are available in voice for Claude, Gemini Live and Copilot, was not confirmed.
+- Audio retention periods for Claude and ChatGPT voice were not found in the pages read.
