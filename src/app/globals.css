@@ -1391,3 +1391,34 @@ input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 }
 .cal-nav { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 640px) { .cal-intro { display: none; } .cal-nav .btn:where(:not(.word-root *)) { padding: 7px 12px; } }
+
+/* ---------- Services ---------- */
+/* Each Sunday in the rotation: a date tile, who preaches and what, and its actions on one row */
+.ops-rotation > li.rot-row { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 12px 0; border-top-color: var(--line-soft); }
+.ops-rotation > li.rot-row:first-child { padding-top: 4px; }
+.rot-main { display: grid; gap: 3px; min-width: 0; }
+.rot-preacher { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rot-preacher strong { overflow-wrap: anywhere; }
+.rot-preacher .ops-avatar { background: var(--surface-2); width: 26px; height: 26px; font-size: 0.68rem; }
+.rot-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.rot-actions .is-planned:where(:not(.word-root *)) { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border-color: transparent; color: var(--ok); }
+.rot-row .ops-rot-form { grid-column: 1 / -1; }
+@media (max-width: 560px) {
+  .ops-rotation > li.rot-row { grid-template-columns: 46px minmax(0, 1fr); }
+  .rot-actions { grid-column: 2; justify-content: flex-start; }
+}
+
+/* Order of service: read as a run sheet; edit only after Edit order */
+.plan-title { display: grid; gap: 2px; min-width: 0; }
+.ops-order:has(.is-reading) { gap: 0; }
+.ops-item.is-reading { background: transparent; border-left: 0; border-radius: 0; padding: 10px 2px; border-top: 1px solid var(--line-soft); }
+.ops-item.is-reading:first-child { border-top: 0; }
+.ops-item.is-reading .ops-item-view { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.ops-item.is-reading .ops-item-min { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; position: relative; padding-left: 14px; }
+.ops-item.is-reading .ops-item-min::before { content: ""; position: absolute; left: 0; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--sea-glass); }
+.ops-item-sermon.is-reading .ops-item-min::before { background: var(--brass); }
+.ops-item-song.is-reading .ops-item-min::before { background: var(--accent); }
+.ops-item-communion.is-reading .ops-item-min::before, .ops-item-benediction.is-reading .ops-item-min::before { background: var(--highlight); }
+.ops-item.is-reading .ops-item-view > span:last-child { display: grid; gap: 1px; min-width: 0; }
+.plan-edit-bar { justify-content: space-between; }
+.plan-edit-end { display: inline-flex; gap: 8px; flex-wrap: wrap; }
