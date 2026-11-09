@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MessagesIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, ShieldIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
 
 /** Sections of the menu, in order. Items with no group sit at the top; "account" sits at the foot. */
 export const NAV_GROUPS = [
@@ -24,11 +24,13 @@ type NavItem = {
   finance?: boolean;
   kids?: boolean;
   site?: boolean;
+  admin?: boolean;
 };
 
 export const NAV: NavItem[] = [
   { href: "/", label: "Today", Icon: TodayIcon, tab: true },
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon, tab: true },
+  { href: "/inbox", label: "Messages", Icon: MessagesIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
   { href: "/people", label: "People", Icon: PeopleIcon, group: "people", tab: true },
   { href: "/shepherding", label: "Shepherding", Icon: HeartIcon, group: "people" },
@@ -42,6 +44,7 @@ export const NAV: NavItem[] = [
   { href: "/reports", label: "Reports", Icon: ReportsIcon, group: "office" },
   { href: "/network", label: "Mesa", Icon: NetworkIcon, group: "office" },
   { href: "/site", label: "Website", Icon: WebsiteIcon, group: "office", site: true },
+  { href: "/admin", label: "Admin", Icon: ShieldIcon, group: "office", admin: true },
   { href: "/memory", label: "Memory", Icon: MemoryIcon, group: "account" },
   { href: "/settings", label: "Settings", Icon: SettingsIcon, group: "account" },
 ];
@@ -50,11 +53,25 @@ function active(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export type NavAccess = { showFinance?: boolean; showKids?: boolean; showSite?: boolean; checkinOnly?: boolean };
+export type NavAccess = {
+  showFinance?: boolean;
+  showKids?: boolean;
+  showSite?: boolean;
+  showAdmin?: boolean;
+  checkinOnly?: boolean;
+  /** Team and Member levels: Barnabas by typing only, so no microphone button. */
+  limited?: boolean;
+  /** Only these pages (Team and Member levels), worked out on the server. */
+  only?: string[];
+  /** Members see Kids as Child care. */
+  member?: boolean;
+};
 
-export function navItems({ showFinance = false, showKids = false, showSite = false, checkinOnly = false }: NavAccess) {
-  if (checkinOnly) return NAV.filter((n) => n.href === "/kids" || n.href === "/settings");
-  return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids) && (!n.site || showSite));
+export function navItems({ showFinance = false, showKids = false, showSite = false, showAdmin = false, checkinOnly = false, only, member = false }: NavAccess) {
+  if (checkinOnly) return NAV.filter((n) => n.href === "/kids" || n.href === "/inbox" || n.href === "/settings");
+  return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids || member) && (!n.site || showSite) && (!n.admin || showAdmin) && (!only || only.includes(n.href))).map((n) =>
+    member && n.href === "/kids" ? { ...n, label: "Child care", group: "worship" as const } : n,
+  );
 }
 
 /** The items in sections: the ungrouped top first, then each named group that has anything in it. */
@@ -149,7 +166,7 @@ export function TabBar(access: NavAccess) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Kids check-in volunteers see only their two pages: no Talk, no More.
+  // Kids check-in volunteers see only their pages: no Talk, no More.
   if (access.checkinOnly) {
     return (
       <nav className="tabbar" aria-label="Main" style={{ gridTemplateColumns: `repeat(${all.length}, minmax(0, 1fr))` }}>
@@ -163,11 +180,13 @@ export function TabBar(access: NavAccess) {
     );
   }
 
-  const tabs = all.filter((n) => n.tab);
-  const overflow = all.filter((n) => !n.tab);
+  // Team and Member levels: Today, Messages and Calendar as tabs, the rest under More, and no microphone.
+  const limitedTabs = ["/", "/inbox", "/calendar"];
+  const tabs = access.limited ? all.filter((n) => limitedTabs.includes(n.href)) : all.filter((n) => n.tab);
+  const overflow = all.filter((n) => !tabs.includes(n));
   const moreActive = overflow.some((n) => active(pathname, n.href));
   // Today and People to the left of the microphone, Calendar and More to the right.
-  const left = tabs.filter((n) => n.href === "/" || n.href === "/people");
+  const left = tabs.filter((n) => n.href === "/" || n.href === "/people" || (access.limited && n.href === "/inbox"));
   const right = tabs.filter((n) => !left.includes(n));
   const tab = ({ href, label, Icon }: NavItem) => (
     <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
@@ -210,11 +229,13 @@ export function TabBar(access: NavAccess) {
           </nav>
         </div>
       )}
-      <nav className="tabbar tabbar-talk" aria-label="Main">
+      <nav className={access.limited ? "tabbar" : "tabbar tabbar-talk"} aria-label="Main" style={access.limited ? { gridTemplateColumns: `repeat(${tabs.length + (overflow.length > 0 ? 1 : 0)}, minmax(0, 1fr))` } : undefined}>
         {left.map(tab)}
-        <button type="button" className="tab-talk" aria-label="Talk to Barnabas" onClick={talk}>
-          <TalkIcon />
-        </button>
+        {!access.limited && (
+          <button type="button" className="tab-talk" aria-label="Talk to Barnabas" onClick={talk}>
+            <TalkIcon />
+          </button>
+        )}
         {right.map(tab)}
         {overflow.length > 0 && (
           <button type="button" className="tab-more" aria-expanded={open} aria-controls="more-sheet" aria-current={moreActive ? "page" : undefined} onClick={() => setOpen((o) => !o)}>

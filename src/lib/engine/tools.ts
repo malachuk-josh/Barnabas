@@ -27,7 +27,7 @@ import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
 import { INBOX_PATH } from "./prompt";
-import { can } from "../auth/roles";
+import { can, isLimited, type Access } from "../auth/roles";
 import { accessFor } from "../team";
 import { HEALTH_LABELS } from "../finance/budget";
 import { donorSummaries, lastMonths, monthLabel } from "../finance/giving";
@@ -52,6 +52,8 @@ export type ToolContext = {
   turnStartedAt: number;
   /** What the leader said this turn, used by the confirmation gate. */
   lastUserText: string;
+  /** Team and Member levels: only these tools (null or absent: all). */
+  toolNames?: string[] | null;
 };
 
 export type ToolResult = { content: string; isError: boolean };
@@ -1333,6 +1335,40 @@ const ALL: ToolSpec<any>[] = [
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
 export const TOOL_DEFS: Anthropic.Beta.BetaTool[] = ALL.map((t) => t.def);
 
+/** Barnabas's own memory, the person's calendar and the getting-to-know-you questions: nobody else's information. */
+const MEMBER_TOOLS = [
+  "recall_memory",
+  "save_memory",
+  "list_calendar",
+  "add_calendar_event",
+  "update_calendar_event",
+  "delete_calendar_event",
+  "ask_to_know",
+  "ask_permission_to_know",
+  "record_to_know",
+  "remember_thorn",
+];
+const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving"];
+const TEAM_ROLE_TOOLS: Record<string, string[]> = {
+  kids: ["kids_checkin_counts"],
+  checkin: ["kids_checkin_counts"],
+  care: ["my_care_load", "list_care_cases", "care_case_detail", "log_care_contact", "add_prayer_request"],
+};
+
+/**
+ * The tools Barnabas may use with this person: every tool for Leaders and Admins (each still checks
+ * permissions), and only their own information at the Team and Member levels. null means all.
+ */
+export function toolNamesFor(access: Access | null | undefined): string[] | null {
+  if (!access || !isLimited(access)) return null;
+  if (access.level === "member") return MEMBER_TOOLS;
+  return [...TEAM_TOOLS, ...(TEAM_ROLE_TOOLS[access.teamRole ?? "serving"] ?? [])];
+}
+
+export function toolDefsFor(names: string[] | null | undefined): Anthropic.Beta.BetaTool[] {
+  return names ? TOOL_DEFS.filter((d) => names.includes(d.name)) : TOOL_DEFS;
+}
+
 const BY_NAME = new Map(ALL.map((t) => [t.def.name, t]));
 
 export function holdingPhrase(name: string): string | undefined {
@@ -1342,6 +1378,7 @@ export function holdingPhrase(name: string): string | undefined {
 export async function executeTool(name: string, input: unknown, ctx: ToolContext): Promise<ToolResult> {
   const spec = BY_NAME.get(name);
   if (!spec) return fail(`Unknown tool ${name}.`);
+  if (ctx.toolNames && !ctx.toolNames.includes(name)) return fail(`${name} isn't available at this person's access level.`);
   // Tool inputs stream eagerly and aren't validated by the API, so validate before running.
   const parsed = spec.schema.safeParse(input ?? {});
   if (!parsed.success) {
