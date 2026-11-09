@@ -5,6 +5,15 @@ import { EmptyState } from "@/components/EmptyState";
 import type { GatheringRoster, SlotView, TeamRoster } from "@/lib/serve/views";
 import { Status, useOps } from "./client";
 
+function initials(name?: string) {
+  return (name ?? "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+}
+
 export type BoardTeam = TeamRoster & { available: { id: string; name: string; recent: number }[]; unavailable: { id: string; name: string; reason: string }[] };
 export type BoardGathering = Omit<GatheringRoster, "teams"> & { teams: BoardTeam[] };
 
@@ -16,7 +25,7 @@ export function RosterBoard({ date, gatherings, myVolunteerId, scheduler }: { da
     <div className="fin-stack">
       <Status error={ops.error} notice={ops.notice} />
       {anyEdit && (
-        <div className="row">
+        <div className="roster-toolbar">
           <button
             className="btn"
             type="button"
@@ -33,6 +42,7 @@ export function RosterBoard({ date, gatherings, myVolunteerId, scheduler }: { da
         <section key={g.key} className="ops-gathering" aria-labelledby={`g-${g.key}`}>
           <h2 id={`g-${g.key}`}>
             {g.label}
+            <span className="care-count">{g.teams.reduce((n, t) => n + t.open, 0)} open</span>
           </h2>
           <div className="ops-teams">
             {g.teams.map((t) => (
@@ -52,11 +62,13 @@ function TeamCard({ date, gathering, team, myVolunteerId, ops }: { date: string;
   return (
     <article className="fin-card ops-team">
       <div className="fin-card-head">
-        <h3>{team.teamName}</h3>
+        <div className="ops-team-title">
+          <h3>{team.teamName}</h3>
+          {team.lead && <span className="small muted">Lead: {team.lead}</span>}
+        </div>
         <span className={`pill ${team.open ? "pill-watch" : "pill-ok"}`}>{team.open ? `${team.open} open` : "Full"}</span>
       </div>
-      {team.lead && <span className="small muted">Lead: {team.lead}</span>}
-      {empty && <p className="small muted">No one is scheduled yet. {team.canEdit ? "Assign teammates below, or fill the open slots from who's available." : "Sign up below if you can serve."}</p>}
+      {empty && <p className="small muted">No one is scheduled yet. {team.canEdit ? "Assign teammates, or fill the open slots from who's free." : "Sign up if you can serve."}</p>}
       <ul className="ops-positions">
         {team.positions.map((p) => (
           <li key={p.id}>
@@ -71,12 +83,12 @@ function TeamCard({ date, gathering, team, myVolunteerId, ops }: { date: string;
       </ul>
       {team.canEdit && team.open > 0 && (
         <button
-          className="btn"
+          className={`btn ops-fill${team.available.length ? " btn-primary" : ""}`}
           type="button"
           disabled={ops.busy || team.available.length === 0}
           onClick={() => void ops.act<{ added: number }>({ action: "autofill", date, gathering, teamId: team.teamId }, (o) => (o.added ? `Filled ${o.added} slot${o.added === 1 ? "" : "s"} on ${team.teamName}, respecting away dates and monthly limits.` : `No one on ${team.teamName} is free for this one.`))}
         >
-          {team.available.length ? "Fill open slots from who's free" : "No teammates free to fill"}
+          {team.available.length ? `Fill ${team.open} open slot${team.open === 1 ? "" : "s"} from who's free` : "No teammates free to fill"}
         </button>
       )}
     </article>
@@ -89,9 +101,10 @@ function Slot({ slot, date, gathering, team, positionId, myVolunteerId, ops }: {
   if (!slot.assignmentId) {
     return (
       <li className="ops-slot open">
+        <span className="ops-avatar is-open" aria-hidden="true" />
         <span className="ops-slot-name">Open</span>
         <span className="ops-slot-actions">
-          <button className="btn" type="button" disabled={ops.busy} onClick={() => void ops.act({ action: "signup", slot: { date, gathering, teamId: team.teamId, positionId } }, () => "You're signed up. Thank you!")}>
+          <button className="btn btn-sm" type="button" disabled={ops.busy} onClick={() => void ops.act({ action: "signup", slot: { date, gathering, teamId: team.teamId, positionId } }, () => "You're signed up. Thank you!")}>
             Sign up
           </button>
           {team.canEdit &&
@@ -130,6 +143,9 @@ function Slot({ slot, date, gathering, team, positionId, myVolunteerId, ops }: {
   const swap = slot.pendingSwap;
   return (
     <li className={`ops-slot${slot.status === "declined" ? " declined" : ""}${mine ? " mine" : ""}`}>
+      <span className={`ops-avatar${mine ? " is-mine" : ""}`} aria-hidden="true">
+        {initials(slot.name)}
+      </span>
       <span className="ops-slot-name">
         {slot.name}
         {mine && <span className="badge badge-barnabas">You</span>}

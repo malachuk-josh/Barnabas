@@ -1245,3 +1245,62 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .know-card-actions { gap: 8px; }
 .know-meter { display: block; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 4px; max-width: 320px; }
 .know-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--brass); }
+
+/* ---------- Serve: rosters ---------- */
+/* Dates as tiles that show where help is needed; one row that scrolls sideways */
+.date-tiles { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 16px; padding: 2px 2px 4px; }
+.date-tiles::-webkit-scrollbar { display: none; }
+.date-tile-link {
+  flex: none; width: 78px; display: grid; justify-items: center; gap: 0; padding: 8px 4px 9px; border-radius: 14px; text-decoration: none; line-height: 1.15;
+  background: var(--surface); color: var(--fg); box-shadow: var(--shadow-card);
+}
+.date-tile-link:hover { box-shadow: 0 0 0 1px var(--muted); }
+.date-tile-link small { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.date-tile-link strong { font-size: 1.4rem; }
+.date-tile-month { font-size: 0.72rem; color: var(--muted); }
+.date-tile-open { margin-top: 5px; font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--watch-bg); color: var(--watch); }
+.date-tile-open.is-full { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
+.date-tile-link[aria-current="page"] { background: var(--accent); color: var(--accent-fg); box-shadow: none; }
+.date-tile-link[aria-current="page"] small, .date-tile-link[aria-current="page"] .date-tile-month { color: var(--accent-fg); opacity: 0.85; }
+@media (max-width: 860px) { .date-tiles { margin-inline: calc(-1 * max(16px, env(safe-area-inset-left))); padding-inline: max(16px, env(safe-area-inset-left)); } }
+.serve-summary { margin-bottom: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.serve-summary dd a { color: var(--fg); }
+@media (max-width: 640px) {
+  .serve-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .serve-summary > div { padding: 10px 12px; }
+  .serve-summary > div:nth-child(3) { border-left: 1px solid var(--line-soft); }
+  .serve-summary > div:nth-child(n + 3) { border-top: 0; }
+  .serve-summary dd { font-size: 0.92rem; }
+}
+.roster-toolbar { display: flex; gap: 6px 12px; align-items: center; flex-wrap: wrap; }
+.ops-gathering > h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ops-gathering > h2 .care-count { font-family: var(--font-body); background: var(--surface); box-shadow: var(--shadow-card); padding: 0 10px; height: 24px; }
+.ops-team { gap: 12px; }
+.ops-team-title { display: grid; gap: 0; min-width: 0; }
+.ops-slot { gap: 6px 10px; }
+.ops-slot-name { flex: 1 1 120px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ops-avatar {
+  width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface); color: var(--accent); font-size: 0.74rem; font-weight: 700;
+}
+.ops-avatar.is-mine { background: var(--brass); color: var(--night); }
+.ops-avatar.is-open { background: transparent; box-shadow: inset 0 0 0 1.5px var(--muted); opacity: 0.6; }
+.ops-slot.open .ops-slot-name:where(:not(.word-root *)) { font-style: normal; }
+.ops-slot-actions { margin-left: auto; }
+.ops-fill:where(:not(.word-root *)) { width: 100%; min-height: 44px; }
+.ops-slot { flex-wrap: nowrap; }
+.ops-slot-name { flex: 1 1 0; min-width: 0; }
+.ops-slot-actions { flex: none; justify-content: flex-end; }
+.ops-slot.open:where(:not(.word-root *)) { border: 0; background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+/* Picking a teammate or a swap needs the whole row */
+.ops-slot:has(select) { flex-wrap: wrap; }
+.ops-slot:has(select) .ops-slot-actions { flex-basis: 100%; }
+.ops-slot:has(select) .ops-slot-actions .row { flex: 1; }
+.ops-slot:has(select) select:where(:not(.word-root *)) { flex: 1; min-width: 0; width: auto; }
+/* A filled slot with several actions (cover, can't make it, remove) wraps them under the name */
+.ops-slot:not(.open):where(:not(.word-root *)) { flex-wrap: wrap; }
+.ops-slot:not(.open) .ops-slot-actions:where(:not(.word-root *)) { margin-left: auto; }
+.ops-slot:not(.open) .ops-slot-name:where(:not(.word-root *)) { min-width: 9rem; }
+.ops-slot:not(.open) .ops-slot-actions:where(:not(.word-root *)) { flex-wrap: wrap; }
+.serve-upcoming li { grid-template-columns: 56px minmax(0, 1fr) auto; }
+.serve-upcoming .date-tile strong { font-size: 0.95rem; white-space: nowrap; }
