@@ -28,6 +28,8 @@ export type Profile = {
     voiceId?: string;
     /** Keep listening between turns and allow interrupting by speaking. */
     handsFree: boolean;
+    /** Speak replies to typed messages too, not only to spoken ones. */
+    readTyped: boolean;
   };
   /** How Barnabas should say names it gets wrong, e.g. Nguyen -> "Win". */
   pronunciations: { word: string; sayAs: string }[];
@@ -61,7 +63,7 @@ export function defaultProfile(leader: Leader): Profile {
     timezone: DEFAULT_TIMEZONE,
     replyLanguage: "en",
     bibleTranslation: DEFAULT_BIBLE_TRANSLATION,
-    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true },
+    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true, readTyped: false },
     pronunciations: [],
     about: "",
     notifications: defaultNotifications(),

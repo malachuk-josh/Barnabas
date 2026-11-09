@@ -18,7 +18,7 @@ type Turn = { id: number; role: "leader" | "barnabas"; text: string; unheard: st
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type Lang = "en-US" | "es-US" | "ko-KR";
 
-type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean };
+type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean; readTyped?: boolean };
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: "en-US", label: "English" },
@@ -84,6 +84,7 @@ export function Talk({
   }, []);
   const [offRecord, setOffRecord] = useState(false);
   const [speak, setSpeak] = useState(voice.speakReplies);
+  const [readTyped, setReadTyped] = useState(Boolean(voice.readTyped));
   const [lang, setLang] = useState<Lang>(voice.language);
   const [handsFree, setHandsFree] = useState(voice.handsFree && cloudListening);
   const [voiceSupported, setVoiceSupported] = useState(true);
@@ -238,7 +239,7 @@ export function Talk({
     pendingInterrupt.current = null;
 
     const update = (fn: (t: Turn) => Turn) => setTurns((all) => all.map((t) => (t.id === reply.id ? fn(t) : t)));
-    const voiced = via === "voice" && speak;
+    const voiced = speak && (via === "voice" || readTyped);
     // Whole sentences only: speaking an opening clause on its own flattens its intonation.
     const chunker = new SentenceChunker();
     const say = (s: string) => {
@@ -466,6 +467,7 @@ export function Talk({
     e.preventDefault();
     const text = draft;
     setDraft("");
+    if (speak && readTyped) speaker.current?.unlock();
     if (status === "speaking" || status === "thinking") interrupt();
     await send(text, "text");
   }
@@ -555,6 +557,22 @@ export function Talk({
         <label>
           <input id="speak-replies" type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); if (!e.target.checked) speaker.current?.stop(); }} />
           Speak replies
+        </label>
+        <label title="Barnabas speaks his reply even when you type">
+          <input
+            id="read-typed"
+            type="checkbox"
+            checked={readTyped}
+            disabled={!speak}
+            onChange={(e) => {
+              const on = e.target.checked;
+              setReadTyped(on);
+              if (on) speaker.current?.unlock();
+              else speaker.current?.stop();
+              void fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ voice: { readTyped: on } }) }).catch(() => {});
+            }}
+          />
+          Read typed replies aloud
         </label>
         {cloudListening && (
           <label>

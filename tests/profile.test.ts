@@ -38,3 +38,15 @@ describe("Bible translation", () => {
     expect(BIBLE_TRANSLATIONS.kjv).toBe("King James Version (KJV)");
   });
 });
+
+describe("read typed replies aloud", () => {
+  beforeEach(() => freshStore());
+
+  it("is off by default, including for profiles saved before the setting existed", async () => {
+    const p = await ensureProfile(leader);
+    expect(p.voice.readTyped).toBe(false);
+    const { readTyped: _drop, ...oldVoice } = p.voice;
+    await saveProfile(leader, { ...p, voice: oldVoice as typeof p.voice });
+    expect((await getProfile(leader)).voice.readTyped).toBe(false);
+  });
+});

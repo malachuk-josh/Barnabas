@@ -28,6 +28,7 @@ const Body = z.object({
     rate: z.number().min(0.7).max(1.4),
     voiceId: z.string().regex(/^[A-Za-z0-9]{8,40}$/).optional().or(z.literal("")),
     handsFree: z.boolean(),
+    readTyped: z.boolean().optional(),
   }),
   pronunciations: z.array(z.object({ word: z.string().trim().min(1).max(40), sayAs: z.string().trim().min(1).max(60) })).max(50),
   about: z.string().max(1500),
@@ -43,6 +44,15 @@ export async function PATCH(request: Request) {
   const leader = await requireLeader();
   if (isResponse(leader)) return leader;
   const raw = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  // "Read typed replies aloud" on the Talk panel saves as it's flipped.
+  if (raw.voice !== undefined) {
+    const v = z.object({ readTyped: z.boolean() }).strict().safeParse(raw.voice);
+    if (!v.success) return NextResponse.json({ error: "Check the voice settings." }, { status: 400 });
+    const current = await getProfile(leader);
+    const next = { ...current, voice: { ...current.voice, readTyped: v.data.readTyped } };
+    await saveProfile(leader, next);
+    return NextResponse.json({ voice: next.voice });
+  }
   const parsed = Notifications.strict().safeParse(raw.notifications);
   if (!parsed.success) return NextResponse.json({ error: "Check the notification settings." }, { status: 400 });
   const current = await getProfile(leader);
@@ -62,7 +72,12 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: `Check ${first?.path.join(".") || "the form"}: ${first?.message ?? "invalid value"}.` }, { status: 400 });
   }
   const current = await getProfile(leader);
-  const next = { ...current, ...parsed.data, bibleTranslation: parsed.data.bibleTranslation ?? current.bibleTranslation };
+  const next = {
+    ...current,
+    ...parsed.data,
+    bibleTranslation: parsed.data.bibleTranslation ?? current.bibleTranslation,
+    voice: { ...parsed.data.voice, readTyped: parsed.data.voice.readTyped ?? current.voice.readTyped },
+  };
   await saveProfile(leader, next);
   await updateLeaderDisplay(leader, next.name, next.role);
   // Keep the signed-in session's display name and role in step with the profile.
