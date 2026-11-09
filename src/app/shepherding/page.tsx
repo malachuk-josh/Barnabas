@@ -5,10 +5,11 @@ import { Suspense } from "react";
 import { CaseCard } from "@/components/care/CaseCard";
 import { CaseFilters } from "@/components/care/CaseFilters";
 import { CareFrame, carePage, directory } from "@/components/care/CareFrame";
+import { NeedRow } from "@/components/care/NeedRow";
 import { NewCase } from "@/components/care/NewCase";
 import { CASE_STATUSES, CASE_STATUS_LABELS, CASE_TYPES, type CaseType } from "@/lib/care/types";
 import { caseRows, recentGuests, teamView } from "@/lib/care/views";
-import { today as todayIso } from "@/lib/dates";
+import { addDays, today as todayIso } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Shepherding · Barnabas" };
@@ -30,6 +31,16 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
   const sees = ctx.isPastor ? "every need, including confidential ones" : role === "deacon" ? "your needs and every need that isn't confidential" : "the needs assigned to you";
   const people = await directory();
   const members = ctx.actor.members.map((m) => ({ id: m.id, name: m.name, title: m.title, role: m.role }));
+  // "By due date" (the default) groups needs by when their next step falls; "By stage" is the board.
+  const view = q.view === "board" ? "board" : "due";
+  const week = addDays(today, 7);
+  const groups = [
+    { key: "overdue", label: "Overdue", rows: rows.filter((r) => r.overdue) },
+    { key: "week", label: "This week", rows: rows.filter((r) => !r.overdue && r.nextStep?.due && r.nextStep.due <= week) },
+    { key: "later", label: "Later", rows: rows.filter((r) => !r.overdue && r.nextStep?.due && r.nextStep.due > week) },
+    { key: "none", label: "No date set", rows: rows.filter((r) => !r.nextStep?.due) },
+  ].filter((g) => g.rows.length > 0);
+  const mineOverdue = mine.filter((c) => c.overdue).length;
 
   return (
     <CareFrame
@@ -45,30 +56,33 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
           The confidential need is with the pastors now.
         </div>
       )}
-      <div className="fin-grid care-stats">
-        <section className="fin-card">
-          <span className="label">Your open needs</span>
-          <div className="fin-stat">{mine.length}</div>
-          <span className="muted small">{mine.filter((c) => c.overdue).length} with a next step past due</span>
-          <p className="fin-source">Needs assigned to you that haven&apos;t been met yet.</p>
-        </section>
-        <section className="fin-card">
-          <span className="label">Across the church</span>
-          <div className="fin-stat">{team.totalOpen}</div>
-          <span className="muted small">
-            open needs, {team.unassigned} waiting in the pastors&apos; queue
-          </span>
-          <p className="fin-source">Every open need, counted without names. <Link href="/shepherding/load#team">How they&apos;re spread</Link></p>
-        </section>
-        <section className="fin-card">
-          <span className="label">Guests not reached yet</span>
-          <div className="fin-stat">{waiting.length}</div>
-          <span className="muted small">{waiting.filter((g) => g.mine).length} of them are yours to follow up</span>
-          <p className="fin-source">
-            Guest cards from the last three weeks with no thank-you or call marked done. <Link href="/shepherding/guests">Guests</Link>
-          </p>
-        </section>
-      </div>
+      <dl className="fact-strip care-summary">
+        <div>
+          <dt>Yours</dt>
+          <dd>
+            <Link href="/shepherding?scope=mine">
+              {mine.length} open{mineOverdue ? <span className="care-overdue"> · {mineOverdue} overdue</span> : null}
+            </Link>
+          </dd>
+        </div>
+        <div>
+          <dt>Across the church</dt>
+          <dd>
+            <Link href="/shepherding/load#team">
+              {team.totalOpen} open{team.unassigned ? ` · ${team.unassigned} unassigned` : ""}
+            </Link>
+          </dd>
+        </div>
+        <div>
+          <dt>Guests to reach</dt>
+          <dd>
+            <Link href="/shepherding/guests">
+              {waiting.length}
+              {waiting.length ? ` · ${waiting.filter((g) => g.mine).length} yours` : ""}
+            </Link>
+          </dd>
+        </div>
+      </dl>
 
       <Suspense>
         <CaseFilters canSeeOthers={role === "pastor" || role === "deacon"} />
@@ -84,10 +98,19 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
             <p className="muted">{scope === "mine" ? "No open needs are assigned to you with these filters." : "No open needs match these filters."}</p>
           </div>
         )
-      ) : q.view === "list" ? (
-        <div className="care-list">
-          {rows.map((c) => (
-            <CaseCard key={c.id} c={c} today={today} showStatus />
+      ) : view === "due" ? (
+        <div className="need-groups">
+          {groups.map((g) => (
+            <section key={g.key} className="need-group" aria-labelledby={`need-${g.key}`}>
+              <h2 id={`need-${g.key}`} className={g.key === "overdue" ? "is-overdue" : undefined}>
+                {g.label} <span className="care-count">{g.rows.length}</span>
+              </h2>
+              <div className="list-card">
+                {g.rows.map((c) => (
+                  <NeedRow key={c.id} c={c} today={today} />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : (
@@ -109,7 +132,7 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
         </div>
       )}
       <p className="fin-source" style={{ marginTop: 14 }}>
-        Shepherding needs in Barnabas, sorted with overdue next steps first. Needs that have been met stay on their own pages.
+        Shepherding needs in Barnabas, overdue next steps first. &ldquo;Across the church&rdquo; counts every open need without names; &ldquo;Guests to reach&rdquo; counts guest cards from the last three weeks with no thank-you or call marked done. Needs that have been met stay on their own pages.
       </p>
     </CareFrame>
   );

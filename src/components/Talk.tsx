@@ -428,9 +428,16 @@ export function Talk({
     window.addEventListener(TALK_EVENT, onTalk);
     window.addEventListener(ASK_EVENT, onAsk);
     // Arriving from another page's Talk button: the mic needs a tap here, so put the orb in reach.
-    if (new URLSearchParams(window.location.search).get("talk") === "1") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("talk") === "1") {
       orbRef.current?.focus();
       window.history.replaceState(null, "", "/");
+    }
+    // "Ask Barnabas" on a person's page arrives with the question, as if typed.
+    const ask = params.get("ask")?.trim().slice(0, 300);
+    if (ask) {
+      window.history.replaceState(null, "", "/");
+      void sendRef.current(ask, "text");
     }
     return () => {
       window.removeEventListener(TALK_EVENT, onTalk);
