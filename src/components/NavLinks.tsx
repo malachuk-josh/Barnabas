@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon, WebsiteIcon } from "./icons";
 
 export const NAV = [
   { href: "/", label: "Talk", Icon: TalkIcon },
@@ -18,6 +18,7 @@ export const NAV = [
   { href: "/kids", label: "Kids", Icon: KidsIcon, kids: true },
   { href: "/reports", label: "Reports", Icon: ReportsIcon },
   { href: "/network", label: "Mesa", Icon: NetworkIcon },
+  { href: "/site", label: "Website", Icon: WebsiteIcon, site: true },
   { href: "/memory", label: "Memory", Icon: MemoryIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
@@ -30,18 +31,18 @@ function active(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export type NavAccess = { showFinance?: boolean; showKids?: boolean; checkinOnly?: boolean };
+export type NavAccess = { showFinance?: boolean; showKids?: boolean; showSite?: boolean; checkinOnly?: boolean };
 
-function items({ showFinance = false, showKids = false, checkinOnly = false }: NavAccess) {
+export function navItems({ showFinance = false, showKids = false, showSite = false, checkinOnly = false }: NavAccess) {
   if (checkinOnly) return NAV.filter((n) => n.href === "/kids" || n.href === "/settings");
-  return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids));
+  return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids) && (!n.site || showSite));
 }
 
 export function SideNav(access: NavAccess) {
   const pathname = usePathname();
   return (
     <nav className="side-nav" aria-label="Main">
-      {items(access).map(({ href, label, Icon }) => (
+      {navItems(access).map(({ href, label, Icon }) => (
         <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
           <Icon />
           {label}
@@ -54,7 +55,7 @@ export function SideNav(access: NavAccess) {
 export function TabBar(access: NavAccess) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const all = items(access);
+  const all = navItems(access);
   const primary = all.length > TAB_SLOTS ? all.slice(0, TAB_SLOTS - 1) : all;
   const overflow = all.length > TAB_SLOTS ? all.slice(TAB_SLOTS - 1) : [];
   const moreActive = overflow.some((n) => active(pathname, n.href));

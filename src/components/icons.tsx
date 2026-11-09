@@ -112,3 +112,9 @@ export const PeopleIcon = () => (
     <path d="M15.5 14.6a4.4 4.4 0 0 1 5 4.9" />
   </svg>
 );
+export const WebsiteIcon = () => (
+  <svg {...common}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M3.5 12h17M12 3.5c2.3 2.4 3.4 5.2 3.4 8.5s-1.1 6.1-3.4 8.5c-2.3-2.4-3.4-5.2-3.4-8.5s1.1-6.1 3.4-8.5Z" />
+  </svg>
+);

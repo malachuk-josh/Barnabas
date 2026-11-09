@@ -17,6 +17,9 @@ import postcss from "postcss";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const GLOBALS = path.join(ROOT, "src/app/globals.css");
+// Other app-wide stylesheets get the same guard: the website builder's, and the public site's and member
+// app's (which are scoped under .cs-root already, so the guard normally changes nothing there).
+const EXTRA = ["src/app/site/editor.css", "src/app/s/site.css"].map((f) => path.join(ROOT, f)).filter((f) => fs.existsSync(f));
 const WORD = path.join(ROOT, "src/app/word/word.css");
 const GUARD = ":where(:not(.word-root *))";
 
@@ -43,7 +46,8 @@ function guard(sel) {
   return m ? `${m[1]}${GUARD}${m[2]}` : `${sel}${GUARD}`;
 }
 
-const root = postcss.parse(fs.readFileSync(GLOBALS, "utf8"), { from: GLOBALS });
+for (const FILE of [GLOBALS, ...EXTRA]) {
+const root = postcss.parse(fs.readFileSync(FILE, "utf8"), { from: FILE });
 let guarded = 0;
 root.walkRules((rule) => {
   if (rule.parent?.type === "atrule" && /keyframes$/i.test(rule.parent.name)) return;
@@ -57,5 +61,6 @@ root.walkRules((rule) => {
     rule.selector = next.join(", ");
   }
 });
-fs.writeFileSync(GLOBALS, root.toString());
-console.log(`guarded ${guarded} selectors in ${path.relative(ROOT, GLOBALS)}`);
+fs.writeFileSync(FILE, root.toString());
+console.log(`guarded ${guarded} selectors in ${path.relative(ROOT, FILE)}`);
+}

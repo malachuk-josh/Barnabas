@@ -41,6 +41,7 @@ export async function AppShell({
   const access = leader ? await accessFor(leader) : null;
   const showFinance = can(access, "finance.view");
   const showKids = can(access, "kids.checkin");
+  const showSite = can(access, "site.edit");
   // Kids check-in volunteers get the check-in station and their settings, nothing else.
   const checkinOnly = isCheckinOnly(access);
   if (checkinOnly && !checkinMayUse(await requestPath())) redirect("/kids");
@@ -51,7 +52,7 @@ export async function AppShell({
           <Mark light />
           Barnabas
         </Link>
-        <SideNav showFinance={showFinance} showKids={showKids} checkinOnly={checkinOnly} />
+        <SideNav showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
         <div className="side-foot">
           <Link href="/settings" className="me-card">
             <span className="avatar" aria-hidden="true">
@@ -83,7 +84,7 @@ export async function AppShell({
           </main>
         )}
       </div>
-      <TabBar showFinance={showFinance} showKids={showKids} checkinOnly={checkinOnly} />
+      <TabBar showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
       <PullToRefresh />
     </div>
   );

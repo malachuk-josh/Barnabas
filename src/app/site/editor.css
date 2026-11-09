@@ -1,0 +1,67 @@
+/* The website builder (/site), in the leader app. Uses the app's tokens, so it follows light and dark. */
+.se-editor { display: grid; gap: 16px; }
+.se-bar { position: sticky; top: 0; z-index: 4; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.se-blocks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.se-block { gap: 12px; }
+.se-block-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.se-block-head h3 { font-size: 1.05rem; }
+.se-block-head h3:focus { outline: 3px solid var(--brass); outline-offset: 3px; border-radius: 6px; }
+.se-small { padding: 5px 12px; font-size: 0.88rem; min-height: 36px; }
+.se-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.se-label { font-weight: 600; font-size: 0.92rem; }
+.se-select, .se-editor input[type="url"], .se-editor input[type="tel"], .se-editor input[type="number"], .se-editor input[type="date"],
+.se-publish input[type="text"], .se-colors input[type="text"], .se-social input[type="text"], .se-newpage input[type="text"], .fin-stack input[type="url"], .fin-stack input[type="tel"], .fin-stack input[type="date"] {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; min-height: 44px;
+}
+.se-select { width: auto; max-width: 100%; }
+.se-num input { max-width: 120px; }
+.se-text { font-family: var(--font-body); font-size: 1rem; min-height: 0; }
+.se-toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; background: var(--surface-2); }
+.se-toolbar button { border: 1px solid transparent; background: transparent; color: var(--fg); border-radius: 8px; padding: 6px 10px; min-height: 36px; cursor: pointer; font: inherit; font-size: 0.88rem; font-weight: 600; }
+.se-toolbar button:hover { border-color: var(--line); background: var(--surface); }
+.se-rich { min-height: 120px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 0 0 10px 10px; background: var(--surface); color: var(--fg); line-height: 1.6; overflow-wrap: anywhere; }
+.se-rich:focus { outline: 3px solid var(--brass); outline-offset: 1px; }
+.se-rich p, .se-rich ul, .se-rich ol, .se-rich blockquote { margin: 0 0 0.7em; }
+.se-rich h2 { font-size: 1.4rem; margin: 0 0 0.4em; }
+.se-rich h3 { font-size: 1.15rem; margin: 0 0 0.4em; }
+.se-rich blockquote { border-left: 4px solid var(--brass); padding-left: 12px; font-style: italic; }
+.se-rich a { color: var(--accent); }
+.se-image, .se-buttons, .se-radios { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 0; display: grid; gap: 10px; min-width: 0; }
+.se-image legend, .se-buttons legend, .se-radios legend { font-weight: 600; padding: 0 4px; }
+.se-thumb { max-width: 220px; max-height: 140px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.se-upload { position: relative; justify-self: start; }
+.se-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.se-button-row { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: end; }
+@media (max-width: 760px) { .se-button-row { grid-template-columns: 1fr; } }
+.se-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 860px) { .se-cols { grid-template-columns: 1fr; } }
+.se-bio { display: grid; gap: 6px; }
+.se-bio .btn:where(:not(.word-root *)) { justify-self: start; }
+.se-add .row { align-items: center; }
+.se-home-addr { align-self: end; }
+.se-pages { list-style: none; padding: 0; margin: 0; display: grid; }
+.se-pages li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.se-pages li:last-child { border-bottom: 0; }
+.se-page-link { font-weight: 700; }
+.se-newpage { margin-top: 6px; }
+.se-newpage input { flex: 1 1 220px; width: auto; }
+.se-preview-link summary { cursor: pointer; font-weight: 600; }
+.se-preview-link .row input { flex: 1 1 240px; width: auto; }
+.se-problems { margin: 6px 0 0; padding-left: 1.2em; }
+.se-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.se-color input[type="color"] { width: 48px; height: 44px; padding: 2px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.se-color .row { flex-wrap: nowrap; }
+.se-color input[type="text"] { flex: 1; width: auto; min-width: 0; }
+.se-contrast { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.se-swatch { display: grid; gap: 8px; padding: 18px; border-radius: 12px; border: 4px solid; }
+.se-swatch-btn { justify-self: start; padding: 8px 16px; border-radius: 999px; font-weight: 700; }
+.se-social { flex-wrap: wrap; }
+.se-social input[type="text"] { flex: 1 1 200px; width: auto; }
+.se-share { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center; }
+.se-share > div { flex: 1 1 260px; display: grid; gap: 8px; }
+.se-qr { border-radius: 10px; border: 1px solid var(--line); flex: none; }
+.se-ann, .se-history, .se-inbox { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.se-ann li, .se-history li { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.se-ann li > div:first-child, .se-history li > div:first-child { flex: 1 1 240px; min-width: 0; }
+.se-msg { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fin-stack form.fin-card > .btn:where(:not(.word-root *)), .fin-stack .fin-card > form .btn:where(:not(.word-root *)) { justify-self: start; }

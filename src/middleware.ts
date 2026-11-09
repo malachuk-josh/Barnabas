@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { routeSiteHost } from "./lib/site/routing";
 
 const PATH_HEADER = "x-barnabas-path";
 
@@ -9,6 +10,9 @@ const PATH_HEADER = "x-barnabas-path";
 const PUBLIC_PATHS = [
   "/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg",
   "/api/messages/twilio/status", "/api/messages/twilio/inbound", "/api/messages/resend", "/api/messages/unsubscribe",
+  // The church website (/s) and member app (/m) and their public forms (/api/s): published content only,
+  // checked in the pages; forms are rate-limited there.
+  "/s", "/m", "/api/s",
 ];
 
 function secret(): Uint8Array | null {
@@ -23,6 +27,15 @@ export async function middleware(request: NextRequest) {
   // Pass the path to server code (role limits are checked there); a header sent by the browser is overwritten.
   const headers = new Headers(request.headers);
   headers.set(PATH_HEADER, pathname);
+  // On the church's own domain (CHURCH_SITE_HOST) the website is served and the leader app isn't.
+  const site = routeSiteHost(request.headers.get("host"), pathname);
+  if (site?.kind === "block") return new NextResponse("Not found", { status: 404 });
+  if (site?.kind === "rewrite") {
+    const url = request.nextUrl.clone();
+    url.pathname = site.path;
+    headers.set(PATH_HEADER, site.path);
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.next({ request: { headers } });
   }

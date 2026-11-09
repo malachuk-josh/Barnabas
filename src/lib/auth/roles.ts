@@ -60,7 +60,9 @@ export type Permission =
   /** Add, edit, merge and archive people, households, groups and custom fields; run the migration tool. */
   | "people.edit"
   /** Share resources with connected churches in the Mesa network (connections themselves need an admin). */
-  | "network.share";
+  | "network.share"
+  /** Edit and publish the church website and member app, read its inbox, post announcements. */
+  | "site.edit";
 
 const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "finance.view": ["pastor", "treasurer", "deacon"],
@@ -77,6 +79,7 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "people.export": ["pastor", "staff"],
   "people.edit": ["pastor", "staff"],
   "network.share": ["pastor", "staff"],
+  "site.edit": ["pastor", "staff"],
 };
 
 /** What a signed-in leader may do: their role, and whether they administer the team. */

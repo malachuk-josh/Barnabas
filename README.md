@@ -23,6 +23,8 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Services | Sermon series, the preaching rotation and orders of service with scripture linked into The Word | |
 | Events | Registration forms, capacity and waitlist, a public sign-up link, attendee lists with CSV export, event-day check-in, and registration status on the Calendar | Online payment (Stripe) isn't built: paid events are settled at the door |
 | Kids | Check-in station, 4" × 2" child labels with matching parent pickup tags, checkout by pickup code, room counts and ratio warnings, families with allergies and authorized pickups | Restricted to `kids.checkin` and `kids.admin`; Barnabas sees counts only |
+| Website | A church website builder at **Website** (`/site`): pages, a block editor, theme, draft and publish with a preview link and version history, a contact inbox; served at `/s` or on the church's own domain | See [Website](#website). The demo site is an unpublished draft (noindex) |
+| Member app | A separate installable app for the congregation at `/m`: announcements, events with sign-up, sermons, give, plan a visit, prayer requests and contact; optional push notifications | See [Member app](#member-app). No member sign-in yet |
 | Roles | Pastor, treasurer, deacon, staff, leader and kids check-in, set by an admin in **Settings → Team**; checked in code on every finance request and tool call | Admins are bootstrapped with `BARNABAS_ADMIN_EMAILS` |
 | Settings | Profile (name, what Barnabas calls you, role, ministries, about you), time zone, reply language, voice language and speed, calendar connections, team roles (admins), delete all data | Barnabas reads the profile at the start of each conversation |
 
@@ -121,9 +123,10 @@ Every leader has a role, kept on their leader record (`leader:{church}:{leaderId
 | Add, edit, merge and archive people, households, groups and custom fields; run the migration tool (`people.edit`) | Yes | No | No | Yes | No | No |
 | Download the church directory as CSV (`people.export`) | Yes | No | No | Yes | No | No |
 | Share resources with connected churches on Mesa (`network.share`) | Yes | No | No | Yes | No | No |
+| Edit and publish the church website and member app, read its inbox, post announcements (`site.edit`) | Yes | No | No | Yes | No | No |
 | Set roles (`team.manage`); connect churches on Mesa | Admins only (`BARNABAS_ADMIN_EMAILS`), whatever their role |
 
-The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`, and Kids from roles without `kids.checkin`. Everyone signed in can read rosters, the preaching rotation, orders of service and event counts, and sign up to serve. A kids check-in volunteer gets the **Kids check-in** role: the check-in station, room counts and labels, and their own profile, and nothing else (no Talk, The Word, Calendar, Care, Finance or family records). Other pages send them to the station and other APIs return 403; the limit is checked on the server (`isCheckinOnly` / `checkinMayUse` in `src/lib/auth/roles.ts`, applied in `AppShell` and `requireLeader`). An administrator is never limited this way.
+The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`, Kids from roles without `kids.checkin`, and Website from roles without `site.edit`. Everyone signed in can read rosters, the preaching rotation, orders of service and event counts, and sign up to serve. A kids check-in volunteer gets the **Kids check-in** role: the check-in station, room counts and labels, and their own profile, and nothing else (no Talk, The Word, Calendar, Care, Finance or family records). Other pages send them to the station and other APIs return 403; the limit is checked on the server (`isCheckinOnly` / `checkinMayUse` in `src/lib/auth/roles.ts`, applied in `AppShell` and `requireLeader`). An administrator is never limited this way.
 
 Care cases follow their own visibility rules (`src/lib/care/visibility.ts`), checked on every page, API call and Barnabas tool:
 
@@ -366,8 +369,57 @@ So a church knows what it still needs before it lets the old platform go:
 | `RESEND_API_KEY`, `RESEND_FROM` | Resend sending key and the From address on a verified domain |
 | `RESEND_WEBHOOK_SECRET` | Verifies Resend's svix-signed delivery webhooks |
 | `APP_URL` | The public address for status callbacks and unsubscribe links (`https://barnabas-three.vercel.app`) |
+| `CHURCH_SITE_HOST` | The church's own domain(s) for the public website, comma-separated (see [Website](#website)) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob, for image uploads in the website editor (set by connecting a Blob store) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional web push for member-app announcements |
 
-None is ever returned to the browser or logged: the app reports only which names are missing.
+None is ever returned to the browser or logged: the app reports only which names are missing. (The VAPID public key is the one exception: browsers need it to subscribe, and it's public by design.)
+
+## Website
+
+**Website** (a globe icon; under More on phones) is shown to roles with `site.edit` (pastors and staff). Kids check-in volunteers never see it, and the builder's API answers them with 403.
+
+- **Pages** (`/site`): home, about and leadership, plan a visit, service times, events, sermons, give and contact, plus custom pages. Reorder them (home stays first), add, remove, and choose which show in the menu.
+- **Block editor** (`/site/edit/{page}`): add, reorder (up and down buttons), edit and remove blocks. Blocks: hero (heading, text, picture, up to three buttons), text (bold, italic, headings, lists, quotes, links), image, two columns, service times (read from the weekly schedule), upcoming events (from Events and the church calendar, with a Register button where registration is open), leadership (names and titles from the leadership list, with website bios), sermon series (from Services), plan a visit (with the guest card), give, contact form, map (an address, no API key), video (YouTube and Vimeo only) and announcement. Every block is validated with zod (`src/lib/site/types.ts`) in the browser and again on the server; images need alt text.
+- **Theme** (`/site/theme`): church name, tagline, logo, colors (starting from the Barnabas palette: Cypress #1E4543, Brass #D9A441, Sea glass, Chalk #F3F6F4, Night #0F2423), fonts (Young Serif and Figtree by default, or a short list of Google fonts), footer, contact details and social links. The editor shows each color pair's contrast; publishing is refused below WCAG AA (4.5:1). Navigation is the page list.
+- **Draft and publish**: every edit goes to the draft. **Publish** copies it to what visitors see. **Preview draft** (`/s?preview=1`) is for leaders with `site.edit`; **Share a preview link** (`/s?preview={token}`) lets anyone see the draft without signing in, and a new link turns the old one off. **History** keeps the last 25 saves, publishes and restores; **Restore** copies a version into the draft. Every write is in the audit log.
+- **Inbox** (`/site/inbox`): contact-form messages, marked answered or deleted. A contact block can also draft a reply into the Drafts review queue (for the leader who last published). Prayer requests from the site go to Care → Prayer, private to the pastors unless the person ticks "OK to share with the prayer team", under the same memory policy as the guest card. Guest cards go to Care → Guests through the same flow as `/welcome`.
+- **Images**: with Vercel Blob set up, the editor uploads PNG, JPEG, WebP or GIF up to 4 MB (checked by their bytes, not only their type; SVG is refused). Without it, paste an https image address.
+- **Barnabas tools**: `website_content` ("What's on our website?") reads the published site, and `post_announcement` proposes an announcement and posts it only after the leader says yes on a later turn (`site.edit` only).
+
+**Public site** (`/s`, or the church's own domain): server-rendered, with titles, descriptions, Open Graph tags, a canonical link, `sitemap.xml` and `robots.txt`; skip link, landmarks and labeled forms; responsive down to 360px; light by default whatever the device's setting.
+
+- **Until an admin publishes**, `/s` is a 404 for visitors and shows the draft only to signed-in leaders (not kids check-in volunteers), with a banner. Every page is `noindex`, `robots.txt` disallows everything and the sitemap is empty. Previews are always `noindex`.
+- **What it shows**: only what's published plus public-facing data: the weekly schedule, event titles, times, places, descriptions and public sign-up links, leaders' names and titles, preaching dates, preachers, series and passages. Leaders' bios come from the website's own text, never from church records. No registrants, rosters, care, giving or People records.
+- **Safety**: rich text is reduced to a small allowlist of tags (`src/lib/site/sanitize.ts`) when it's saved and again when it's rendered; it's the only HTML the site injects. Links must be https, http, mailto, tel or a site path. Videos are embedded only from YouTube (no-cookie) and Vimeo, built from the video id.
+- **Forms** (`/api/s/contact`, `/api/s/prayer`, `/api/s/guest`, `/api/s/push`): no sign-in; open only once the site is published (or for a signed-in leader trying the draft); 5 per address per 10 minutes and 200 per hour overall per form; a hidden honeypot field makes a bot's submission a silent no-op; they answer only whether it worked.
+- **Giving**: the Give block, Give page and the app's Give tab link to the church's existing giving page (set in **Member app and giving**) or say "Online giving is coming soon". **Stripe plugs in at `giveTarget()` in `src/lib/site/give.ts`**: return a `checkout` target pointing at a Checkout route, and record gifts through Finance from the webhook; nothing else changes.
+- **The Word**: passage references show as text, because The Word needs a sign-in. If it's opened to the public, set `WORD_IS_PUBLIC` in `src/lib/site/data.ts` and references link to `/word?b=&c=&v=`.
+
+### Using the church's own domain
+
+1. In Vercel, open the project → **Settings → Domains**, and add the church's domain, for example `www.mountgreylockbaptist.com` (and the bare `mountgreylockbaptist.com`, redirecting to `www`).
+2. At the domain's DNS provider, add the records Vercel shows: usually a `CNAME` for `www` to `cname.vercel-dns.com`, and an `A` record for the bare domain to `76.76.21.21`. Wait for Vercel to show the domain as valid (it issues the certificate).
+3. In **Settings → Environment Variables**, set `CHURCH_SITE_HOST=www.mountgreylockbaptist.com,mountgreylockbaptist.com` and redeploy.
+4. Publish the site from **Website**.
+
+On that domain the middleware serves the website at the root (`/about`, `/visit`, `/sitemap.xml`, `/robots.txt`), the member app at `/m`, and the public sign-up and guest-card links. Every other path is rewritten under the site (so `/finance` is a 404 there), and the leader app's API answers 404. Leaders keep using `https://barnabas-three.vercel.app`; sign-in cookies never go to the church's domain.
+
+**Storage**: `site:{church}:*` keys in Redis (meta, draft, published, versions, inbox, announcements, push). Code: `src/lib/site/`, `src/components/site/`, `src/app/site/` (builder), `src/app/s/` (public site), `src/app/m/` (member app), `src/app/api/site/` and `src/app/api/s/`.
+
+## Member app
+
+A separate app for the congregation at `/m`, with its own web manifest (`/m/manifest.webmanifest`: the church's name, an icon drawn from its initials or its own icon, `start_url` `/m` and scope `/m/`), so members can **Add to Home Screen** and get the church's app, not Barnabas.
+
+- **Tabs**: Home (announcements and the next gatherings), Events (with Register links), Sermons (series, preachers and passages), Give (the giving seam) and Connect (plan a visit with the guest card, a prayer request that goes to Care, and a contact form). Leaders choose which tabs show.
+- **Leader side** (`/site/app`): the app's name, home-screen name, icon, welcome line and tabs (published with the site); announcements; a share link and a QR code (SVG, drawn in code with `uqr`) for "get our app".
+- **Push notifications (optional)**: with VAPID keys set, members can tap "Notify me about announcements" (on iPhone, after adding the app to the home screen), and a leader can send an announcement as a notification after confirming. Without the keys the button is hidden and the leader side says push isn't set up. To set it up, run `npx web-push generate-vapid-keys`, then set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (for example `mailto:office@yourchurch.org`) in Vercel and redeploy. The private key stays on the server.
+- **No member sign-in yet.** The seam is `src/lib/site/member.ts`: sign-in by email link (a one-time link sent through the Resend sender in `src/lib/messages`, matched to a People record by email, setting a separate member cookie scoped to `/m`) plugs in there.
+- **Not published yet**: like the site, the app shows only to signed-in leaders until the site is published.
+
+### Vercel Blob (image uploads)
+
+In the Vercel project, open **Storage → Create → Blob**, connect it to the project (this sets `BLOB_READ_WRITE_TOKEN`), and redeploy. Without it the editor accepts image addresses only.
 
 ## Getting to know each leader
 
@@ -389,6 +441,7 @@ The rules are enforced in code, not only in the instructions:
 - **Messaging**: register for A2P 10DLC before texting anyone in the US, verify the email domain, and make sure the people you text have agreed to hear from the church by text (a connection card or sign-up form is the usual way). STOP replies and unsubscribes are honored automatically.
 - **Care**: clear the demo care records, set roles in Settings → Team, and turn off any guest-card links you aren't using. Care notes follow `BARNABAS_ALLOW_SENSITIVE_MEMORY`.
 - **Operations**: clear the demo rosters, rotation and events from their banners; add teams' volunteers, families and children; and give check-in volunteers the staff role (the station shows children's names and allergies). Stripe payments for events are not built yet.
+- **Website**: replace the placeholder words ("Add your church's story here"), check the leaders' website bios, add a logo and photos, then publish from **Website**. Nothing is public until you do.
 - **Finance**: clear the demo books, set roles in Settings → Team, and have your accountant review the chart of accounts and opening balances. Fund transfers between funds, multiple fiscal-year start months and Stripe are not built yet.
 
 ## Next steps

@@ -70,6 +70,7 @@ describe("roles and permissions", () => {
     "people.export": ["pastor", "staff"],
     "people.edit": ["pastor", "staff"],
     "network.share": ["pastor", "staff"],
+    "site.edit": ["pastor", "staff"],
   };
 
   it("follows the role matrix", () => {
