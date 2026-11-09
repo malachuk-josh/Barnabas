@@ -7,6 +7,8 @@ import { NotificationsCard } from "@/components/NotificationsCard";
 import { KnowCard } from "@/components/KnowCard";
 import { knowProgress } from "@/lib/engine/know";
 import { vapidPublicKey } from "@/lib/push/vapid";
+import { accessFor } from "@/lib/team";
+import { isLimited } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,9 @@ function todayIn(timezone: string) {
 
 export default async function Home() {
   const { leader, profile } = await requirePageLeader();
-  const know = await knowProgress(leader).catch(() => null);
+  // Team and Member levels: Barnabas by typing, and no church briefing.
+  const limited = isLimited(await accessFor(leader));
+  const know = limited ? null : await knowProgress(leader).catch(() => null);
   const { date, part, dayNumber } = todayIn(profile.timezone);
   // The verse for today: one of Barnabas's KJV verses, a different one each day.
   const keys = Object.keys(VERSES) as VerseKey[];
@@ -55,8 +59,9 @@ export default async function Home() {
           pronunciations={profile.pronunciations}
           cloudVoice={elevenLabs.configured() && Boolean(elevenLabs.defaultVoice())}
           cloudListening={deepgram.configured()}
+          typedOnly={limited}
         />
-        <Briefing todaysVerse={todaysVerse} />
+        {!limited && <Briefing todaysVerse={todaysVerse} />}
       </div>
     </AppShell>
   );

@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentLeader, type Leader } from "@/lib/auth/session";
-import { can, checkinMayUse, isCheckinOnly } from "@/lib/auth/roles";
+import { can, checkinMayUse, isCheckinOnly, isLimited, levelMayUse } from "@/lib/auth/roles";
 import { requestPath } from "@/lib/auth/require";
 import { getProfile, type Profile } from "@/lib/profile";
 import { accessFor } from "@/lib/team";
+import { unreadCount } from "@/lib/inbox/service";
 import { Mark } from "./Mark";
 import { AppThemeSwitch } from "./AppThemeSwitch";
 import { PullToRefresh } from "./PullToRefresh";
 import { ServiceWorkerRegistrar } from "./ServiceWorkerRegistrar";
 import { pushConfig } from "@/lib/push/vapid";
-import { SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton } from "./NavLinks";
+import { SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton, type NavAccess } from "./NavLinks";
 
 function initials(name: string) {
   return name
@@ -47,7 +48,23 @@ export async function AppShell({
   const showSite = can(access, "site.edit");
   // Kids check-in volunteers get the check-in station and their settings, nothing else.
   const checkinOnly = isCheckinOnly(access);
-  if (checkinOnly && !checkinMayUse(await requestPath())) redirect("/kids");
+  if (access?.removed) redirect("/signin?removed=1");
+  const path = await requestPath();
+  if (checkinOnly && !checkinMayUse(path)) redirect("/kids");
+  // Team and Member levels see only their features; anything else goes back to Today.
+  const limited = isLimited(access);
+  if (limited && access && path && !levelMayUse(access, path)) redirect("/");
+  const nav: NavAccess = {
+    showFinance,
+    showKids,
+    showSite,
+    showAdmin: can(access, "team.manage"),
+    checkinOnly,
+    limited,
+    member: access?.level === "member" && !access.admin,
+    levelAccess: limited && access ? access : undefined,
+    unread: leader ? await unreadCount(leader) : 0,
+  };
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -58,10 +75,10 @@ export async function AppShell({
           </Link>
           <AppThemeSwitch />
         </div>
-        {!checkinOnly && <TalkButton />}
-        <SideNav showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
+        {!checkinOnly && !limited && <TalkButton />}
+        <SideNav {...nav} />
         <div className="side-foot">
-          <SideFootLinks showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
+          <SideFootLinks {...nav} />
           <Link href="/settings" className="me-card">
             <span className="avatar" aria-hidden="true">
               {initials(profile.name)}
@@ -95,7 +112,7 @@ export async function AppShell({
           </main>
         )}
       </div>
-      <TabBar showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
+      <TabBar {...nav} />
       <PullToRefresh />
       {pushConfig() && <ServiceWorkerRegistrar />}
     </div>

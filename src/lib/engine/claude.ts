@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { config, type Effort } from "../config";
-import { defaultAi, resolvedAi, type ResolvedAi } from "../ai/settings";
+import { defaultAi, limitAi, resolvedAi, type ResolvedAi } from "../ai/settings";
+import type { Leader } from "../auth/session";
+import { accessFor } from "../team";
 import type { ConversationMeta, Message } from "../data/conversations";
 import { BARNABAS_SYSTEM, toneNote } from "./prompt";
-import { TOOL_DEFS } from "./tools";
+import { toolDefsFor, toolNamesFor } from "./tools";
 
 type Beta = typeof Anthropic.Beta.prototype;
 export type ClaudeClient = { beta: { messages: Pick<Beta["messages"], "stream" | "create"> } };
@@ -54,7 +56,7 @@ export function modelFor(mode: TurnMode, ai: ResolvedAi = defaultAi()): { model:
 }
 
 /**
- * Claude's own web search and web fetch, when an admin has turned them on (Settings -> Barnabas AI).
+ * Claude's own web search and web fetch, when an admin has turned them on (Admin -> Barnabas AI).
  * Newer models get the versions with dynamic filtering; Haiku gets the basic ones.
  */
 export function webTools(model: string, ai?: ResolvedAi): Anthropic.Beta.BetaToolUnion[] {
@@ -79,7 +81,7 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
     output_config: { effort },
     // Automatic caching for the growing conversation, after the two system breakpoints.
     cache_control: { type: "ephemeral" },
-    tools: [...TOOL_DEFS, ...webTools(model, ai)],
+    tools: [...toolDefsFor(ai?.tools), ...webTools(model, ai)],
     system: system(meta, ai),
     messages,
     ...(fallbacks ? { fallbacks: "default" as const, betas: [config.fallbackBeta] } : {}),
@@ -90,17 +92,23 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
  * Pre-warm the cache for a new conversation: max_tokens 0, same tools, system, thinking and effort
  * as real turns, with the breakpoint on the last shared block (not on the placeholder message).
  */
-export async function warmCache(meta: ConversationMeta, churchId?: string) {
+/** The church's AI settings for this person: Team and Member levels get Haiku and only their own tools. */
+export async function aiForLeader(leader: Pick<Leader, "churchId" | "leaderId" | "email">): Promise<ResolvedAi> {
+  const [ai, access] = await Promise.all([resolvedAi(leader.churchId), accessFor(leader)]);
+  return limitAi(ai, toolNamesFor(access));
+}
+
+export async function warmCache(meta: ConversationMeta, leader?: Pick<Leader, "churchId" | "leaderId" | "email">) {
   // A conversation started by voice is warmed for the voice model (caches are per model).
-  const mode: TurnMode = meta.mode === "voice" ? "voice" : "text";
-  const ai = churchId ? await resolvedAi(churchId) : undefined;
+  const ai = leader ? await aiForLeader(leader) : undefined;
+  const mode: TurnMode = meta.mode === "voice" && !ai?.tools ? "voice" : "text";
   const { model, thinking, effort } = modelFor(mode, ai);
   await claude().beta.messages.create({
     model,
     max_tokens: 0,
     thinking,
     output_config: { effort },
-    tools: [...TOOL_DEFS, ...webTools(model, ai)],
+    tools: [...toolDefsFor(ai?.tools), ...webTools(model, ai)],
     system: system(meta, ai),
     messages: [{ role: "user", content: "warmup" }],
   });

@@ -7,16 +7,16 @@ import { Status, useOps } from "./client";
 
 type Draft = {
   name: string;
-  guardians: { name: string; phone: string; relationship: string }[];
+  guardians: { name: string; phone: string; email: string; relationship: string }[];
   children: { id?: string; firstName: string; lastName: string; birthdate: string; grade: string; allergies: string; medical: string; roomId: string }[];
   pickups: { name: string; relationship: string }[];
   notes: string;
 };
 
-const blank = (): Draft => ({ name: "", guardians: [{ name: "", phone: "", relationship: "Parent" }], children: [{ firstName: "", lastName: "", birthdate: "", grade: "", allergies: "", medical: "", roomId: "" }], pickups: [], notes: "" });
+const blank = (): Draft => ({ name: "", guardians: [{ name: "", phone: "", email: "", relationship: "Parent" }], children: [{ firstName: "", lastName: "", birthdate: "", grade: "", allergies: "", medical: "", roomId: "" }], pickups: [], notes: "" });
 const fromHousehold = (h: Household): Draft => ({
   name: h.name,
-  guardians: h.guardians.map((g) => ({ name: g.name, phone: g.phone ?? "", relationship: g.relationship ?? "" })),
+  guardians: h.guardians.map((g) => ({ name: g.name, phone: g.phone ?? "", email: g.email ?? "", relationship: g.relationship ?? "" })),
   children: h.children.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, birthdate: c.birthdate ?? "", grade: c.grade ?? "", allergies: c.allergies ?? "", medical: c.medical ?? "", roomId: c.roomId ?? "" })),
   pickups: h.pickups.map((p) => ({ name: p.name, relationship: p.relationship ?? "" })),
   notes: h.notes ?? "",
@@ -89,7 +89,7 @@ function FamilyForm({ id, initial, rooms, onDone }: { id?: string; initial: Draf
     e.preventDefault();
     const family = {
       name: f.name,
-      guardians: f.guardians.filter((g) => g.name.trim()).map((g) => ({ name: g.name, phone: g.phone || undefined, relationship: g.relationship || undefined })),
+      guardians: f.guardians.filter((g) => g.name.trim()).map((g) => ({ name: g.name, phone: g.phone || undefined, email: g.email.trim() || undefined, relationship: g.relationship || undefined })),
       children: f.children.filter((c) => c.firstName.trim()).map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName || f.name, birthdate: c.birthdate || undefined, grade: c.grade || undefined, allergies: c.allergies || undefined, medical: c.medical || undefined, roomId: c.roomId || undefined })),
       pickups: f.pickups.filter((p) => p.name.trim()).map((p) => ({ name: p.name, relationship: p.relationship || undefined })),
       notes: f.notes || undefined,
@@ -109,7 +109,7 @@ function FamilyForm({ id, initial, rooms, onDone }: { id?: string; initial: Draf
       </div>
       <h3>Parents and guardians</h3>
       {f.guardians.map((g, i) => (
-        <div key={i} className="kids-row">
+        <div key={i} className="kids-row kids-row-guardian">
           <label className="sr-only" htmlFor={`${pre}-g${i}`}>
             Guardian name
           </label>
@@ -118,6 +118,10 @@ function FamilyForm({ id, initial, rooms, onDone }: { id?: string; initial: Draf
             Phone
           </label>
           <input id={`${pre}-gp${i}`} type="tel" placeholder="Phone" maxLength={40} value={g.phone} onChange={(e) => setF({ ...f, guardians: f.guardians.map((x, j) => (j === i ? { ...x, phone: e.target.value } : x)) })} />
+          <label className="sr-only" htmlFor={`${pre}-ge${i}`}>
+            Email (links them to Barnabas for messages)
+          </label>
+          <input id={`${pre}-ge${i}`} type="email" placeholder="Email (for Barnabas messages)" maxLength={120} value={g.email} onChange={(e) => setF({ ...f, guardians: f.guardians.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)) })} />
           <label className="sr-only" htmlFor={`${pre}-gr${i}`}>
             Relationship
           </label>
@@ -125,7 +129,7 @@ function FamilyForm({ id, initial, rooms, onDone }: { id?: string; initial: Draf
         </div>
       ))}
       {f.guardians.length < 4 && (
-        <button className="btn" type="button" onClick={() => setF({ ...f, guardians: [...f.guardians, { name: "", phone: "", relationship: "" }] })}>
+        <button className="btn" type="button" onClick={() => setF({ ...f, guardians: [...f.guardians, { name: "", phone: "", email: "", relationship: "" }] })}>
           Add a guardian
         </button>
       )}

@@ -31,7 +31,7 @@ export function deliverySettings(overrides: { stability?: number; style?: number
     return v !== undefined && v !== "" && Number.isFinite(n) && n >= 0 && n <= 1 ? n : d;
   };
   return {
-    // An admin's choice in Settings -> Barnabas AI wins, then Vercel's ELEVENLABS_* values, then these.
+    // An admin's choice in the voice sliders (Settings -> Barnabas and voice) wins, then Vercel's ELEVENLABS_* values, then these.
     stability: num(overrides.stability, num(process.env.ELEVENLABS_STABILITY, 0.6)),
     similarity_boost: 0.8,
     style: num(overrides.style, num(process.env.ELEVENLABS_STYLE, 0.6)),

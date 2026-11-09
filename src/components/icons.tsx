@@ -130,3 +130,15 @@ export const NotebookIcon = () => (
     <path d="M6.5 3.5v17M4.5 7.5h4M4.5 12h4M4.5 16.5h4M11 8h4.5M11 11.5h4.5" />
   </svg>
 );
+export const MessagesIcon = () => (
+  <svg {...common}>
+    <path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-9l-4.5 3.5v-3.5H4A1.5 1.5 0 0 1 2.5 16V7A1.5 1.5 0 0 1 4 5.5Z" />
+    <path d="M7 10h10M7 13h6" />
+  </svg>
+);
+export const ShieldIcon = () => (
+  <svg {...common}>
+    <path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1.3 7.5-5 7.5-9.5V6L12 3Z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);

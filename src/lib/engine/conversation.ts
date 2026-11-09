@@ -8,7 +8,7 @@ import { outsideEvents } from "../calendar/service";
 import { addDaysIso } from "../calendar/time";
 import { churchData } from "../chms";
 import { getProfile } from "../profile";
-import { can, ROLE_LABELS } from "../auth/roles";
+import { can, isLimited, LEVEL_LABELS, ROLE_LABELS, TEAM_ROLE_LABELS } from "../auth/roles";
 import { accessFor } from "../team";
 import { careSnapshot } from "../care/views";
 import { briefing } from "./briefing";
@@ -34,10 +34,16 @@ export async function startConversation(
       return undefined;
     }),
   ]);
+  // Team and Member levels: no church briefing or shepherding in the context, and no voice.
+  const limited = isLimited(access);
+  if (limited) {
+    brief.radar = [];
+    brief.followUps = [];
+  }
   const knowStats = await noteConversationStarted(leader, opts.offRecord).catch(() => ({ conversations: 0, firstAt: 0 }));
   const context = await buildLeaderContext({
     leader,
-    mode: opts.mode,
+    mode: limited ? "text" : opts.mode,
     offRecord: opts.offRecord,
     knowConversations: knowStats.conversations,
     localDate,
@@ -45,8 +51,9 @@ export async function startConversation(
     profile,
     calendar: { events, outside: outside.events },
     leadership,
+    level: limited ? { level: access.level === "member" ? "member" : "team", label: access.level === "team" ? `Team (${TEAM_ROLE_LABELS[access.teamRole ?? "serving"]})` : LEVEL_LABELS.member } : undefined,
     access: {
-      role: ROLE_LABELS[access.role],
+      role: limited ? (access.level === "team" ? `Team: ${TEAM_ROLE_LABELS[access.teamRole ?? "serving"]}` : "Member") : ROLE_LABELS[access.role],
       financeAccess: can(access, "giving.donors")
         ? "full, including individual giving"
         : can(access, "finance.view")
@@ -57,15 +64,15 @@ export async function startConversation(
         : access.role === "deacon"
           ? "their own and every non-confidential need"
           : "only the needs assigned to them",
-      opsAccess: await opsAccessLine({ leader }),
+      opsAccess: limited ? undefined : await opsAccessLine({ leader }),
     },
-    care,
+    care: limited && access.teamRole !== "care" ? undefined : care,
   });
   const now = Date.now();
   const meta: ConversationMeta = {
     id: newId("conv"),
     title: "New conversation",
-    mode: opts.mode,
+    mode: limited ? "text" : opts.mode,
     offRecord: opts.offRecord,
     createdAt: now,
     updatedAt: now,

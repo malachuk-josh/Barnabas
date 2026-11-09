@@ -47,12 +47,14 @@ let nextId = 1;
 
 /** Things a leader can ask, offered before the first turn. */
 const SUGGESTIONS = ["Who needs a call this week?", "Help me plan Sunday", "Which co-laborers could use encouragement?"];
+const TYPED_SUGGESTIONS = ["Give me a verse for today", "What's on the church calendar this week?", "Help me pray for my family"];
 
 export function Talk({
   voice,
   pronunciations,
   cloudVoice,
   cloudListening,
+  typedOnly = false,
 }: {
   /** The name the leader goes by (Today's header greets them, so the panel no longer does). */
   greetingName?: string;
@@ -62,6 +64,8 @@ export function Talk({
   cloudVoice: boolean;
   /** Deepgram listening is set up (needed for hands-free). */
   cloudListening: boolean;
+  /** Team and Member levels: Barnabas by typing only (no microphone, no spoken replies). */
+  typedOnly?: boolean;
 }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState<Status>("idle");
@@ -84,11 +88,11 @@ export function Talk({
     }
   }, []);
   const [offRecord, setOffRecord] = useState(false);
-  const [speak, setSpeak] = useState(voice.speakReplies);
-  const [readTyped, setReadTyped] = useState(Boolean(voice.readTyped));
+  const [speak, setSpeak] = useState(voice.speakReplies && !typedOnly);
+  const [readTyped, setReadTyped] = useState(Boolean(voice.readTyped) && !typedOnly);
   const lastFiller = useRef(-1);
   const [lang, setLang] = useState<Lang>(voice.language);
-  const [handsFree, setHandsFree] = useState(voice.handsFree && cloudListening);
+  const [handsFree, setHandsFree] = useState(voice.handsFree && cloudListening && !typedOnly);
   const [voiceSupported, setVoiceSupported] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
@@ -440,6 +444,7 @@ export function Talk({
   const orbRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const onTalk = () => {
+      if (!orbRef.current) return;
       orbRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
       onOrbRef.current();
     };
@@ -508,17 +513,19 @@ export function Talk({
   return (
     <section className="talk" aria-label="Talk with Barnabas">
       <div className="talk-head">
-        <button ref={orbRef} type="button" className="orb" data-state={status} onClick={onOrb} disabled={!voiceSupported} aria-label={statusText(status, handsFree)}>
+        {!typedOnly && <button ref={orbRef} type="button" className="orb" data-state={status} onClick={onOrb} disabled={!voiceSupported} aria-label={statusText(status, handsFree)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="9" y="3" width="6" height="11" rx="3" />
             <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
           </svg>
-        </button>
+        </button>}
         <div className="talk-intro">
           <h2>How can I encourage you today?</h2>
-          <p className="orb-status" aria-live="polite">
-            {voiceSupported ? statusText(status, handsFree) : "Voice isn't available in this browser. You can type below."}
-          </p>
+          {!typedOnly && (
+            <p className="orb-status" aria-live="polite">
+              {voiceSupported ? statusText(status, handsFree) : "Voice isn't available in this browser. You can type below."}
+            </p>
+          )}
           <p className="sub">
             Nothing is sent without your yes.
             {offRecord ? " This conversation is off the record: nothing will be saved." : ""}
@@ -528,7 +535,7 @@ export function Talk({
 
       {turns.length === 0 && (
         <div className="talk-suggestions" role="group" aria-label="Things to ask">
-          {SUGGESTIONS.map((q) => (
+          {(typedOnly ? TYPED_SUGGESTIONS : SUGGESTIONS).map((q) => (
             <button key={q} type="button" className="talk-chip" onClick={() => void send(q, "text")}>
               {q}
             </button>
@@ -564,7 +571,7 @@ export function Talk({
         <label htmlFor="message" style={{ position: "absolute", left: -9999 }}>
           Message Barnabas
         </label>
-        <input id="message" type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Or type to Barnabas…" autoComplete="off" />
+        <input id="message" type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={typedOnly ? "Type to Barnabas…" : "Or type to Barnabas…"} autoComplete="off" />
         <button type="submit" className="btn btn-send" disabled={!draft.trim()}>
           Send
         </button>
@@ -575,6 +582,7 @@ export function Talk({
           <input id="off-record" type="checkbox" checked={offRecord} onChange={(e) => toggleOffRecord(e.target.checked)} />
           Off the record
         </label>
+        {!typedOnly && <>
         <label>
           <input id="speak-replies" type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); if (!e.target.checked) speaker.current?.stop(); }} />
           Speak replies
@@ -601,6 +609,7 @@ export function Talk({
             Hands-free
           </label>
         )}
+        </>}
         <label>
           Language
           <select id="voice-language" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>

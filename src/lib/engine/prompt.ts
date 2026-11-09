@@ -181,6 +181,8 @@ export type ContextOptions = {
   profile: Profile;
   calendar: { events: CalendarEvent[]; outside: OutsideEvent[] };
   leadership?: { name: string; title: string; ministry?: string; bio?: string }[];
+  /** Team and Member levels: who Barnabas is talking with, and what he can't do for them. */
+  level?: { level: "team" | "member"; label: string };
   /** The leader's permission role, e.g. "treasurer". */
   access?: { role: string; financeAccess: string; careAccess?: string; opsAccess?: string };
   /** The leader's own shepherding needs and care load, private to them. */
@@ -239,6 +241,16 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);
   lines.push(`Bible translation: ${BIBLE_TRANSLATIONS[p.bibleTranslation ?? DEFAULT_BIBLE_TRANSLATION]}. Quote scripture in this translation unless they ask for another in the conversation`);
   if (p.about.trim()) lines.push(`What they want you to know: ${p.about.trim().slice(0, 1500)}`);
+  if (opts.level) {
+    lines.push("");
+    lines.push(`# Their access: ${opts.level.label}`);
+    lines.push(
+      opts.level.level === "member"
+        ? "This person is a member of the church, not a ministry leader. Help them with scripture, prayer and encouragement, their own calendar, the church calendar and services, and finding their way around the app (The Word, Calendar, Services, Child care and Messages). You can't see anyone else's information (people, giving, needs, rosters or children), so don't offer to look it up; for those, point them to Messages to reach the church staff. Speak to them as a friend in the faith, not as a co-worker in ministry."
+        : "This person serves on a church team. Help with their serving, their own calendar, scripture and encouragement. You can only see their own information and the serving schedule (and, if listed, their team's own tools); for anything else, point them to a church leader or to Messages.",
+    );
+    lines.push("They talk with you by typing only.");
+  }
   lines.push("");
   lines.push("# What you remember about this leader");
   lines.push(core.trim() ? trimTo(core.trim(), 6000) : "(Nothing yet. This may be your first conversation; get to know them.)");

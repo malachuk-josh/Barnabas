@@ -96,7 +96,7 @@ describe("roles and permissions", () => {
       const sam: Leader = { churchId: "demo", leaderId: "bbbb2222", name: "Sam", email: "sam@example.org", role: "" };
       await recordSignIn(dana);
       await recordSignIn(sam);
-      expect(await accessFor(dana)).toEqual({ role: "pastor", admin: true });
+      expect(await accessFor(dana)).toMatchObject({ role: "pastor", admin: true, level: "admin" });
       expect(await accessFor(sam)).toEqual({ role: "leader", admin: false });
       await setLeaderRole("demo", sam.leaderId, "treasurer", dana.leaderId);
       await recordSignIn(sam);

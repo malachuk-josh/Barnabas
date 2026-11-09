@@ -10,8 +10,7 @@ import {
 } from "../data/conversations";
 import { CRISIS_REMINDER, detectCrisis } from "../policy/crisis";
 import { withLock } from "../store";
-import { claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
-import { resolvedAi } from "../ai/settings";
+import { aiForLeader, claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
 import { resolvePermission } from "./know";
 import { executeTool, holdingPhrase, type ToolContext } from "./tools";
 
@@ -112,13 +111,14 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   const note = operatorNote(input, crisis);
   if (note) added.push(note);
   let messages = await appendMessages(leader, meta, ...added);
-  let mode: TurnMode = input.voice ? "voice" : "text";
-  // The models an admin chose in Settings → Barnabas AI (or the defaults).
-  const ai = await resolvedAi(leader.churchId);
+  // The models an admin chose in Admin → Barnabas AI (or the defaults); Team and Member levels
+  // get Claude Haiku, typing only, and only the tools for their own information.
+  const ai = await aiForLeader(leader);
+  let mode: TurnMode = input.voice && !ai.tools ? "voice" : "text";
   const setupMs = Date.now() - turnStartedAt;
   let firstTextMs: number | null = null;
 
-  const ctx: ToolContext = { leader, meta, turnStartedAt, lastUserText: input.text };
+  const ctx: ToolContext = { leader, meta, turnStartedAt, lastUserText: input.text, toolNames: ai.tools ?? null };
   let stopReason: string | null = null;
   let parseRetries = 0;
 

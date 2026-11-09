@@ -12,12 +12,14 @@ const last4 = (phone?: string) => (phone ?? "").replace(/\D/g, "").slice(-4);
 
 /**
  * A family as the station sees it: names, allergies (they're on the label), who may pick up, and which
- * children are checked in now. Never medical notes, full phone numbers or pickup codes.
+ * children are checked in now. Never medical notes, full phone numbers, emails or pickup codes.
  */
-export function stationFamily(book: KidsBook, h: Household, date: string, gathering: string) {
+export function stationFamily(book: KidsBook, h: Household, date: string, gathering: string, parents?: (h: Household) => string[]) {
   return {
     id: h.id,
     name: h.name,
+    /** The leaderIds of guardians on Barnabas (matched by email), for "Message parent". Never the emails. */
+    parents: parents ? parents(h) : [],
     guardians: h.guardians.map((g) => ({ name: g.name, relationship: g.relationship, phoneLast4: last4(g.phone) || undefined })),
     pickups: h.pickups.map((p) => ({ name: p.name, relationship: p.relationship })),
     children: h.children.map((c) => {
@@ -27,7 +29,7 @@ export function stationFamily(book: KidsBook, h: Household, date: string, gather
   };
 }
 
-export function stationSearch(book: KidsBook, actor: KidsActor, q: string, date: string, gathering: string) {
+export function stationSearch(book: KidsBook, actor: KidsActor, q: string, date: string, gathering: string, parents?: (h: Household) => string[]) {
   if (!actor.station) return [];
-  return searchFamilies(book, q).slice(0, 12).map((h) => stationFamily(book, h, date, gathering));
+  return searchFamilies(book, q).slice(0, 12).map((h) => stationFamily(book, h, date, gathering, parents));
 }

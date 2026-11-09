@@ -5,10 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile";
 import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@/lib/profile/translations";
-import { ROLE_DESCRIPTIONS, ROLE_LABELS, isCheckinOnly, type Access } from "@/lib/auth/roles";
+import { accessSummary, isCheckinOnly, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
-import { TeamSettings } from "./TeamSettings";
-import { AiSettings, VoiceTuning } from "./AiSettings";
+import { VoiceTuning } from "./AiSettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { typesFor } from "@/lib/notifications/types";
 
@@ -175,7 +174,6 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
     ...(!checkinOnly ? [{ id: "barnabas", label: "Barnabas and voice" }] : []),
     { id: "notifications", label: "Notifications" },
     ...(!checkinOnly ? [{ id: "calendars", label: "Calendars" }] : []),
-    ...(access.admin ? [{ id: "team", label: "Team" }, { id: "ai", label: "Barnabas AI" }] : []),
     { id: "privacy", label: "Privacy and data" },
   ];
 
@@ -222,8 +220,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
           <div>
             <strong>{p.name}</strong>
             <span className="small muted">
-              {ROLE_LABELS[access.role]}
-              {access.admin ? " · Administrator" : ""} · {p.email}
+              {accessSummary(access).label} · {p.email}
             </span>
           </div>
         </div>
@@ -261,12 +258,20 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
               </div>
             </div>
             <div className="field">
-              <span className="label" style={{ textTransform: "none", letterSpacing: 0, fontSize: "0.92rem", color: "var(--fg)" }}>Your Barnabas role</span>
+              <span className="label" style={{ textTransform: "none", letterSpacing: 0, fontSize: "0.92rem", color: "var(--fg)" }}>Your access</span>
               <span>
-                <strong>{ROLE_LABELS[access.role]}</strong>
-                <span className="muted">: {ROLE_DESCRIPTIONS[access.role]}.</span>
+                <strong>{accessSummary(access).label}</strong>
+                <span className="muted">: {accessSummary(access).description}.</span>
               </span>
-              <span className="small muted">{access.admin ? "You're an administrator: change roles in Team below." : "Your church administrator sets this."}</span>
+              <span className="small muted">
+                {access.admin ? (
+                  <>
+                    You&apos;re an admin: manage people, access and Barnabas AI on the <Link href="/admin">Admin page</Link>.
+                  </>
+                ) : (
+                  "Your church administrator sets this."
+                )}
+              </span>
             </div>
             <div className="field">
               <label htmlFor="ministry-input">Ministries you lead</label>
@@ -594,8 +599,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
         </section>
         )}
 
-        {access.admin && <TeamSettings myLeaderId={leaderId} />}
-        {access.admin && <AiSettings />}
+
 
         <section id="privacy" className="card danger-zone">
           <h2>Privacy and data</h2>

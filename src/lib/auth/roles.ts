@@ -1,6 +1,6 @@
 /**
  * Roles and permissions. A leader's role lives on their leader record (`leader:{church}:{leaderId}`),
- * which an admin manages in Settings → Team. Admins are bootstrapped with BARNABAS_ADMIN_EMAILS.
+ * which an admin manages on the Admin page (Church office → Admin). Admins are bootstrapped with BARNABAS_ADMIN_EMAILS.
  * Everything here is checked on the server; the app only hides what a leader can't use.
  */
 
@@ -82,8 +82,91 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "site.edit": ["pastor", "staff"],
 };
 
-/** What a signed-in leader may do: their role, and whether they administer the team. */
-export type Access = { role: Role; admin: boolean };
+/**
+ * Access levels, set by an admin on the Admin page (Church office → Admin).
+ * - admin: everything, including managing people and Barnabas's settings.
+ * - leader: every feature; finance only when an admin turns it on for them.
+ * - team: the features their team role needs, and Barnabas by typing only (Claude Haiku).
+ * - member: The Word, Calendar, Services, Child care and Messages, and Barnabas by typing only (Claude Haiku).
+ */
+export const LEVELS = ["admin", "leader", "team", "member"] as const;
+export type Level = (typeof LEVELS)[number];
+
+export const LEVEL_LABELS: Record<Level, string> = { admin: "Admin", leader: "Leader", team: "Team", member: "Member" };
+
+export const LEVEL_DESCRIPTIONS: Record<Level, string> = {
+  admin: "Everything, including adding and removing people, their access, and Barnabas's settings",
+  leader: "Every feature, and Barnabas by voice or typing. Finance only when an admin turns it on",
+  team: "The features their team role needs, and Barnabas by typing (lighter model)",
+  member: "The Word, Calendar, Services, Child care and Messages, and Barnabas by typing (lighter model)",
+};
+
+/** What a Team member works on; it decides which features they see. */
+export const TEAM_ROLES = ["serving", "kids", "care", "checkin"] as const;
+export type TeamRole = (typeof TEAM_ROLES)[number];
+
+export const TEAM_ROLE_LABELS: Record<TeamRole, string> = {
+  serving: "Serving team",
+  kids: "Kids ministry",
+  care: "Care team",
+  checkin: "Kids check-in only",
+};
+
+export const TEAM_ROLE_DESCRIPTIONS: Record<TeamRole, string> = {
+  serving: "Today, Calendar, Serve, Services, The Word, Journal and Messages",
+  kids: "Serving team features plus the kids check-in station",
+  care: "Serving team features plus the shepherding needs assigned to them",
+  checkin: "Only the kids check-in station and Messages",
+};
+
+const FINANCE_PERMISSIONS: readonly Permission[] = ["finance.view", "finance.edit", "giving.donors"];
+const TEAM_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
+  serving: [],
+  kids: ["kids.checkin"],
+  care: [],
+  checkin: ["kids.checkin"],
+};
+
+export function isLevel(value: unknown): value is Level {
+  return typeof value === "string" && (LEVELS as readonly string[]).includes(value);
+}
+export function isTeamRole(value: unknown): value is TeamRole {
+  return typeof value === "string" && (TEAM_ROLES as readonly string[]).includes(value);
+}
+
+/** The permission role older code reads (shepherding visibility and the like), derived from the level. */
+export function roleForLevel(level: Level, finance: boolean, teamRole?: TeamRole): Role {
+  if (level === "admin" || level === "leader") return "pastor";
+  if (level === "team") return teamRole === "care" ? "deacon" : teamRole === "checkin" ? "checkin" : "leader";
+  return "leader";
+}
+
+/** A role set before levels existed, as a level. */
+export function levelForRole(role: Role): { level: Level; finance: boolean; teamRole?: TeamRole } {
+  switch (role) {
+    case "pastor":
+    case "treasurer":
+      return { level: "leader", finance: true };
+    case "staff":
+    case "leader":
+      return { level: "leader", finance: false };
+    case "deacon":
+      return { level: "team", finance: false, teamRole: "care" };
+    case "checkin":
+      return { level: "team", finance: false, teamRole: "checkin" };
+  }
+}
+
+/**
+ * What a signed-in leader may do: their level (with the finance switch and team role), whether they
+ * administer the church, and the older permission role derived from those.
+ */
+export type Access = { role: Role; admin: boolean; level?: Level; finance?: boolean; teamRole?: TeamRole; removed?: boolean };
+
+/** Team and Member levels talk with Barnabas by typing only, on the lighter model. */
+export function isLimited(access: Access | null | undefined): boolean {
+  return Boolean(access && !access.admin && (access.level === "team" || access.level === "member"));
+}
 
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
@@ -91,8 +174,20 @@ export function isRole(value: unknown): value is Role {
 
 export function can(access: Access | null | undefined, permission: Permission): boolean {
   if (!access) return false;
+  // An Admin level has everything; before levels, the admin flag only added team management.
+  if (access.level === "admin") return true;
   if (permission === "team.manage") return access.admin;
-  return MATRIX[permission].includes(access.role);
+  switch (access.level) {
+    case "leader":
+      return FINANCE_PERMISSIONS.includes(permission) ? Boolean(access.finance) : true;
+    case "team":
+      return (TEAM_PERMISSIONS[access.teamRole ?? "serving"] ?? []).includes(permission);
+    case "member":
+      return false;
+    default:
+      // Before levels: the role's own permissions.
+      return MATRIX[permission].includes(access.role);
+  }
 }
 
 /** Emails listed in BARNABAS_ADMIN_EMAILS (comma-separated), lowercased. */
@@ -113,11 +208,13 @@ export function isAdminEmail(email: string, env?: string): boolean {
  * passes along.
  */
 export function isCheckinOnly(access: Access | null | undefined): boolean {
-  return Boolean(access && access.role === "checkin" && !access.admin);
+  if (!access || access.admin) return false;
+  if (access.level) return access.level === "team" && access.teamRole === "checkin";
+  return access.role === "checkin";
 }
 
-const CHECKIN_PAGES = ["/kids", "/settings"];
-const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account", "/api/push"];
+const CHECKIN_PAGES = ["/kids", "/settings", "/inbox"];
+const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account", "/api/push", "/api/inbox"];
 
 /** Whether a check-in-only volunteer may open this path. Family records stay behind kids.admin. */
 export function checkinMayUse(pathname: string): boolean {
@@ -126,4 +223,64 @@ export function checkinMayUse(pathname: string): boolean {
   // A leader's journal is their own writing; check-in has none (and no leader's shared entries either).
   if (under("/journal") || under("/api/journal")) return false;
   return [...CHECKIN_PAGES, ...CHECKIN_APIS].some(under);
+}
+
+/** Pages and APIs every signed-in person may use (their own settings, account, Barnabas, messages). */
+const BASE_PATHS = [
+  "/settings",
+  "/inbox",
+  "/api/profile",
+  "/api/auth",
+  "/api/account",
+  "/api/push",
+  "/api/inbox",
+  "/api/chat",
+  "/api/conversations",
+  "/api/memory",
+];
+const MEMBER_PATHS = [
+  ...BASE_PATHS,
+  "/word",
+  "/calendar",
+  "/services",
+  "/kids",
+  "/api/bible",
+  "/api/bookmarks",
+  "/api/study",
+  "/api/search",
+  "/api/calendar",
+  "/api/services",
+  "/api/kids",
+  "/api/notes",
+];
+const TEAM_PATHS = [...MEMBER_PATHS, "/serve", "/journal", "/memory", "/api/serve", "/api/journal"];
+
+/**
+ * Whether someone at the Team or Member level may open this path (Leaders and Admins may open
+ * everything; the features themselves still check permissions). Today ("/") is everyone's home.
+ */
+export function levelMayUse(access: Access, pathname: string): boolean {
+  if (!isLimited(access)) return true;
+  if (isCheckinOnly(access)) return checkinMayUse(pathname);
+  const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
+  if (pathname === "" || pathname === "/") return true;
+  // Family records, the kids rooms and labels are for the kids team; members see their own children.
+  if (access.level === "member" && (under("/kids/families") || under("/kids/rooms") || under("/kids/labels"))) return false;
+  if (access.level === "team" && access.teamRole !== "kids" && under("/kids/families")) return false;
+  const extra = access.level === "team" && access.teamRole === "care" ? ["/shepherding", "/api/care"] : [];
+  const allowed = access.level === "team" ? [...TEAM_PATHS, ...extra] : MEMBER_PATHS;
+  return allowed.some(under);
+}
+
+/** How someone's access reads in Settings: their level (or older role, before a level is chosen). */
+export function accessSummary(access: Access): { label: string; description: string } {
+  if (access.level === "admin") return { label: LEVEL_LABELS.admin, description: LEVEL_DESCRIPTIONS.admin };
+  if (access.level === "leader")
+    return { label: access.finance ? "Leader, with finance" : LEVEL_LABELS.leader, description: access.finance ? "Every feature, including finance, and Barnabas by voice or typing" : LEVEL_DESCRIPTIONS.leader };
+  if (access.level === "team") {
+    const r = access.teamRole ?? "serving";
+    return { label: `Team: ${TEAM_ROLE_LABELS[r]}`, description: `${TEAM_ROLE_DESCRIPTIONS[r]}, and Barnabas by typing` };
+  }
+  if (access.level === "member") return { label: LEVEL_LABELS.member, description: LEVEL_DESCRIPTIONS.member };
+  return { label: ROLE_LABELS[access.role], description: ROLE_DESCRIPTIONS[access.role] };
 }

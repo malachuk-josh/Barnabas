@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   if (hasAnthropicKey()) {
     after(async () => {
       try {
-        await warmCache(meta, leader.churchId);
+        await warmCache(meta, leader);
       } catch (err) {
         console.warn("[barnabas] cache warm failed", err);
       }

@@ -4,12 +4,12 @@ import { getJSON, setJSON } from "../store";
 import { DEFAULT_TONE, type AiSettingsView, type ModelId, type TextEffort } from "./choices";
 
 /**
- * The church's choice of Claude models for Barnabas, set by an admin in Settings → Barnabas AI.
+ * The church's choice of Claude models for Barnabas, set by an admin in Church office → Admin → Barnabas AI.
  * Anything not chosen falls back to the deployment's defaults (BARNABAS_MODEL, BARNABAS_VOICE_MODEL,
  * BARNABAS_EFFORT, then the built-in defaults).
  */
 type Stored = { textModel?: ModelId; voiceModel?: ModelId; textEffort?: TextEffort; voiceEffort?: TextEffort; voiceStability?: number; voiceStyle?: number; tone?: number; webSearch?: boolean; webDomains?: string[]; updatedBy?: string; updatedAt?: number };
-export type ResolvedAi = { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; tone?: number; webSearch?: boolean; webDomains?: string[] };
+export type ResolvedAi = { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; tone?: number; webSearch?: boolean; webDomains?: string[]; tools?: string[] | null };
 
 const key = (churchId: string) => `cfg:${churchId}:ai`;
 const cache = new Map<string, { at: number; value: Stored }>();
@@ -102,4 +102,13 @@ export async function saveAiSettings(churchId: string, by: string, next: AiSetti
 export async function voiceDelivery(churchId: string) {
   const s = await stored(churchId).catch(() => ({}) as Stored);
   return deliverySettings({ stability: s.voiceStability, style: s.voiceStyle });
+}
+
+/** Team and Member levels talk with Barnabas on Claude Haiku, by typing only. */
+export const LIMITED_MODEL = "claude-haiku-5-5";
+
+/** The church's settings, narrowed for someone at the Team or Member level. */
+export function limitAi(ai: ResolvedAi, tools: string[] | null): ResolvedAi {
+  if (!tools) return ai;
+  return { ...ai, textModel: LIMITED_MODEL, voiceModel: LIMITED_MODEL, tools };
 }

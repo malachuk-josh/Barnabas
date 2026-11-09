@@ -3,7 +3,7 @@ import { z } from "zod";
 import { accessCode, config } from "@/lib/config";
 import { SESSION_COOKIE, leaderIdFor, sessionCookieOptions, signSession } from "@/lib/auth/session";
 import { ensureProfile, handsFreeOnSignIn } from "@/lib/profile";
-import { recordSignIn } from "@/lib/team";
+import { maySignIn, recordSignIn } from "@/lib/team";
 
 const Body = z.object({
   name: z.string().trim().min(1).max(80),
@@ -35,6 +35,10 @@ export async function POST(request: Request) {
   }
   const { name, email, role } = parsed.data;
   const leaderId = await leaderIdFor(config.churchId, email);
+  // Only people an admin has added (Church office → Admin), and the admins from the server settings.
+  if (!(await maySignIn(config.churchId, leaderId, email))) {
+    return NextResponse.json({ error: "That email isn't on Barnabas yet. Ask your church administrator to add you." }, { status: 403 });
+  }
   const leader = { churchId: config.churchId, leaderId, name, email: email.toLowerCase(), role };
   const profile = await handsFreeOnSignIn(leader, await ensureProfile(leader, parsed.data.timezone));
   // A returning leader keeps the name and role they set in Settings.
