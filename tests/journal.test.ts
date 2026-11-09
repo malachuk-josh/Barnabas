@@ -231,7 +231,8 @@ describe("Barnabas's journal tools", () => {
     const names = TOOL_DEFS.map((t) => t.name);
     for (const t of ["journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "share_journal_entry", "send_setlist_to_service"]) expect(names).toContain(t);
     expect(names.filter((x) => /journal|setlist/.test(x) && /delete|remove|archive/.test(x))).toEqual([]);
-    expect(names.slice(-7)).toContain("journal_note");
+    // Registered together, after the tools before them (later areas append after the journal).
+    expect(names.slice(names.indexOf("journal_note"), names.indexOf("journal_note") + 7)).toEqual(["journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "share_journal_entry", "send_setlist_to_service"]);
     expect(BARNABAS_SYSTEM).toMatch(/You never delete a journal entry/);
   });
 

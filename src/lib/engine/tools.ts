@@ -23,6 +23,7 @@ import { KNOW_TOOLS } from "./know";
 import { THORN_TOOLS } from "./thorn";
 import { SITE_TOOLS } from "./site-tools";
 import { JOURNAL_TOOLS } from "./journal-tools";
+import { PEOPLE_TOOLS } from "./people-tools";
 import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
@@ -121,7 +122,8 @@ const findPerson = tool({
   async run({ name }) {
     const matches = await churchData().findPeople(name);
     if (!matches.length) return ok({ matches: [], note: `No one named "${name}" is in the directory. Say so, and don't guess at someone else. The leader can add them, or import the church's list.` });
-    return ok({ matches: matches.slice(0, 6).map(personCard) });
+    const shown = matches.slice(0, 6);
+    return { ...ok({ matches: shown.map((p) => ({ ...personCard(p), page: `/people/${encodeURIComponent(p.id)}` })) }), links: shown.slice(0, 4).map((p) => ({ label: `Open ${p.name}'s record`, href: `/people/${encodeURIComponent(p.id)}` })) };
   },
 });
 
@@ -161,17 +163,20 @@ const getPersonSummary = tool({
     const follow = (await followUps(ctx.leader)).filter((f) => f.personId === person_id).map((f) => f.reason);
     const memoryFile = `/memories/people/${slug(person.name)}.md`;
     const hasNotes = (await memoryFor(ctx).read(memoryFile)) !== null;
-    return ok({
-      ...personCard(person),
-      serving_last_8_weeks: byTeam,
-      worship_last_4_sundays: `${worship.filter((a) => a.present).length} of ${worship.length}`,
-      small_group_last_meetings: groups.length ? `${groups.filter((g) => g.present).length} of ${groups.length}` : "not in a group",
-      upcoming_assignments: upcoming,
-      last_thanked: person.lastThanked ? friendlyDate(person.lastThanked) : "no record",
-      burnout_signals: signal && signal.band !== "ok" ? { level: signal.band, reasons: signal.drivers, suggestion: signal.suggestion } : "none",
-      open_follow_ups: follow,
-      your_notes_file: hasNotes ? memoryFile : null,
-    });
+    return {
+      ...ok({
+        ...personCard(person),
+        serving_last_8_weeks: byTeam,
+        worship_last_4_sundays: `${worship.filter((a) => a.present).length} of ${worship.length}`,
+        small_group_last_meetings: groups.length ? `${groups.filter((g) => g.present).length} of ${groups.length}` : "not in a group",
+        upcoming_assignments: upcoming,
+        last_thanked: person.lastThanked ? friendlyDate(person.lastThanked) : "no record",
+        burnout_signals: signal && signal.band !== "ok" ? { level: signal.band, reasons: signal.drivers, suggestion: signal.suggestion } : "none",
+        open_follow_ups: follow,
+        your_notes_file: hasNotes ? memoryFile : null,
+      }),
+      links: [{ label: `Open ${person.name}'s record`, href: `/people/${encodeURIComponent(person.id)}` }],
+    };
   },
 });
 
@@ -1336,6 +1341,7 @@ const ALL: ToolSpec<any>[] = [
   ...SITE_TOOLS,
   onlineGivingTool,
   ...JOURNAL_TOOLS,
+  ...PEOPLE_TOOLS,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
