@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isResponse, requireLeader } from "@/lib/auth/require";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
-import { getProfile, isValidTimezone, saveProfile } from "@/lib/profile";
+import { getProfile, isValidTimezone, saveProfile, BIBLE_TRANSLATION_IDS } from "@/lib/profile";
 import { updateLeaderDisplay } from "@/lib/team";
 
 export const runtime = "nodejs";
@@ -20,6 +20,7 @@ const Body = z.object({
   ministries: z.array(z.string().trim().min(1).max(60)).max(12),
   timezone: z.string().refine(isValidTimezone, "Unknown time zone"),
   replyLanguage: z.enum(["en", "es", "ko"]),
+  bibleTranslation: z.enum(BIBLE_TRANSLATION_IDS).optional(),
   voice: z.object({
     speakReplies: z.boolean(),
     language: z.enum(["en-US", "es-US", "ko-KR"]),
@@ -40,7 +41,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: `Check ${first?.path.join(".") || "the form"}: ${first?.message ?? "invalid value"}.` }, { status: 400 });
   }
   const current = await getProfile(leader);
-  const next = { ...current, ...parsed.data };
+  const next = { ...current, ...parsed.data, bibleTranslation: parsed.data.bibleTranslation ?? current.bibleTranslation };
   await saveProfile(leader, next);
   await updateLeaderDisplay(leader, next.name, next.role);
   // Keep the signed-in session's display name and role in step with the profile.

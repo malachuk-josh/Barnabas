@@ -4,6 +4,9 @@ import { getJSON, setJSON } from "../store";
 export type ReplyLanguage = "en" | "es" | "ko";
 export type VoiceLang = "en-US" | "es-US" | "ko-KR";
 
+import { DEFAULT_BIBLE_TRANSLATION, type BibleTranslation } from "./translations";
+export { BIBLE_TRANSLATIONS, BIBLE_TRANSLATION_IDS, DEFAULT_BIBLE_TRANSLATION, type BibleTranslation } from "./translations";
+
 export type Profile = {
   name: string;
   /** What Barnabas calls the leader in conversation, e.g. "Pastor Dana" or "Dana". */
@@ -14,6 +17,8 @@ export type Profile = {
   /** IANA time zone, e.g. "America/Chicago". */
   timezone: string;
   replyLanguage: ReplyLanguage;
+  /** The translation Barnabas quotes scripture in. */
+  bibleTranslation: BibleTranslation;
   voice: {
     speakReplies: boolean;
     language: VoiceLang;
@@ -52,6 +57,7 @@ export function defaultProfile(leader: Leader): Profile {
     ministries: [],
     timezone: DEFAULT_TIMEZONE,
     replyLanguage: "en",
+    bibleTranslation: DEFAULT_BIBLE_TRANSLATION,
     voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true },
     pronunciations: [],
     about: "",

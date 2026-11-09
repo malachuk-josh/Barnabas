@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile";
+import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@/lib/profile/translations";
 import { ROLE_DESCRIPTIONS, ROLE_LABELS, isCheckinOnly, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
 import { TeamSettings } from "./TeamSettings";
@@ -112,6 +113,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
         ministries: p.ministries,
         timezone: p.timezone,
         replyLanguage: p.replyLanguage,
+        bibleTranslation: p.bibleTranslation,
         voice: p.voice,
         pronunciations: p.pronunciations,
         about: p.about,
@@ -272,6 +274,18 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
                   <option value="ko">한국어</option>
                 </select>
               </div>
+            </div>
+            <div className="field">
+              <label htmlFor="bibleTranslation">Bible translation Barnabas quotes</label>
+              <select id="bibleTranslation" value={p.bibleTranslation ?? "kjv"} onChange={(e) => setP({ ...p, bibleTranslation: e.target.value as BibleTranslation })}>
+                {(Object.entries(BIBLE_TRANSLATIONS) as [BibleTranslation, string][]).map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                    {id === "kjv" ? " (default)" : ""}
+                  </option>
+                ))}
+              </select>
+              <span className="small muted">You can still ask for another translation in any conversation.</span>
             </div>
             <div className="form-row">
               <div className="field">

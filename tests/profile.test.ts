@@ -19,3 +19,22 @@ describe("hands-free default", () => {
     expect(saved.voice.rate).toBe(1.2);
   });
 });
+
+describe("Bible translation", () => {
+  beforeEach(() => freshStore());
+
+  it("defaults to the King James Version, including for profiles saved before the setting existed", async () => {
+    const p = await ensureProfile(leader);
+    expect(p.bibleTranslation).toBe("kjv");
+    const { bibleTranslation: _drop, ...old } = p;
+    await saveProfile(leader, old as typeof p);
+    expect((await getProfile(leader)).bibleTranslation).toBe("kjv");
+  });
+
+  it("tells Barnabas which translation to quote", async () => {
+    const { BARNABAS_SYSTEM } = await import("@/lib/engine/prompt");
+    expect(BARNABAS_SYSTEM).toMatch(/King James Version \(KJV\) unless they chose another/);
+    const { BIBLE_TRANSLATIONS } = await import("@/lib/profile");
+    expect(BIBLE_TRANSLATIONS.kjv).toBe("King James Version (KJV)");
+  });
+});

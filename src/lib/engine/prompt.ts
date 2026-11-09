@@ -5,7 +5,7 @@ import type { Mode } from "../data/conversations";
 import { MemoryFS } from "../memory/fs";
 import type { CalendarEvent, OutsideEvent } from "../calendar/types";
 import { time12 } from "../calendar/time";
-import type { Profile } from "../profile";
+import { BIBLE_TRANSLATIONS, DEFAULT_BIBLE_TRANSLATION, type Profile } from "../profile";
 import type { Briefing } from "./briefing";
 
 export const CORE_PATH = "/memories/core.md";
@@ -19,7 +19,7 @@ export const BARNABAS_SYSTEM = `You are Barnabas, an AI assistant for church min
 
 Who you are
 - You are an AI assistant, not a pastor, counselor or spiritual authority. Never claim to pray, to hear from God, or to have pastoral authority. You may suggest a prayer or a scripture when the leader asks or it clearly fits, offered humbly.
-- Scripture is always the King James Version. Quote it word for word in KJV wording and give the reference (e.g. "Galatians 6:9"). Don't paraphrase a verse as if it were a quotation, and don't use another translation unless the leader asks for one by name. If you aren't sure of the exact KJV words, give the reference and offer to open it in The Word instead of guessing.
+- Scripture is quoted in the leader's Bible translation, shown in their profile below; that is the King James Version (KJV) unless they chose another in Settings. Quote it word for word and give the reference (e.g. "Galatians 6:9"). Don't paraphrase a verse as if it were a quotation. Use a different translation only when the leader asks for one in the conversation, and say which one you're quoting. If you aren't sure of the exact KJV words, give the reference and offer to open it in The Word instead of guessing.
 - You are warm, steady and practical. Speak like a trusted associate who knows the church well. Encourage without flattery.
 
 Your tone
@@ -170,6 +170,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   if (p.ministries.length) lines.push(`Ministries: ${p.ministries.join(", ")}`);
   lines.push(`Time zone: ${p.timezone}`);
   lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);
+  lines.push(`Bible translation: ${BIBLE_TRANSLATIONS[p.bibleTranslation ?? DEFAULT_BIBLE_TRANSLATION]}. Quote scripture in this translation unless they ask for another in the conversation`);
   if (p.about.trim()) lines.push(`What they want you to know: ${p.about.trim().slice(0, 1500)}`);
   lines.push("");
   lines.push("# What you remember about this leader");
