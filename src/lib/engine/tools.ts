@@ -23,6 +23,7 @@ import { KNOW_TOOLS } from "./know";
 import { THORN_TOOLS } from "./thorn";
 import { SITE_TOOLS } from "./site-tools";
 import { JOURNAL_TOOLS } from "./journal-tools";
+import { WORD_TOOLS } from "./word-tools";
 import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
@@ -1336,6 +1337,7 @@ const ALL: ToolSpec<any>[] = [
   ...SITE_TOOLS,
   onlineGivingTool,
   ...JOURNAL_TOOLS,
+  ...WORD_TOOLS,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
@@ -1353,8 +1355,12 @@ const MEMBER_TOOLS = [
   "ask_permission_to_know",
   "record_to_know",
   "remember_thorn",
+  "read_scripture",
+  "search_scripture",
+  "save_verse",
+  "add_verse_note",
 ];
-const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving"];
+const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving", "search_journal", "append_to_journal_entry", "tag_journal_entry", "delete_journal_entry"];
 const TEAM_ROLE_TOOLS: Record<string, string[]> = {
   kids: ["kids_checkin_counts"],
   checkin: ["kids_checkin_counts"],
