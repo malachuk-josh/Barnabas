@@ -313,3 +313,15 @@ describe("email", () => {
     expect(maskAddress("+14135550142")).toBe("•••0142");
   });
 });
+
+describe("Barnabas can't send", () => {
+  it("no engine module (tools, prompt, turn loop) reaches the sending code", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const dir = path.resolve("src/lib/engine");
+    for (const f of fs.readdirSync(dir)) {
+      const src = fs.readFileSync(path.join(dir, f), "utf8");
+      expect(src, f).not.toMatch(/messages\/service|sendApprovedDraft|queueDraft/);
+    }
+  });
+});
