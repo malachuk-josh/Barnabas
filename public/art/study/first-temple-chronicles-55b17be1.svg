@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2160" viewBox="0 0 1600 2160" role="img"><title>First Temple: Chronicles inventory</title><rect width="1600" height="2160" fill="#fbf9f2"/>
+<text x="80" y="90" fill="#243c38" font-family="Arial,sans-serif" font-size="52" text-anchor="start">First Temple: Chronicles inventory</text>
+<text x="80" y="160" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">2 Chronicles 3:3-8;4:7-8 KJV. Annex inset compares 1 Kings 6.</text>
+<rect x="220" y="390" width="840" height="280" fill="#eadab2" stroke="#243c38" stroke-width="4"/>
+<rect x="220" y="390" width="280" height="280" fill="#d7bd73" stroke="#243c38" stroke-width="4"/>
+<rect x="1060" y="390" width="140" height="280" fill="#f3ecd9" stroke="#a26728" stroke-width="4" stroke-dasharray="12 9"/>
+<line x1="500" y1="390" x2="500" y2="505" stroke="#754f80" stroke-width="6"/>
+<line x1="500" y1="555" x2="500" y2="670" stroke="#754f80" stroke-width="6"/>
+<line x1="500" y1="505" x2="538" y2="525" stroke="#a26728" stroke-width="6"/>
+<line x1="500" y1="555" x2="538" y2="535" stroke="#a26728" stroke-width="6"/>
+<line x1="488" y1="390" x2="488" y2="670" stroke="#95567c" stroke-width="4" stroke-dasharray="12 9"/>
+<line x1="220" y1="235" x2="1060" y2="235" stroke="#60706b" stroke-width="3"/>
+<line x1="220" y1="223" x2="220" y2="247" stroke="#60706b" stroke-width="3"/>
+<line x1="1060" y1="223" x2="1060" y2="247" stroke="#60706b" stroke-width="3"/>
+<text x="640.0" y="212" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">60</text>
+<line x1="220" y1="295" x2="500" y2="295" stroke="#60706b" stroke-width="3"/>
+<line x1="220" y1="283" x2="220" y2="307" stroke="#60706b" stroke-width="3"/>
+<line x1="500" y1="283" x2="500" y2="307" stroke="#60706b" stroke-width="3"/>
+<text x="360.0" y="272" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">20</text>
+<line x1="500" y1="295" x2="1060" y2="295" stroke="#60706b" stroke-width="3"/>
+<line x1="500" y1="283" x2="500" y2="307" stroke="#60706b" stroke-width="3"/>
+<line x1="1060" y1="283" x2="1060" y2="307" stroke="#60706b" stroke-width="3"/>
+<text x="780.0" y="272" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">40</text>
+<line x1="1310" y1="390" x2="1310" y2="670" stroke="#60706b" stroke-width="3"/>
+<line x1="1298" y1="390" x2="1322" y2="390" stroke="#60706b" stroke-width="3"/>
+<line x1="1298" y1="670" x2="1322" y2="670" stroke="#60706b" stroke-width="3"/>
+<text x="1334" y="530.0" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">20</text>
+<text x="360" y="505" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">ORACLE</text>
+<text x="360" y="565" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">20 x 20 plan</text>
+<text x="770" y="555" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">HOLY PLACE</text>
+<text x="1140" y="565" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">Porch</text>
+<text x="1170" y="290" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">NORTH</text>
+<text x="70" y="550" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">WEST</text>
+<text x="1370" y="740" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">EAST</text>
+<circle cx="560" cy="415" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<circle cx="560" cy="645" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<rect x="533" y="460" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<rect x="533" y="580" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<circle cx="660" cy="415" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<circle cx="660" cy="645" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<rect x="633" y="460" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<rect x="633" y="580" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<circle cx="760" cy="415" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<circle cx="760" cy="645" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<rect x="733" y="460" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<rect x="733" y="580" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<circle cx="860" cy="415" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<circle cx="860" cy="645" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<rect x="833" y="460" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<rect x="833" y="580" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<circle cx="960" cy="415" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<circle cx="960" cy="645" r="12" fill="#d7b75e" stroke="#243c38" stroke-width="3"/>
+<rect x="933" y="460" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<rect x="933" y="580" width="54" height="25" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<rect x="525" y="515" width="20" height="20" fill="#d7b75e" stroke="#243c38" stroke-width="4"/>
+<text x="160" y="820" fill="#243c38" font-family="Arial,sans-serif" font-size="44" text-anchor="start">Kings 6 annex section: inner widths 5 /6 /7</text>
+<rect x="290" y="1030" width="90" height="90" fill="#e1d3b7" stroke="#243c38" stroke-width="4"/>
+<text x="335.0" y="1095" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">5</text>
+<rect x="290" y="940" width="108" height="90" fill="#e1d3b7" stroke="#243c38" stroke-width="4"/>
+<text x="344.0" y="1005" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">6</text>
+<rect x="290" y="850" width="126" height="90" fill="#e1d3b7" stroke="#243c38" stroke-width="4"/>
+<text x="353.0" y="915" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="middle">7</text>
+<path d="M 380,1120 L 650,1120 L 650,840 L 434,840 L 434,850 L 416,850 L 416,940 L 398,940 L 398,1030 L 380,1030 Z" fill="#b4b3aa" stroke="#243c38" stroke-width="3"/>
+<rect x="290" y="1020" width="105" height="10" fill="#795d40" stroke="#243c38" stroke-width="2"/>
+<rect x="290" y="930" width="123" height="10" fill="#795d40" stroke="#243c38" stroke-width="2"/>
+<rect x="290" y="840" width="141" height="10" fill="#795d40" stroke="#243c38" stroke-width="2"/>
+<text x="760" y="920" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Each storey 5 high</text>
+<text x="760" y="985" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Outer face vertical</text>
+<text x="760" y="1050" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Beams rest on ledges</text>
+<line x1="80" y1="1200" x2="1520" y2="1200" stroke="#c9c5b9" stroke-width="3"/>
+<text x="80" y="1250" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Chronicles 3:8 gives oracle length/breadth 20; height 20 comes</text>
+<text x="80" y="1304" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">from Kings 6:20. House plan 60 x 20; annex inset is a Kings</text>
+<text x="80" y="1358" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">comparison.</text>
+<text x="80" y="1428" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Inventory:10 lampstands,5 per side; 10 tables,5 per side</text>
+<text x="80" y="1482" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">(Chronicles 4:8). One gold incense altar; symbols/spacing</text>
+<text x="80" y="1536" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">schematic.</text>
+<text x="80" y="1606" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Kings 6:31-32 specifies olivewood entering doors. Chronicles</text>
+<text x="80" y="1660" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">describes both a veil(3:14) and doors(4:22). Material details and</text>
+<text x="80" y="1714" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">source differences remain explicit.</text>
+<text x="80" y="1784" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Porch plan 20 across×10 projecting follows Kings 6:3; Kings gives</text>
+<text x="80" y="1838" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">no separate porch height. Chronicles 3:4 KJV 120 is shown in the</text>
+<text x="80" y="1892" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">dedicated variant study.</text>
+<text x="80" y="1962" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">Chronicles elsewhere uses singular table (13:11;29:18); retain</text>
+<text x="80" y="2016" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">this textual distinction instead of silently reducing 4:8 ten-</text>
+<text x="80" y="2070" fill="#243c38" font-family="Arial,sans-serif" font-size="40" text-anchor="start">table inventory.</text>
+</svg>
