@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon } from "./icons";
 
 export const NAV = [
   { href: "/", label: "Talk", Icon: TalkIcon },
@@ -15,6 +15,8 @@ export const NAV = [
   { href: "/services", label: "Services", Icon: ServicesIcon },
   { href: "/events", label: "Events", Icon: EventsIcon },
   { href: "/kids", label: "Kids", Icon: KidsIcon, kids: true },
+  { href: "/reports", label: "Reports", Icon: ReportsIcon },
+  { href: "/network", label: "Mesa", Icon: NetworkIcon },
   { href: "/memory", label: "Memory", Icon: MemoryIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },

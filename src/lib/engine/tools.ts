@@ -18,6 +18,7 @@ import { slug } from "../memory/paths";
 import { isAffirmative } from "../policy/confirm";
 import { gateConfirmed } from "./gate";
 import { OPS_TOOLS } from "./ops-tools";
+import { GROWTH_TOOLS } from "./growth-tools";
 import { checkMemoryText } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
@@ -1270,6 +1271,7 @@ const ALL: ToolSpec<any>[] = [
   assignCareCase,
   closeCareCase,
   ...OPS_TOOLS,
+  ...GROWTH_TOOLS,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */

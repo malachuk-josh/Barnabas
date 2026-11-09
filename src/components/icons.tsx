@@ -90,3 +90,17 @@ export const KidsIcon = () => (
     <path d="M9.2 9.8h.01M14.8 9.8h.01" strokeWidth="2.6" />
   </svg>
 );
+export const ReportsIcon = () => (
+  <svg {...common}>
+    <path d="M4 20h16" />
+    <path d="M7 16.5v-5M12 16.5V7M17 16.5v-8" />
+  </svg>
+);
+export const NetworkIcon = () => (
+  <svg {...common}>
+    <circle cx="6" cy="7" r="2.4" />
+    <circle cx="18" cy="7" r="2.4" />
+    <circle cx="12" cy="17.5" r="2.4" />
+    <path d="M8.3 7.6h7.4M7.2 9.2l3.6 6.2M16.8 9.2l-3.6 6.2" />
+  </svg>
+);
