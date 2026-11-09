@@ -32,6 +32,9 @@ export async function POST(request: Request) {
     }),
     signal: AbortSignal.timeout(20000),
   });
+  if (upstream.status === 429) {
+    return NextResponse.json({ error: "Voice is busy; try again." }, { status: 429 });
+  }
   if (!upstream.ok || !upstream.body) {
     console.error("[barnabas] tts failed", upstream.status, await upstream.text().catch(() => ""));
     return NextResponse.json({ error: "Barnabas's voice isn't available right now." }, { status: 502 });

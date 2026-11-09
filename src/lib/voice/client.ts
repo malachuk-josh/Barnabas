@@ -39,7 +39,7 @@ function silentWav(): string {
 /** Barnabas's own voice from ElevenLabs, fetched sentence by sentence and played in order. */
 export class CloudSpeaker implements Speaker {
   private audio: HTMLAudioElement | null = null;
-  private queue: { text: string; url: Promise<string | null>; abort: AbortController }[] = [];
+  private queue: { text: string; spoken: string; url: Promise<string | null> | null; abort: AbortController }[] = [];
   private playing = false;
   private generation = 0;
   lastHeard = "";
@@ -60,17 +60,35 @@ export class CloudSpeaker implements Speaker {
   speak(sentence: string) {
     const text = normalizeForSpeech(sentence, this.opts.pronunciations);
     if (!text) return;
-    const abort = new AbortController();
-    const url = fetch("/api/voice/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, lang: this.opts.lang.slice(0, 2) }),
-      signal: abort.signal,
-    })
-      .then(async (r) => (r.ok ? URL.createObjectURL(await r.blob()) : null))
-      .catch(() => null);
-    this.queue.push({ text: sentence, url, abort });
+    this.queue.push({ text: sentence, spoken: text, url: null, abort: new AbortController() });
+    this.prefetch();
     if (!this.playing) void this.next(this.generation);
+  }
+
+  /** ElevenLabs allows a few requests at a time: fetch only the next couple of sentences ahead. */
+  private prefetch() {
+    for (const item of this.queue.slice(0, 2)) {
+      if (item.url) continue;
+      item.url = this.fetchAudio(item.spoken, item.abort.signal);
+    }
+  }
+
+  private async fetchAudio(text: string, signal: AbortSignal, attempt = 0): Promise<string | null> {
+    try {
+      const r = await fetch("/api/voice/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, lang: this.opts.lang.slice(0, 2) }),
+        signal,
+      });
+      if (r.status === 429 && attempt < 2) {
+        await new Promise((res) => setTimeout(res, 400 * (attempt + 1)));
+        return this.fetchAudio(text, signal, attempt + 1);
+      }
+      return r.ok ? URL.createObjectURL(await r.blob()) : null;
+    } catch {
+      return null;
+    }
   }
 
   private async next(gen: number) {
@@ -81,7 +99,8 @@ export class CloudSpeaker implements Speaker {
       return;
     }
     this.playing = true;
-    const url = await item.url;
+    this.prefetch();
+    const url = await (item.url ?? (item.url = this.fetchAudio(item.spoken, item.abort.signal)));
     if (gen !== this.generation) return;
     if (!url) {
       this.opts.onError();
