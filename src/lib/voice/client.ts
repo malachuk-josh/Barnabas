@@ -189,8 +189,10 @@ type DGResult = {
 /** Deepgram streaming speech-to-text, with Barnabas's congregation names boosted. */
 export class DeepgramListener implements Listener {
   private ws: WebSocket | null = null;
-  private recorder: MediaRecorder | null = null;
   private stream: MediaStream | null = null;
+  private ctx: AudioContext | null = null;
+  private processor: ScriptProcessorNode | null = null;
+  private source: MediaStreamAudioSourceNode | null = null;
   private finals: string[] = [];
   private interim = "";
   private closed = false;
@@ -209,6 +211,10 @@ export class DeepgramListener implements Listener {
   }
 
   async start() {
+    // Create and resume the audio context first, while we're still inside the tap: iPhones require it.
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    this.ctx = new AC();
+    void this.ctx.resume();
     const tokenRes = await fetch("/api/voice/stt-token");
     if (!tokenRes.ok) throw new Error((await tokenRes.json().catch(() => ({}))).error ?? "Couldn't start listening.");
     const { token, keyterms } = (await tokenRes.json()) as { token: string; keyterms: string[] };
@@ -226,6 +232,10 @@ export class DeepgramListener implements Listener {
       endpointing: "500",
       utterance_end_ms: "1500",
       vad_events: "true",
+      // Raw 16-bit PCM works the same on every browser, including iPhone home-screen apps.
+      encoding: "linear16",
+      sample_rate: String(this.ctx.sampleRate),
+      channels: "1",
     });
     for (const k of keyterms) q.append("keyterm", k);
     const ws = new WebSocket(`wss://api.deepgram.com/v1/listen?${q}`, ["bearer", token]);
@@ -258,12 +268,25 @@ export class DeepgramListener implements Listener {
       setTimeout(() => reject(new Error("Couldn't connect to the listening service.")), 8000);
     });
 
-    const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((m) => MediaRecorder.isTypeSupported(m));
-    this.recorder = new MediaRecorder(this.stream, mime ? { mimeType: mime } : undefined);
-    this.recorder.ondataavailable = (e) => {
-      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(e.data);
+    if (this.ctx.state !== "running") await this.ctx.resume().catch(() => {});
+    this.source = this.ctx.createMediaStreamSource(this.stream);
+    this.processor = this.ctx.createScriptProcessor(4096, 1, 1);
+    this.processor.onaudioprocess = (e) => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      const input = e.inputBuffer.getChannelData(0);
+      const pcm = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const v = Math.max(-1, Math.min(1, input[i]));
+        pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+      }
+      ws.send(pcm.buffer);
     };
-    this.recorder.start(250);
+    this.source.connect(this.processor);
+    // A muted output keeps the processor running without playing the mic back.
+    const mute = this.ctx.createGain();
+    mute.gain.value = 0;
+    this.processor.connect(mute);
+    mute.connect(this.ctx.destination);
   }
 
   finish() {
@@ -280,9 +303,14 @@ export class DeepgramListener implements Listener {
   }
 
   private release() {
-    if (this.recorder && this.recorder.state !== "inactive") this.recorder.stop();
+    this.processor?.disconnect();
+    this.source?.disconnect();
+    if (this.processor) this.processor.onaudioprocess = null;
     this.stream?.getTracks().forEach((t) => t.stop());
-    this.recorder = null;
+    void this.ctx?.close().catch(() => {});
+    this.processor = null;
+    this.source = null;
+    this.ctx = null;
     this.stream = null;
   }
 
