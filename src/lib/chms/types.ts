@@ -84,6 +84,8 @@ export type Leader = {
   lighterLoad?: boolean;
   /** false: known to Barnabas and in the directory, but not on the church's published leadership page. */
   published?: boolean;
+  /** Their Barnabas sign-in email, when the church gave it: fills in their profile at first sign-in and their directory record. */
+  email?: string;
 };
 
 export interface ChurchData {

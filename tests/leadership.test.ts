@@ -16,7 +16,9 @@ describe("the leadership team in the directory", () => {
     expect(names).toEqual(["Aaron Malachuk", "Adam Malachuk", "Cal Najimy", "Eric Malachuk", "Ethan Malachuk", "Micah Hayre", "Travis Willette"]);
     for (const p of book.people) {
       expect(p.leadership).toBe(true);
-      expect(p.email ?? p.phone ?? p.address ?? p.birthdate).toBeUndefined();
+      expect(p.phone ?? p.address ?? p.birthdate).toBeUndefined();
+      // Only the email the church gave (Ethan's) is on a record.
+      expect(p.email).toBe(p.firstName === "Ethan" ? "ethanmalachuk@gmail.com" : undefined);
     }
     const adam = book.people.find((p) => p.firstName === "Adam")!;
     expect(adam.custom[LEADERSHIP_FIELD_ID]).toBe("Worship Leader");
@@ -47,5 +49,34 @@ describe("the leadership team in the directory", () => {
     await loadPeople("demo");
     const people = await churchData().listPeople();
     expect(people.some((p) => p.id === "p19" && p.name === "Aaron Malachuk")).toBe(true);
+  });
+});
+
+describe("a leader whose email the church gave", () => {
+  beforeEach(() => freshStore());
+
+  it("starts with their profile filled in from the leadership list at first sign-in", async () => {
+    const { ensureProfile } = await import("@/lib/profile");
+    const ethan = { churchId: "demo", leaderId: "ethan1", name: "Ethan", email: "EthanMalachuk@gmail.com", role: "" };
+    const p = await ensureProfile(ethan);
+    expect(p.name).toBe("Ethan Malachuk");
+    expect(p.preferredName).toBe("Pastor Ethan");
+    expect(p.role).toBe("Lead Pastor");
+    expect(p.ministries).toEqual(["Bible teaching"]);
+    expect(p.about).toMatch(/Lead Pastor since 2024/);
+    const other = await ensureProfile({ churchId: "demo", leaderId: "x1", name: "Sam", email: "sam@example.org", role: "Elder" });
+    expect(other.name).toBe("Sam");
+    expect(other.about).toBe("");
+  });
+
+  it("gets that email on an existing directory record", async () => {
+    vi.stubEnv("BARNABAS_SKIP_LEADER_SEED", "0");
+    await updatePeople("demo", ["meta", "people"], (b) => {
+      b.meta.leadersAddedAt = 1;
+      b.people.push({ id: "ldr-ethan-malachuk", firstName: "Ethan", lastName: "Malachuk", status: "member", language: "en", leadership: true, custom: {}, createdAt: 0, updatedAt: 0 });
+    });
+    const book = await loadPeople("demo");
+    expect(book.people.find((p) => p.firstName === "Ethan")!.email).toBe("ethanmalachuk@gmail.com");
+    vi.unstubAllEnvs();
   });
 });

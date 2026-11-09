@@ -42,7 +42,7 @@ const TEAMS: Team[] = [
  * No congregation is invented: the directory below has only the real leaders who serve on teams.
  */
 const LEADERSHIP: ChurchLeader[] = [
-  { name: "Ethan Malachuk", title: "Lead Pastor", ministry: "Bible teaching",
+  { name: "Ethan Malachuk", title: "Lead Pastor", ministry: "Bible teaching", email: "ethanmalachuk@gmail.com",
     bio: "Raised at MGBC and on the pastoral team since 2006: assistant pastor, then co-pastor from 2016, and Lead Pastor since 2024. His focus is clear, faithful Bible teaching that connects with everyday life. Lives in Clarksburg." },
   { name: "Eric Malachuk", title: "Care Pastor", ministry: "Discipleship and pastoral care",
     bio: "Came to faith in the church's first year and has served since 1982, as Senior Pastor from 1990 to 2023. He guided the pastoral transition from 2016 to 2024 and now gives his time to discipleship and pastoral care." },

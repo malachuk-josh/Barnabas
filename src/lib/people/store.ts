@@ -27,7 +27,7 @@ const slugOf = (name: string) => name.toLowerCase().normalize("NFD").replace(/[\
  * the directory under the same name is marked as leadership instead of added again. If the church later
  * archives or removes them, they aren't added back.
  */
-export function addLeadership(book: PeopleBook, leaders: { name: string; title: string }[], now = Date.now()): boolean {
+export function addLeadership(book: PeopleBook, leaders: { name: string; title: string; email?: string }[], now = Date.now()): boolean {
   if (book.meta.leadersAddedAt || !leaders.length) return false;
   const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
   const ids: string[] = [];
@@ -48,7 +48,7 @@ export function addLeadership(book: PeopleBook, leaders: { name: string; title: 
     }
     const id = LEADER_IDS[l.name] ?? `ldr-${slugOf(l.name)}`;
     if (book.people.some((p) => p.id === id)) continue;
-    const person: PersonRecord = { id, firstName, lastName, status: "member", language: "en", leadership: true, custom: { [LEADERSHIP_FIELD_ID]: l.title }, createdAt: now, updatedAt: now };
+    const person: PersonRecord = { id, firstName, lastName, status: "member", language: "en", leadership: true, custom: { [LEADERSHIP_FIELD_ID]: l.title }, createdAt: now, updatedAt: now, ...(l.email ? { email: l.email.toLowerCase() } : {}) };
     book.people.push(person);
     ids.push(id);
   }
@@ -62,8 +62,24 @@ export function addLeadership(book: PeopleBook, leaders: { name: string; title: 
 /** The church's People database, with its published leaders added the first time it's opened. */
 export async function loadPeople(church: string): Promise<PeopleBook> {
   const book = await store.load(church);
-  if (book.meta.leadersAddedAt || process.env.BARNABAS_SKIP_LEADER_SEED === "1") return book;
+  if (process.env.BARNABAS_SKIP_LEADER_SEED === "1") return book;
   const leaders = await new DemoChurch().leadership();
+  if (book.meta.leadersAddedAt) {
+    // Emails the church has since given for leaders go on their directory records (only where none is set).
+    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+    const missing = leaders.filter((l) => l.email && book.people.some((p) => !p.email && !p.archivedAt && norm(`${p.firstName} ${p.lastName}`) === norm(l.name)));
+    if (!missing.length) return book;
+    return store.update(church, ["people"], (b) => {
+      for (const l of missing) {
+        const p = b.people.find((x) => !x.email && !x.archivedAt && norm(`${x.firstName} ${x.lastName}`) === norm(l.name));
+        if (p) {
+          p.email = l.email!.toLowerCase();
+          p.updatedAt = Date.now();
+        }
+      }
+      return b;
+    });
+  }
   return store.update(church, ["meta", "people", "groups", "fields"], (b) => {
     addLeadership(b, leaders);
     return b;

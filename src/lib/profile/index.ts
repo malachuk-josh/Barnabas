@@ -92,12 +92,30 @@ export async function saveProfile(leader: Leader, profile: Profile) {
   await setJSON(key(leader), { ...profile, email: leader.email, updatedAt: Date.now() });
 }
 
+/**
+ * A leader on the church's leadership list whose sign-in email the church gave starts with their profile
+ * filled in from it: name, role, ministries and their published bio. Only at first sign-in; they can
+ * change any of it in Settings.
+ */
+export async function prefillFromLeadership(profile: Profile, email: string) {
+  const { DemoChurch } = await import("../chms/demo");
+  const me = (await new DemoChurch().leadership()).find((l) => l.email && l.email.toLowerCase() === email.trim().toLowerCase());
+  if (!me) return;
+  const first = me.name.split(/\s+/)[0] ?? me.name;
+  profile.name = me.name;
+  profile.preferredName = /pastor/i.test(me.title) ? `Pastor ${first}` : first;
+  profile.role = me.title;
+  if (me.ministry) profile.ministries = me.ministry.split(/\s+and\s+|,\s*/).map((m) => m.trim()).filter(Boolean).map((m) => m[0]!.toUpperCase() + m.slice(1));
+  if (me.bio) profile.about = me.bio;
+}
+
 /** Created once at first sign-in; later sign-ins don't overwrite edits. */
 export async function ensureProfile(leader: Leader, timezone?: string) {
   const existing = await getJSON<Profile>(key(leader));
   if (existing) return existing;
   const profile = defaultProfile(leader);
   if (timezone && isValidTimezone(timezone)) profile.timezone = timezone;
+  await prefillFromLeadership(profile, leader.email);
   await saveProfile(leader, profile);
   return profile;
 }
