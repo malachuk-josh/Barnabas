@@ -101,7 +101,7 @@ export function ClassCard({ cls, everyone, canEdit, today }: { cls: CareClass; e
             if (add) void act({ action: "enroll", classId: cls.id, key: add }, () => setAdd(""));
           }}
         >
-          <label className="care-select" style={{ flex: 1, minWidth: 0 }}>
+          <label className="care-select wide">
             <span className="sr-only">Enroll someone</span>
             <select value={add} onChange={(e) => setAdd(e.target.value)}>
               <option value="">Enroll someone…</option>

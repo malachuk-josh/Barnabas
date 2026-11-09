@@ -16,6 +16,7 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Church data | A demo congregation (18 people, 6 teams) so everything works before a ChMS is connected | Planning Center adapter is the next step |
 | Calendar | Month and agenda views, create, edit and delete; Barnabas adds and changes events when asked and must ask before deleting; Google and Outlook events and church events shown alongside | Google and Outlook two-way sync need a one-time app registration (below); Apple Calendar and any other app can subscribe to a private link |
 | Finance | Overview, budget and plans, fund accounting (chart of accounts, funds, split transactions, bank reconciliation, CSV import), giving (batches, recurring givers, donor history, year-end statements), missions (partners, pledges, faith-promise campaigns) and printable reports; Barnabas answers budget, giving and missions questions and records gifts and expenses after a yes | See [Finance](#finance) below. The demo church starts with labeled demo books |
+| Care | Pastoral care cases with a contact timeline, prayer requests, guest follow-up with a public guest card, the discipleship pathway and classes, and a private care-load tracker; Barnabas opens cases, logs contacts and records guests when asked, and asks before reassigning or closing | See [Care](#care) below. The demo church starts with labeled demo care records |
 | Roles | Pastor, treasurer, deacon, staff and leader, set by an admin in **Settings → Team**; checked in code on every finance request and tool call | Admins are bootstrapped with `BARNABAS_ADMIN_EMAILS` |
 | Settings | Profile (name, what Barnabas calls you, role, ministries, about you), time zone, reply language, voice language and speed, calendar connections, team roles (admins), delete all data | Barnabas reads the profile at the start of each conversation |
 
@@ -101,9 +102,22 @@ Every leader has a role, kept on their leader record (`leader:{church}:{leaderId
 | See finance summaries, budgets, funds, missions and reports (`finance.view`) | Yes | Yes | Yes | No | No |
 | Change budgets, transactions, gifts and missions records; import and reconcile (`finance.edit`) | Yes | Yes | No | No | No |
 | See individual giving: donor names, gifts, pledges, statements (`giving.donors`) | Yes | Yes | No | No | No |
+| See every care case, including confidential ones (`care.view_all`) | Yes | No | No | No | No |
+| Assign care cases to someone else; keep the pathway and classes; make guest-card links (`care.assign`) | Yes | No | Yes | Yes | No |
 | Set roles (`team.manage`) | Admins only (`BARNABAS_ADMIN_EMAILS`), whatever their role |
 
 The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's finance tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`.
+
+Care cases follow their own visibility rules (`src/lib/care/visibility.ts`), checked on every page, API call and Barnabas tool:
+
+| Who | Sees |
+|---|---|
+| Pastor | Every case, including confidential ones |
+| Deacon | Cases assigned to them, and every case that isn't confidential |
+| Staff, treasurer, leader | Only cases assigned to them |
+| Confidential cases | Pastors only, whoever they're assigned to; only a pastor can hold one |
+
+Prayer requests marked shareable are visible to the whole team; private ones to the pastors and whoever added them. A case someone can't see reads as "not found".
 
 ## Finance
 
@@ -124,12 +138,33 @@ The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes us
 
 **Storage**: `fin:{church}:*` keys in Redis (chart, transactions and gifts by year, budgets by year, reconciliations, recurring givers, missions). Amounts are whole cents. Code: `src/lib/finance/`.
 
+## Care
+
+**Care** (after Finance, a heart icon; under More on phones) has five views:
+
+- **Cases**: pastoral care for a person or household. Types: hospital, grief, illness, crisis, new baby, homebound, prayer, counseling referral, other. Status moves new → assigned → active → follow-up → closed. Each case has who holds it (a pastor, deacon or other team member), a next step with a due date, a one-line summary, and a timeline of contacts (visit, call, text, card, meal) with a minimal note. A board by status or a list, filtered by mine or all, type and overdue.
+- **Prayer**: who, the request, private or shareable, how many times the team has prayed, and answered.
+- **Guests**: guest cards (name, contact, how they heard, kids' ages, prayer request, interests). Each new card makes a thank-you text or email, drafted into the Drafts review queue within 24 hours (delivery isn't connected), a welcome call within 48 hours, and after a second visit an invitation to Discover Faith. Cards are assigned in rotation among the deacons and connections staff; anyone in a busy season (from the church's leadership notes) takes about half as many. Pastors, deacons and staff can make a **public guest-card link** (`/welcome/{token}`) that guests fill in on their own phone: the token is 32 random bytes looked up by its hash, links can be turned off, and submissions are rate-limited (5 per address per 10 minutes, 60 per link per hour) with a honeypot.
+- **Next steps**: the discipleship pathway (first visit, Discover Faith class, salvation decision, baptism, membership class, membership, a Growth Group or Life Group, serving, giving), each step with a date, and who's ready for their next one with the reason (for example baptized but not a member, or attending 3+ months but not in a group). Discover Faith and membership classes with sessions, a teacher, enrollees, attendance, and completion, which records the pathway step.
+- **My care load**: private to each person. Open cases by type and weight (crisis 3; grief, hospital and counseling referral 2; illness 1.5; others 1; prayer 0.5), contacts in the last 7 days, days without a day off (from "Rest / sabbath" calendar events and an "I took a day off" log), and a gentle signal: **steady**, **full** (one thing is full) or **stretched** (one thing is heavy, or two are full), always with its reasons and thresholds. Others see only the team view: total open cases and how evenly they're spread, as anonymous shares.
+
+**Privacy.** Every note, next step, summary and prayer request goes through the same memory policy as Barnabas's memory (`checkMemoryText`): the case type can say "illness", but notes can't hold diagnoses or other health, counseling, family, addiction, legal or money details unless the church sets `BARNABAS_ALLOW_SENSITIVE_MEMORY=true`. Secrets are never stored. Every care write is in the audit log.
+
+**Reminders.** Next steps and guest tasks appear in the Talk briefing under Follow-ups (overdue ones marked) and as suggestions on the Calendar, along with a day off when your load is full or stretched. Nothing is added to the calendar unless you add it.
+
+**Barnabas tools**: `list_care_cases`, `care_case_detail`, `my_care_load`, `discipleship_next_steps` ("Who's ready for the membership class?") and `recent_guests` (read-only); `open_care_case`, `log_care_contact`, `add_prayer_request` and `record_guest`, which Barnabas does when asked and then says what it did; and `assign_care_case` (to someone else) and `close_care_case`, which propose first and run only after a yes on a later turn. Each conversation starts with the leader's own open cases, overdue next steps and care load. The older `log_care_event` tool still works and lands on the person's open case; earlier records from it are folded into cases once.
+
+**Demo data.** The first time Care is opened, the demo church gets labeled demo records: cases, prayer requests, pathways, classes and guests. Everyone receiving care is from the fictional demo congregation or a fictional guest. Mount Greylock's real leadership appear only doing ministry in their real roles (Eric Malachuk for pastoral care and Discover Faith, Ethan Malachuk for crisis escalation and the membership class, Aaron Malachuk and the deacons for guests, the deacons as the prayer team); nothing is made up about them, and no rest data is seeded for them. A leader who signs in with one of their names picks up their assigned cases. A pastor can clear the demo data from the banner. The leadership bios in Barnabas's context are our own summaries of the church's website plus details the church supplied.
+
+**Storage**: `pcare:{church}:*` keys in Redis (cases, prayers, pathways, classes, guests, links, rotation), each leader's private day-off log at `pcare:{church}:rest:{leaderId}`, and public link lookups at `welcome:{sha256(token)}`. Code: `src/lib/care/`.
+
 ## Before real congregants' data goes in
 
 - **Sign-in** is a shared church access code plus email, enough for a pilot. Move to per-person accounts (for example Clerk or Auth.js with email links) before a wider rollout.
 - **Data retention**: review Anthropic's API data retention settings for your organization; memory itself lives only in your Redis.
 - **Church policy**: set `BARNABAS_ALLOW_SENSITIVE_MEMORY` to match your written policy (default `false`).
 - **Messaging** is not connected; Barnabas says so when it queues something.
+- **Care**: clear the demo care records, set roles in Settings → Team, and turn off any guest-card links you aren't using. Care notes follow `BARNABAS_ALLOW_SENSITIVE_MEMORY`.
 - **Finance**: clear the demo books, set roles in Settings → Team, and have your accountant review the chart of accounts and opening balances. Fund transfers between funds, multiple fiscal-year start months and Stripe are not built yet.
 
 ## Next steps

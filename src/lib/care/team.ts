@@ -58,7 +58,13 @@ export function selfMember(leader: Pick<Leader, "leaderId">, members: TeamMember
   return members.find((m) => m.id === leaderMemberId(leader.leaderId));
 }
 
+/** The member an assignee id refers to, following a leadership placeholder to the leader who has since signed in. */
+export function findMember(members: TeamMember[], id: string | undefined) {
+  if (!id) return undefined;
+  return members.find((m) => m.id === id) ?? members.find((m) => !m.placeholder && placeholderId(m.name) === id);
+}
+
 export function memberName(members: TeamMember[], id: string | undefined) {
   if (!id) return "Unassigned";
-  return members.find((m) => m.id === id)?.name ?? "A former team member";
+  return findMember(members, id)?.name ?? "A former team member";
 }

@@ -1,6 +1,6 @@
 import type { Leader } from "../auth/session";
 import { allEvents } from "../calendar/store";
-import { addDays, today } from "../dates";
+import { addDays, friendlyDate, today } from "../dates";
 import { getLeaderRecord } from "../team";
 import { seedDemoRest } from "./demo";
 import { notContacted, openTasks } from "./guests";
@@ -179,6 +179,8 @@ export function careFollowUps(book: CareBook, actor: CareActor, asOf = today(), 
   return out.sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
 }
 
+const shortDay = (iso: string) => friendlyDate(iso).replace(/,? \d{4}$/, "");
+
 export type CalendarSuggestion = { id: string; title: string; date: string; kind: "visit" | "rest"; reason: string; href: string };
 
 /** Suggestions only: nothing is added to the calendar unless the leader adds it. */
@@ -187,7 +189,7 @@ export async function calendarSuggestions(leader: Leader, asOf = today()): Promi
   const out: CalendarSuggestion[] = careFollowUps(book, actor, asOf)
     .filter((f) => f.source === "care" && f.due && f.due <= addDays(asOf, 14))
     .slice(0, 6)
-    .map((f) => ({ id: f.id, title: `${f.reason.length > 60 ? `${f.reason.slice(0, 57)}…` : f.reason}: ${f.name}`, date: f.due! < asOf ? asOf : f.due!, kind: "visit", reason: f.overdue ? `Overdue since ${f.due}` : `Next step due ${f.due}`, href: f.href }));
+    .map((f) => ({ id: f.id, title: `${f.reason.length > 60 ? `${f.reason.slice(0, 57)}…` : f.reason}: ${f.name}`, date: f.due! < asOf ? asOf : f.due!, kind: "visit", reason: f.overdue ? `Overdue since ${shortDay(f.due!)}` : f.due === asOf ? "Next step due today" : `Next step due ${shortDay(f.due!)}`, href: f.href }));
   const load = await myCareLoad(leader, book, actor, asOf);
   if (load.signal !== "steady") {
     const events = await allEvents(leader);

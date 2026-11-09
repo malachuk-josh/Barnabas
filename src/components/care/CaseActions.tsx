@@ -151,7 +151,7 @@ export function CaseActions(props: {
         <h2>Who holds it</h2>
         {props.canAssign ? (
           <div className="row">
-            <label className="care-select" style={{ flex: 1, minWidth: 0 }}>
+            <label className="care-select wide">
               <span className="sr-only">Assign to</span>
               <select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
                 <option value="">The pastors&apos; queue (unassigned)</option>

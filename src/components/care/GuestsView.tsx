@@ -25,7 +25,8 @@ type Guest = {
 };
 type Link_ = { id: string; token: string; label: string; createdAt: number };
 
-const when = (ms: number) => new Date(ms).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+/** In the leader's own time zone, so the server and the browser render the same text. */
+const when = (ms: number, timeZone: string) => new Date(ms).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone });
 
 function useAct() {
   const router = useRouter();
@@ -47,7 +48,7 @@ function useAct() {
   return { act, error, busy };
 }
 
-function GuestCardView({ g, selfIds, canAssign }: { g: Guest; selfIds: string[]; canAssign: boolean }) {
+function GuestCardView({ g, selfIds, canAssign, timeZone }: { g: Guest; selfIds: string[]; canAssign: boolean; timeZone: string }) {
   const { act, error, busy } = useAct();
   const [visit, setVisit] = useState(localToday());
   return (
@@ -107,7 +108,7 @@ function GuestCardView({ g, selfIds, canAssign }: { g: Guest; selfIds: string[];
             <span>
               <strong>{t.label}</strong>
               <small className={t.overdue && !t.doneAt ? "care-overdue" : "muted"}>
-                {t.doneAt ? `Done ${when(t.doneAt)}` : `${t.overdue ? "Overdue: was due" : "Due"} ${when(t.dueAt)}`} · {t.mine ? "you" : t.assigneeName}
+                {t.doneAt ? `Done ${when(t.doneAt, timeZone)}` : `${t.overdue ? "Overdue: was due" : "Due"} ${when(t.dueAt, timeZone)}`} · {t.mine ? "you" : t.assigneeName}
               </small>
             </span>
             {!t.doneAt && (
@@ -257,7 +258,7 @@ export function GuestFields<T extends GuestForm>({ f, setF, publicForm = false }
   );
 }
 
-export function GuestList({ guests, selfIds, canAssign }: { guests: Guest[]; selfIds: string[]; canAssign: boolean }) {
+export function GuestList({ guests, selfIds, canAssign, timeZone }: { guests: Guest[]; selfIds: string[]; canAssign: boolean; timeZone: string }) {
   const [filter, setFilter] = useState<"waiting" | "mine" | "all">("waiting");
   const shown = guests.filter((g) => (filter === "waiting" ? !g.contacted : filter === "mine" ? g.mine : true));
   return (
@@ -272,7 +273,7 @@ export function GuestList({ guests, selfIds, canAssign }: { guests: Guest[]; sel
       {shown.length ? (
         <div className="fin-grid-2">
           {shown.map((g) => (
-            <GuestCardView key={g.id} g={g} selfIds={selfIds} canAssign={canAssign} />
+            <GuestCardView key={g.id} g={g} selfIds={selfIds} canAssign={canAssign} timeZone={timeZone} />
           ))}
         </div>
       ) : (

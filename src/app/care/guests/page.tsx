@@ -17,7 +17,7 @@ export default async function GuestsPage() {
   return (
     <CareFrame ctx={ctx} title="Guests" intro="First-time guests and their follow-up: a thank-you within a day, a welcome call within two, and an invitation to Discover Faith when they come back." actions={<NewGuest />}>
       <div className="fin-stack">
-        <GuestList guests={guests.map(({ tasks, ...g }) => ({ ...g, tasks: tasks.map(({ draftText: _t, ...t }) => t) }))} selfIds={ctx.actor.viewer.memberIds} canAssign={ctx.canAssign} />
+        <GuestList guests={guests.map(({ tasks, ...g }) => ({ ...g, tasks: tasks.map(({ draftText: _t, ...t }) => t) }))} selfIds={ctx.actor.viewer.memberIds} canAssign={ctx.canAssign} timeZone={ctx.profile.timezone} />
         <div className="fin-grid-2">
           {ctx.canAssign && <WelcomeLinks links={ctx.book.links.filter((l) => !l.revokedAt).map(({ id, token, label, createdAt }) => ({ id, token, label, createdAt }))} origin={origin} />}
           <section className="fin-card">

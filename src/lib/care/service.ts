@@ -11,7 +11,7 @@ import { getJSON, setJSON } from "../store";
 import { getLeaderRecord } from "../team";
 import { initialTasks, pickAssignee, thankYouText, visitTasks } from "./guests";
 import { careKey, listRest, loadCare, resetCare, saveRest, updateCare } from "./store";
-import { leaderMemberId, memberName, viewerFor } from "./team";
+import { findMember, leaderMemberId, memberName, viewerFor } from "./team";
 import {
   CASE_STATUSES,
   CASE_TYPES,
@@ -192,7 +192,7 @@ export async function updateCase(actor: CareActor, caseId: string, input: z.inpu
     if (v.confidential !== undefined && v.confidential !== c.confidential) {
       if (actor.viewer.access.role !== "pastor") fail("Only a pastor can change whether a case is confidential.");
       if (v.confidential && c.assigneeId) {
-        const holder = actor.members.find((m) => m.id === c.assigneeId);
+        const holder = findMember(actor.members, c.assigneeId);
         if (holder && !canHoldCase(holder, { confidential: true })) fail("Assign it to a pastor before marking it confidential.");
       }
       c.confidential = v.confidential;
