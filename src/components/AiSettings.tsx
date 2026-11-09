@@ -120,7 +120,7 @@ export function AiSettings() {
               onChange={(e) => setVoice({ ...voice, stability: Number(e.target.value) })}
             />
             <span className="small muted">
-              Lower is more expressive and varied; higher is steadier and more even. Most voices sound best between 0.35 and 0.55.
+              Lower is more expressive and varied; higher is steadier and more even.
               {voice.stability !== null && (
                 <>
                   {" "}
@@ -138,7 +138,7 @@ export function AiSettings() {
             </label>
             <input id="ai-style" type="range" min={0} max={1} step={0.01} value={voice.style ?? view.defaults.voiceStyle} onChange={(e) => setVoice({ ...voice, style: Number(e.target.value) })} />
             <span className="small muted">
-              How much of the recorded speaker&apos;s character and warmth comes through. Small steps make a big difference; above about 0.5 can sound overdone.
+              How much of the recorded speaker&apos;s character and warmth comes through. Small steps make a big difference.
               {voice.style !== null && (
                 <>
                   {" "}

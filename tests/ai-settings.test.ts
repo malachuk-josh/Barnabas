@@ -79,11 +79,11 @@ describe("voice stability and style sliders", () => {
     vi.unstubAllGlobals();
   });
 
-  it("default to Vercel's values (or 0.42 / 0.3), and an admin's choice wins for every spoken sentence", async () => {
+  it("default to Vercel's values (or 0.6 / 0.6), and an admin's choice wins for every spoken sentence", async () => {
     const { voiceDelivery } = await import("@/lib/ai/settings");
-    expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.42, style: 0.3 });
+    expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.6, style: 0.6 });
     vi.stubEnv("ELEVENLABS_STYLE", "0.35");
-    expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.42, style: 0.35 });
+    expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.6, style: 0.35 });
 
     session.current = admin;
     const r = await put({ textModel: null, voiceModel: null, textEffort: null, voiceStability: 0.5, voiceStyle: 0.2 });
@@ -104,7 +104,7 @@ describe("voice stability and style sliders", () => {
 
     // "Use default" clears them.
     await put({ textModel: null, voiceModel: null, textEffort: null, voiceStability: null, voiceStyle: null });
-    expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.42, style: 0.35 });
+    expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.6, style: 0.35 });
   });
 
   it("are admin-only and must be between 0 and 1", async () => {

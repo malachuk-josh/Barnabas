@@ -32,9 +32,9 @@ export function deliverySettings(overrides: { stability?: number; style?: number
   };
   return {
     // An admin's choice in Settings -> Barnabas AI wins, then Vercel's ELEVENLABS_* values, then these.
-    stability: num(overrides.stability, num(process.env.ELEVENLABS_STABILITY, 0.42)),
+    stability: num(overrides.stability, num(process.env.ELEVENLABS_STABILITY, 0.6)),
     similarity_boost: 0.8,
-    style: num(overrides.style, num(process.env.ELEVENLABS_STYLE, 0.3)),
+    style: num(overrides.style, num(process.env.ELEVENLABS_STYLE, 0.6)),
     use_speaker_boost: true,
   };
 }
