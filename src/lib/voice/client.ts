@@ -36,15 +36,38 @@ export function silentWav(): string {
   return `data:audio/wav;base64,${btoa(bin)}`;
 }
 
-/** Barnabas's own voice from ElevenLabs, fetched sentence by sentence and played in order. */
+/**
+ * Barnabas's own voice from ElevenLabs, fetched sentence by sentence and played in order.
+ *
+ * Sentences play through one AudioContext that stays open for the whole reply, each with a short fade in
+ * and out. Swapping an <audio> element's source between sentences made a click at every clip edge, and on
+ * phones with the microphone open (hands-free) the audio route re-engaged between clips, which sounded like
+ * a burst of static. At a speaking speed other than 1x the <audio> element is used instead, because it
+ * keeps the voice's pitch when sped up.
+ */
 export class CloudSpeaker implements Speaker {
   private audio: HTMLAudioElement | null = null;
-  private queue: { text: string; spoken: string; url: Promise<string | null> | null; abort: AbortController }[] = [];
+  private ctx: AudioContext | null = null;
+  private current: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private queue: { text: string; spoken: string; data: Promise<ArrayBuffer | null> | null; abort: AbortController }[] = [];
   private playing = false;
   private generation = 0;
   lastHeard = "";
 
   constructor(private readonly opts: SpeakerOptions & { onError: () => void }) {}
+
+  /** Web Audio when available and at normal speed. */
+  private useWebAudio() {
+    return this.opts.rate === 1 && typeof window !== "undefined" && typeof (window.AudioContext ?? (window as unknown as { webkitAudioContext?: unknown }).webkitAudioContext) !== "undefined";
+  }
+
+  private context(): AudioContext {
+    if (!this.ctx || this.ctx.state === "closed") {
+      const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      this.ctx = new Ctor({ latencyHint: "playback" });
+    }
+    return this.ctx;
+  }
 
   private el() {
     if (!this.audio) this.audio = new Audio();
@@ -52,6 +75,16 @@ export class CloudSpeaker implements Speaker {
   }
 
   unlock() {
+    if (this.useWebAudio()) {
+      // Phones only allow audio to start from a tap: resume the context and play one silent sample.
+      const ctx = this.context();
+      void ctx.resume().catch(() => {});
+      const src = ctx.createBufferSource();
+      src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      src.connect(ctx.destination);
+      src.start();
+      return;
+    }
     const a = this.el();
     a.src = silentWav();
     a.play().catch(() => {});
@@ -60,7 +93,7 @@ export class CloudSpeaker implements Speaker {
   speak(sentence: string) {
     const text = normalizeForSpeech(sentence, this.opts.pronunciations);
     if (!text) return;
-    this.queue.push({ text: sentence, spoken: text, url: null, abort: new AbortController() });
+    this.queue.push({ text: sentence, spoken: text, data: null, abort: new AbortController() });
     this.prefetch();
     if (!this.playing) void this.next(this.generation);
   }
@@ -68,12 +101,12 @@ export class CloudSpeaker implements Speaker {
   /** ElevenLabs allows a few requests at a time: fetch only the next couple of sentences ahead. */
   private prefetch() {
     for (const item of this.queue.slice(0, 2)) {
-      if (item.url) continue;
-      item.url = this.fetchAudio(item.spoken, item.abort.signal);
+      if (item.data) continue;
+      item.data = this.fetchAudio(item.spoken, item.abort.signal);
     }
   }
 
-  private async fetchAudio(text: string, signal: AbortSignal, attempt = 0): Promise<string | null> {
+  private async fetchAudio(text: string, signal: AbortSignal, attempt = 0): Promise<ArrayBuffer | null> {
     try {
       const r = await fetch("/api/voice/tts", {
         method: "POST",
@@ -85,7 +118,7 @@ export class CloudSpeaker implements Speaker {
         await new Promise((res) => setTimeout(res, 400 * (attempt + 1)));
         return this.fetchAudio(text, signal, attempt + 1);
       }
-      return r.ok ? URL.createObjectURL(await r.blob()) : null;
+      return r.ok ? await r.arrayBuffer() : null;
     } catch {
       return null;
     }
@@ -95,29 +128,75 @@ export class CloudSpeaker implements Speaker {
     const item = this.queue.shift();
     if (!item) {
       this.playing = false;
+      this.current = null;
       this.opts.onIdle();
       return;
     }
     this.playing = true;
     this.prefetch();
-    const url = await (item.url ?? (item.url = this.fetchAudio(item.spoken, item.abort.signal)));
+    const data = await (item.data ?? (item.data = this.fetchAudio(item.spoken, item.abort.signal)));
     if (gen !== this.generation) return;
-    if (!url) {
+    if (!data) {
       this.opts.onError();
       void this.next(gen);
       return;
     }
+    const done = () => {
+      if (gen === this.generation) void this.next(gen);
+    };
+    if (this.useWebAudio()) {
+      try {
+        await this.playBuffer(data, gen, item.text, done);
+        return;
+      } catch {
+        // decoding failed in this browser: fall back to the <audio> element for this sentence
+      }
+      if (gen !== this.generation) return;
+    }
+    this.playElement(data, item.text, done, gen);
+  }
+
+  private async playBuffer(data: ArrayBuffer, gen: number, text: string, done: () => void) {
+    const ctx = this.context();
+    if (ctx.state === "suspended") await ctx.resume().catch(() => {});
+    const buffer = await ctx.decodeAudioData(data.slice(0));
+    if (gen !== this.generation) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const gain = ctx.createGain();
+    src.connect(gain).connect(ctx.destination);
+    // A few milliseconds of fade at each edge: no click where one clip ends and the next begins.
+    const t = ctx.currentTime + 0.01;
+    const end = t + buffer.duration;
+    const fadeIn = Math.min(0.012, buffer.duration / 4);
+    const fadeOut = Math.min(0.025, buffer.duration / 4);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(1, t + fadeIn);
+    gain.gain.setValueAtTime(1, Math.max(t + fadeIn, end - fadeOut));
+    gain.gain.linearRampToValueAtTime(0, end);
+    src.onended = () => {
+      if (this.current?.src === src) this.current = null;
+      done();
+    };
+    this.current = { src, gain };
+    this.lastHeard = text;
+    this.opts.onStart();
+    src.start(t);
+  }
+
+  private playElement(data: ArrayBuffer, text: string, done: () => void, gen: number) {
+    const url = URL.createObjectURL(new Blob([data], { type: "audio/mpeg" }));
     const a = this.el();
     a.src = url;
     a.playbackRate = this.opts.rate;
     a.onended = a.onerror = () => {
       URL.revokeObjectURL(url);
-      if (gen === this.generation) void this.next(gen);
+      done();
     };
-    this.lastHeard = item.text;
+    this.lastHeard = text;
     this.opts.onStart();
-    await a.play().catch(() => {
-      if (gen === this.generation) void this.next(gen);
+    a.play().catch(() => {
+      if (gen === this.generation) done();
     });
   }
 
@@ -126,6 +205,21 @@ export class CloudSpeaker implements Speaker {
     for (const q of this.queue) q.abort.abort();
     this.queue = [];
     this.playing = false;
+    if (this.current && this.ctx) {
+      // Fade out over a few milliseconds instead of cutting off mid-wave, which clicks.
+      const { src, gain } = this.current;
+      const now = this.ctx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.03);
+      src.onended = null;
+      try {
+        src.stop(now + 0.035);
+      } catch {
+        // already stopped
+      }
+      this.current = null;
+    }
     if (this.audio) {
       this.audio.pause();
       this.audio.removeAttribute("src");

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const voice = elevenLabs.defaultVoice();
   if (!voice || !VOICE_ID.test(voice)) return NextResponse.json({ error: "Barnabas's voice isn't set up yet (ELEVENLABS_VOICE_ID)." }, { status: 503 });
   const model = elevenLabs.model();
-  const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}/stream?output_format=mp3_44100_64`, {
+  const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}/stream?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": elevenLabs.key(), "Content-Type": "application/json", Accept: "audio/mpeg" },
     body: JSON.stringify({
