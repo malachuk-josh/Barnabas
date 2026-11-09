@@ -23,9 +23,17 @@ const CHILD = "(kid|kids|child|children|son|daughter|toddler|infant|baby|boy|gir
 const CHILD_DETAIL = "(allerg\\w*|epi-?pen|inhaler|asthma|seizure\\w*|diabet\\w*|medical|medication|meds|diagnos\\w*|custody|authori[sz]ed pick-?ups?|picks? (him|her|them) up|pick-?up list|not allowed to pick|checked (into|out)|check-?in room|nursery room)";
 const CHILD_PATTERNS: RegExp[] = [new RegExp(`\\b${CHILD}\\b[^.]{0,80}\\b${CHILD_DETAIL}`, "i"), new RegExp(`\\b${CHILD_DETAIL}\\b[^.]{0,80}\\b${CHILD}\\b`, "i")];
 
+const HEALTH =
+  /\b(allerg\w*|epi-?pen|diagnos\w*|cancer|chemo\w*|dementia|alzheimer\w*|hiv|std|pregnan\w*|miscarr\w*|mental illness|bipolar|schizophren\w*|depress\w*|anxiety disorder|ptsd|medication|prescription|rehab|overdos\w*|chronic|arthritis|lupus|fibromyalgia|migraines?|diabet\w*|multiple sclerosis|parkinson\w*|crohn'?s|colitis|epilep\w*|seizures?|heart condition|surgery|long covid|chronic pain|insomnia|tinnitus|hearing loss|vision loss)\b/i;
+
+/** Whether a note mentions health. The leader's own health is remembered only with their spoken permission (engine/thorn.ts). */
+export function mentionsHealth(text: string): boolean {
+  return HEALTH.test(text);
+}
+
 /** Topics that need the church's written opt-in before Barnabas may remember them. */
 const SENSITIVE_PATTERNS: { re: RegExp; label: string }[] = [
-  { re: /\b(allerg\w*|epi-?pen|diagnos\w*|cancer|chemo\w*|dementia|alzheimer\w*|hiv|std|pregnan\w*|miscarr\w*|mental illness|bipolar|schizophren\w*|depress\w*|anxiety disorder|ptsd|medication|prescription|rehab|overdos\w*)\b/i, label: "health details" },
+  { re: HEALTH, label: "health details" },
   { re: /\b(counsel(?:ing|ed|or)?|therapy|therapist|confess\w*|confided)\b/i, label: "counseling content" },
   { re: /\b(divorc\w*|separat(?:ed|ion)|affair|infidelity|cheat(?:ed|ing) on|custody|restraining order|domestic (?:violence|abuse)|abus\w*)\b/i, label: "family conflict or abuse" },
   { re: /\b(addict\w*|alcoholi\w*|drunk|relapse\w*|porn\w*)\b/i, label: "addiction details" },

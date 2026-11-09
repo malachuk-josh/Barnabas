@@ -421,6 +421,10 @@ A separate app for the congregation at `/m`, with its own web manifest (`/m/mani
 
 In the Vercel project, open **Storage → Create → Blob**, connect it to the project (this sets `BLOB_READ_WRITE_TOKEN`), and redeploy. Without it the editor accepts image addresses only.
 
+## A thorn in the flesh: the leader's own health
+
+Health details are never saved as notes. When a leader mentions their own chronic condition or ongoing struggle that bears on their ministry, Barnabas responds with care, then asks whether they'd like him to remember it "as a thorn in the flesh" (2 Corinthians 12:7, KJV) or keep it private. It is enforced in code (`src/lib/engine/thorn.ts`): the first `remember_thorn` call saves nothing; only the leader's very next message, with a clear yes about the same detail, saves it to `/memories/thorn-in-the-flesh.md`. Anything else, including "keep it private", stores nothing. Never off the record, never in a crisis moment, and only for the leader themselves (congregants' health follows the church's memory policy). `save_memory` and getting-to-know-you answers refuse the leader's own health details, and the after-conversation memory job may not touch that file. Barnabas reads it at the start of each conversation; the leader can edit or delete it on the Memory screen.
+
 ## Getting to know each leader
 
 Barnabas works through twenty questions with every leader over many conversations, ranked so their ministry comes first (calling, biggest challenge, hope for the year, their role, the people they invest in) and their own rest, walk and support after. The list and its order are in `src/lib/engine/know.ts`.

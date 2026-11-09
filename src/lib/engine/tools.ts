@@ -20,8 +20,9 @@ import { gateConfirmed } from "./gate";
 import { OPS_TOOLS } from "./ops-tools";
 import { GROWTH_TOOLS } from "./growth-tools";
 import { KNOW_TOOLS } from "./know";
+import { THORN_TOOLS } from "./thorn";
 import { SITE_TOOLS } from "./site-tools";
-import { checkMemoryText } from "../policy/privacy";
+import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
 import { INBOX_PATH } from "./prompt";
@@ -268,6 +269,10 @@ const saveMemory = tool({
   schema: z.object({ note: z.string().min(3).max(400), about_person_id: z.string().max(40).optional() }),
   async run({ note, about_person_id }, ctx) {
     if (ctx.meta.offRecord) return fail("This conversation is off the record, so nothing can be saved.");
+    // The leader's own health is never saved as a quick note: it needs their spoken permission first.
+    if (!about_person_id && mentionsHealth(note)) {
+      return fail("Not saved: if this is about the leader's own health, use remember_thorn to ask whether they'd like you to remember it as a thorn in the flesh or keep it private. Otherwise save only a minimal follow-up without the details.");
+    }
     const problem = checkMemoryText(note, { allowSensitive: config.allowSensitiveMemory });
     if (problem) return fail(problem);
     let about = "";
@@ -1275,6 +1280,7 @@ const ALL: ToolSpec<any>[] = [
   ...OPS_TOOLS,
   ...GROWTH_TOOLS,
   ...KNOW_TOOLS,
+  ...THORN_TOOLS,
   ...SITE_TOOLS,
 ];
 

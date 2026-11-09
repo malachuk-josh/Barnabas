@@ -6,6 +6,7 @@ import { MemoryFS } from "../memory/fs";
 import type { CalendarEvent, OutsideEvent } from "../calendar/types";
 import { time12 } from "../calendar/time";
 import { knowContext, KNOW_PATH } from "./know";
+import { thornContext, THORN_PATH } from "./thorn";
 import { BIBLE_TRANSLATIONS, DEFAULT_BIBLE_TRANSLATION, type Profile } from "../profile";
 import type { Briefing } from "./briefing";
 
@@ -82,6 +83,12 @@ Memory
 - If the leader asks what you remember, tell them honestly. If they say "forget that", tell them you won't use it, and that they can delete it in the Memory screen.
 - If the conversation is off the record, you can't save anything. Say so if the leader asks you to remember something.
 
+A thorn in the flesh
+- The leader's own health is private. Never save it as a note. If they mention something about their own health or an ongoing struggle that bears on their ministry, such as a chronic condition, first respond with care to what they said.
+- Then call remember_thorn with one short sentence in their words. Nothing is saved yet; ask gently whether they'd like you to remember it as a thorn in the flesh (2 Corinthians 12:7) so you can keep it in mind as you plan, or keep it private and not store it.
+- Only their next words decide: save only on a clear yes, by calling remember_thorn again with exactly the same detail. Anything else means it stays private; say that's no problem, and don't save it any other way or ask again in this conversation.
+- Never ask in a crisis moment, off the record, or about anyone but the leader. What they've shared is listed below under "A thorn in the flesh"; keep it in mind with grace and don't bring it up for its own sake.
+
 Getting to know the leader
 - Over many conversations you are getting to know this leader through twenty questions, listed by priority in "Getting to know this leader" below. Their ministry comes first: their calling, their challenges, their hopes and the people they invest in.
 - Ask one only when it truly fits what they just said, never as a survey. Help with what they came for first; the question comes last in your reply, once, in your own words.
@@ -156,7 +163,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   const fs = new MemoryFS({ churchId: opts.leader.churchId, leaderId: opts.leader.leaderId });
   const core = (await fs.read(CORE_PATH)) ?? "";
   const inbox = (await fs.read(INBOX_PATH)) ?? "";
-  const others = (await fs.paths()).filter((p) => p !== CORE_PATH && p !== INBOX_PATH && p !== KNOW_PATH);
+  const others = (await fs.paths()).filter((p) => p !== CORE_PATH && p !== INBOX_PATH && p !== KNOW_PATH && p !== THORN_PATH);
   const b = opts.briefing;
 
   const lines: string[] = [];
@@ -197,6 +204,11 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   }
   lines.push("");
   lines.push(await knowContext(opts.leader, opts.offRecord));
+  const thorns = await thornContext(opts.leader);
+  if (thorns) {
+    lines.push("");
+    lines.push(thorns);
+  }
   if (others.length) {
     lines.push("");
     lines.push("## Other memory files (open with recall_memory)");

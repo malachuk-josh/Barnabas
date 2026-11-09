@@ -16,6 +16,7 @@ import { kv } from "../store";
 import { claude, historyContent, supportsFallbacks } from "./claude";
 import { CORE_PATH, INBOX_PATH } from "./prompt";
 import { KNOW_PATH, KNOW_QUESTIONS } from "./know";
+import { THORN_PATH } from "./thorn";
 
 const MEMORY_TOOL: Anthropic.Beta.BetaMemoryTool20250818 = { type: "memory_20250818", name: "memory" };
 
@@ -39,6 +40,7 @@ Rules:
 - Write dates as yyyy-mm-dd.
 - ${POLICY_TEXT()}
 - Never record passwords, codes, account numbers or other secrets.
+- Never record the leader's own health conditions anywhere. ${THORN_PATH} holds the only ones they agreed to share; Barnabas changes it only with their spoken permission. Don't edit it, copy from it, or add to it.
 - If nothing worth remembering was said, change nothing.
 When you're finished, reply with one short sentence describing what you changed.`;
 

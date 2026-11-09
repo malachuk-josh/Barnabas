@@ -3,7 +3,7 @@ import type { Leader } from "../auth/session";
 import { config } from "../config";
 import { provenanceKey, saveConversation, type ConversationMeta } from "../data/conversations";
 import { MemoryFS } from "../memory/fs";
-import { checkMemoryText } from "../policy/privacy";
+import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { detectCrisis } from "../policy/crisis";
 import { isAffirmative } from "../policy/confirm";
 import { audit } from "../data/records";
@@ -268,6 +268,7 @@ const recordToKnow = tool({
   async run({ question_id, answer }, ctx: ToolContext) {
     if (ctx.meta.offRecord) return fail("This conversation is off the record, so nothing can be saved.");
     const clean = answer.replace(/\s+/g, " ").trim();
+    if (mentionsHealth(clean)) return fail("Not saved: health details need their permission first. Use remember_thorn to ask, and save this answer without the health detail.");
     const problem = checkMemoryText(clean, { allowSensitive: config.allowSensitiveMemory });
     if (problem) return fail(problem);
     const fs = memoryFor(ctx.leader, ctx.meta);

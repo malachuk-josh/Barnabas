@@ -6,6 +6,7 @@ import { audit } from "@/lib/data/records";
 import { MemoryFS } from "@/lib/memory/fs";
 import { MemoryPathError, normalizeMemoryPath } from "@/lib/memory/paths";
 import { checkMemoryText } from "@/lib/policy/privacy";
+import { THORN_PATH } from "@/lib/engine/thorn";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,16 @@ export async function PUT(request: Request) {
   if (isResponse(leader)) return leader;
   const parsed = Put.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid memory file." }, { status: 400 });
-  const result = await memory(leader.leaderId, leader.churchId).run({ command: "create", path: parsed.data.path, file_text: parsed.data.content });
+  // The leader editing their own "thorn in the flesh" file is their own consent to keep its health details;
+  // secrets and children's details are still refused.
+  let path: string;
+  try {
+    path = normalizeMemoryPath(parsed.data.path);
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof MemoryPathError ? err.message : "Invalid memory file." }, { status: 400 });
+  }
+  const fs = path === THORN_PATH ? new MemoryFS({ churchId: leader.churchId, leaderId: leader.leaderId }, (text) => checkMemoryText(text, { allowSensitive: true })) : memory(leader.leaderId, leader.churchId);
+  const result = await fs.run({ command: "create", path, file_text: parsed.data.content });
   if (result.isError) return NextResponse.json({ error: result.text.replace(/^Error: /, "") }, { status: 400 });
   await audit(leader, { action: "memory.edit_by_leader", detail: parsed.data.path });
   return NextResponse.json({ ok: true });
