@@ -36,8 +36,9 @@
   --radius: 16px;
 }
 
+/* Dark theme: follows the device unless the leader picks light or dark with the header toggle (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0c1c1b;
     --surface: #132a28;
     --surface-2: #19332f;
@@ -63,6 +64,32 @@
     color-scheme: dark;
   }
 }
+:root[data-theme="dark"] {
+  --bg: #0c1c1b;
+  --surface: #132a28;
+  --surface-2: #19332f;
+  --fg: #e6eeeb;
+  --muted: #9fb7b1;
+  --line: #26413d;
+  --line-soft: #203936;
+  --shadow-card: 0 0 0 1px var(--line-soft);
+  --accent: #bfd8d1;
+  --accent-fg: #0f2423;
+  --highlight: #e5b75c;
+  --danger: #f08a7e;
+  --danger-bg: #3a1d1a;
+  --watch: #e8b65a;
+  --watch-bg: #33290f;
+  --ok: #7fcb9c;
+  --talk-bg: #163634;
+  --talk-fg: #f3f6f4;
+  --talk-muted: #9fc4bb;
+  --chart-1: #14a894;
+  --chart-2: #c48712;
+  --chart-grid: #22403c;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -393,7 +420,8 @@ pre.file:where(:not(.word-root *)) { white-space: pre-wrap; overflow-wrap: anywh
 .src-google { --chip-color: #1a73e8; }
 .src-microsoft { --chip-color: #6264a7; }
 .src-church { --chip-color: #b37e1c; }
-@media (prefers-color-scheme: dark) { .src-barnabas { --chip-color: #8cc5b8; } .src-google { --chip-color: #8ab4f8; } .src-microsoft { --chip-color: #a6a7e8; } .src-church { --chip-color: #e5b75c; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .src-barnabas { --chip-color: #8cc5b8;} :root:not([data-theme="light"]) .src-google { --chip-color: #8ab4f8;} :root:not([data-theme="light"]) .src-microsoft { --chip-color: #a6a7e8;} :root:not([data-theme="light"]) .src-church { --chip-color: #e5b75c;} }
+:root[data-theme="dark"] .src-barnabas { --chip-color: #8cc5b8;} :root[data-theme="dark"] .src-google { --chip-color: #8ab4f8;} :root[data-theme="dark"] .src-microsoft { --chip-color: #a6a7e8;} :root[data-theme="dark"] .src-church { --chip-color: #e5b75c;}
 @media (max-width: 640px) {
   .day { min-height: 64px; padding: 4px; }
   .day .chip:where(:not(.word-root *)) { font-size: 0; padding: 0; height: 6px; border-left-width: 0; background: var(--chip-color); border-radius: 3px; }
@@ -1025,3 +1053,14 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
   .care-chips::-webkit-scrollbar { display: none; }
   .care-chip { flex: none; white-space: nowrap; min-height: 40px; }
 }
+
+/* Light/dark toggle in the header (phones) and beside the name in the sidebar (desktop) */
+.theme-switch {
+  display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; flex: none;
+  border: 1px solid color-mix(in srgb, var(--talk-fg) 22%, transparent); background: transparent; color: var(--talk-fg); cursor: pointer;
+}
+.theme-switch:hover { background: color-mix(in srgb, var(--talk-fg) 10%, transparent); }
+.theme-switch:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.theme-switch svg { width: 18px; height: 18px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

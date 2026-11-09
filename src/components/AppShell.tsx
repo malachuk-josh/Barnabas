@@ -6,6 +6,7 @@ import { requestPath } from "@/lib/auth/require";
 import { getProfile, type Profile } from "@/lib/profile";
 import { accessFor } from "@/lib/team";
 import { Mark } from "./Mark";
+import { AppThemeSwitch } from "./AppThemeSwitch";
 import { PullToRefresh } from "./PullToRefresh";
 import { SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton } from "./NavLinks";
 
@@ -48,10 +49,13 @@ export async function AppShell({
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Link href={checkinOnly ? "/kids" : "/"} className="brand">
-          <Mark light />
-          Barnabas
-        </Link>
+        <div className="brand-row">
+          <Link href={checkinOnly ? "/kids" : "/"} className="brand">
+            <Mark light />
+            Barnabas
+          </Link>
+          <AppThemeSwitch />
+        </div>
         {!checkinOnly && <TalkButton />}
         <SideNav showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
         <div className="side-foot">
@@ -74,9 +78,12 @@ export async function AppShell({
             <Mark light />
             Barnabas
           </Link>
-          <Link href="/settings" className="avatar" aria-label="Settings">
-            {initials(profile.name)}
-          </Link>
+          <div className="header-actions">
+            <AppThemeSwitch />
+            <Link href="/settings" className="avatar" aria-label="Settings">
+              {initials(profile.name)}
+            </Link>
+          </div>
         </header>
         {fill ? (
           <main className="main-fill">{children}</main>
