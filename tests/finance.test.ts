@@ -64,7 +64,7 @@ describe("roles and permissions", () => {
     "ops.schedule": ["pastor", "staff"],
     "services.plan": ["pastor", "staff"],
     "events.manage": ["pastor", "deacon", "staff"],
-    "kids.checkin": ["pastor", "staff"],
+    "kids.checkin": ["pastor", "staff", "checkin"],
     "kids.admin": ["pastor", "staff"],
   };
 

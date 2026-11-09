@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentLeader, type Leader } from "@/lib/auth/session";
-import { can } from "@/lib/auth/roles";
+import { can, checkinMayUse, isCheckinOnly } from "@/lib/auth/roles";
+import { requestPath } from "@/lib/auth/require";
 import { getProfile, type Profile } from "@/lib/profile";
 import { accessFor } from "@/lib/team";
 import { Mark } from "./Mark";
@@ -40,14 +41,17 @@ export async function AppShell({
   const access = leader ? await accessFor(leader) : null;
   const showFinance = can(access, "finance.view");
   const showKids = can(access, "kids.checkin");
+  // Kids check-in volunteers get the check-in station and their settings, nothing else.
+  const checkinOnly = isCheckinOnly(access);
+  if (checkinOnly && !checkinMayUse(await requestPath())) redirect("/kids");
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Link href="/" className="brand">
+        <Link href={checkinOnly ? "/kids" : "/"} className="brand">
           <Mark light />
           Barnabas
         </Link>
-        <SideNav showFinance={showFinance} showKids={showKids} />
+        <SideNav showFinance={showFinance} showKids={showKids} checkinOnly={checkinOnly} />
         <div className="side-foot">
           <Link href="/settings" className="me-card">
             <span className="avatar" aria-hidden="true">
@@ -63,7 +67,7 @@ export async function AppShell({
       </aside>
       <div className="main-area">
         <header className="mobile-top">
-          <Link href="/" className="brand">
+          <Link href={checkinOnly ? "/kids" : "/"} className="brand">
             <Mark light />
             Barnabas
           </Link>
@@ -79,7 +83,7 @@ export async function AppShell({
           </main>
         )}
       </div>
-      <TabBar showFinance={showFinance} showKids={showKids} />
+      <TabBar showFinance={showFinance} showKids={showKids} checkinOnly={checkinOnly} />
       <PullToRefresh />
     </div>
   );

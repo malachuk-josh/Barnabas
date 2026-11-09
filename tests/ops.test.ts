@@ -64,7 +64,7 @@ describe("operations permissions", () => {
       "ops.schedule": ["pastor", "staff"],
       "services.plan": ["pastor", "staff"],
       "events.manage": ["pastor", "deacon", "staff"],
-      "kids.checkin": ["pastor", "staff"],
+      "kids.checkin": ["pastor", "staff", "checkin"],
       "kids.admin": ["pastor", "staff"],
     };
     for (const role of ROLES) for (const [perm, roles] of Object.entries(expected)) expect(can({ role, admin: false }, perm as never), `${role} ${perm}`).toBe(roles.includes(role));
@@ -615,5 +615,18 @@ describe("Barnabas operations tools", () => {
     expect(cover.by_gathering[0].could_cover).toEqual([]);
     const people = new DemoChurch();
     expect((await people.listPeople()).every((p) => LEADERS.includes(p.name))).toBe(true);
+  });
+});
+
+describe("kids check-in role", () => {
+  it("can only reach the check-in station and its own settings", async () => {
+    const { checkinMayUse, isCheckinOnly, can } = await import("@/lib/auth/roles");
+    const access = { role: "checkin" as const, admin: false };
+    expect(isCheckinOnly(access)).toBe(true);
+    expect(isCheckinOnly({ role: "checkin", admin: true })).toBe(false);
+    expect(can(access, "kids.checkin")).toBe(true);
+    for (const p of ["kids.admin", "finance.view", "care.assign", "ops.schedule", "services.plan", "events.manage"] as const) expect(can(access, p), p).toBe(false);
+    for (const ok of ["/kids", "/kids/rooms", "/kids/labels", "/settings", "/api/kids", "/api/profile", "/api/auth/signout", "/api/account"]) expect(checkinMayUse(ok), ok).toBe(true);
+    for (const no of ["/", "/kids/families", "/care", "/finance", "/word", "/api/chat", "/api/memory", "/api/kidsx", "/settingsx", "/api/conversations"]) expect(checkinMayUse(no), no).toBe(false);
   });
 });

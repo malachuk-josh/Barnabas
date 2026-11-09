@@ -67,6 +67,7 @@ describe("care visibility", () => {
       treasurer: [true, false, false, false, false],
       staff: [true, false, false, false, false],
       leader: [true, false, false, false, false],
+      checkin: [true, false, false, false, false],
     };
     for (const role of ROLES) {
       const viewer = v(role);

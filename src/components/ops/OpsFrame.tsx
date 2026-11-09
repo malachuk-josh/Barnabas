@@ -1,4 +1,7 @@
 import { AppShell } from "@/components/AppShell";
+import { checkinMayUse, isCheckinOnly } from "@/lib/auth/roles";
+import { currentLeader } from "@/lib/auth/session";
+import { accessFor } from "@/lib/team";
 import type { Profile } from "@/lib/profile";
 import { OpsDemoBanner, type DemoClear } from "./OpsDemoBanner";
 import { OpsTabs, type Tab } from "./OpsTabs";
@@ -19,7 +22,7 @@ export const KIDS_TABS: Tab[] = [
 ];
 
 /** The page frame for Serve, Services, Events and Kids: heading, section tabs and the demo banner. */
-export function OpsFrame({
+export async function OpsFrame({
   profile,
   eyebrow,
   title,
@@ -40,6 +43,9 @@ export function OpsFrame({
   demo?: { text: React.ReactNode; clear?: DemoClear };
   children: React.ReactNode;
 }) {
+  // A kids check-in volunteer sees only the tabs they can open.
+  const leader = await currentLeader();
+  if (tabs && leader && isCheckinOnly(await accessFor(leader))) tabs = tabs.filter((t) => checkinMayUse(t.href));
   return (
     <AppShell profile={profile}>
       <div className="page-head">

@@ -27,9 +27,10 @@ function active(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export type NavAccess = { showFinance?: boolean; showKids?: boolean };
+export type NavAccess = { showFinance?: boolean; showKids?: boolean; checkinOnly?: boolean };
 
-function items({ showFinance = false, showKids = false }: NavAccess) {
+function items({ showFinance = false, showKids = false, checkinOnly = false }: NavAccess) {
+  if (checkinOnly) return NAV.filter((n) => n.href === "/kids" || n.href === "/settings");
   return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids));
 }
 

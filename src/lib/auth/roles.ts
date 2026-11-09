@@ -4,7 +4,7 @@
  * Everything here is checked on the server; the app only hides what a leader can't use.
  */
 
-export const ROLES = ["pastor", "treasurer", "deacon", "staff", "leader"] as const;
+export const ROLES = ["pastor", "treasurer", "deacon", "staff", "leader", "checkin"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -13,6 +13,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   deacon: "Deacon",
   staff: "Staff",
   leader: "Leader",
+  checkin: "Kids check-in",
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -21,6 +22,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   deacon: "Finance summaries without donor names; sees care cases assigned to them and non-confidential ones; manages events; leads their own serving team",
   staff: "Everything except finance; schedules every team, plans services, manages events, runs kids check-in and keeps family records",
   leader: "Everything except finance and kids check-in; sees the care cases assigned to them; signs up to serve and leads their own team",
+  checkin: "Only the kids check-in station: find families, check children in and out, print labels and see room counts. No other part of Barnabas",
 };
 
 export const DEFAULT_ROLE: Role = "leader";
@@ -58,7 +60,7 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "ops.schedule": ["pastor", "staff"],
   "services.plan": ["pastor", "staff"],
   "events.manage": ["pastor", "deacon", "staff"],
-  "kids.checkin": ["pastor", "staff"],
+  "kids.checkin": ["pastor", "staff", "checkin"],
   "kids.admin": ["pastor", "staff"],
 };
 
@@ -85,4 +87,23 @@ export function adminEmails(env: string | undefined = process.env.BARNABAS_ADMIN
 
 export function isAdminEmail(email: string, env?: string): boolean {
   return adminEmails(env).includes(email.trim().toLowerCase());
+}
+
+/**
+ * A kids check-in volunteer (and not an administrator) may use only the check-in station and their own
+ * settings. Enforced for pages in AppShell and for APIs in requireLeader, using the path the middleware
+ * passes along.
+ */
+export function isCheckinOnly(access: Access | null | undefined): boolean {
+  return Boolean(access && access.role === "checkin" && !access.admin);
+}
+
+const CHECKIN_PAGES = ["/kids", "/settings"];
+const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account"];
+
+/** Whether a check-in-only volunteer may open this path. Family records stay behind kids.admin. */
+export function checkinMayUse(pathname: string): boolean {
+  const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
+  if (under("/kids/families")) return false;
+  return [...CHECKIN_PAGES, ...CHECKIN_APIS].some(under);
 }

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
+const PATH_HEADER = "x-barnabas-path";
+
 // /welcome/{token} and /register/{token} (and their APIs) are the public guest card and event registration:
 // the token is checked and the API is rate-limited there.
 const PUBLIC_PATHS = ["/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg"];
@@ -14,8 +16,11 @@ function secret(): Uint8Array | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Pass the path to server code (role limits are checked there); a header sent by the browser is overwritten.
+  const headers = new Headers(request.headers);
+  headers.set(PATH_HEADER, pathname);
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers } });
   }
   const key = secret();
   const token = request.cookies.get("barnabas_session")?.value;
@@ -28,7 +33,7 @@ export async function middleware(request: NextRequest) {
       ok = false;
     }
   }
-  if (ok) return NextResponse.next();
+  if (ok) return NextResponse.next({ request: { headers } });
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Sign in to continue." }, { status: 401 });
   }

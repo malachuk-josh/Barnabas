@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile";
-import { ROLE_DESCRIPTIONS, ROLE_LABELS, type Access } from "@/lib/auth/roles";
+import { ROLE_DESCRIPTIONS, ROLE_LABELS, isCheckinOnly, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
 import { TeamSettings } from "./TeamSettings";
 
@@ -51,8 +51,11 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
   const [sayAs, setSayAs] = useState("");
 
   const syncParam = params.get("sync");
+  // Kids check-in volunteers only see their profile and data settings.
+  const checkinOnly = isCheckinOnly(access);
 
   useEffect(() => {
+    if (checkinOnly) return;
     fetch("/api/voice/voices")
       .then((r) => (r.ok ? r.json() : null))
       .then(setVoices)
@@ -88,6 +91,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
   }
 
   useEffect(() => {
+    if (checkinOnly) return;
     fetch("/api/calendar/sync")
       .then((r) => (r.ok ? r.json() : null))
       .then(setSync)
@@ -159,8 +163,8 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
     <div className="settings">
       <nav className="settings-nav" aria-label="Settings sections">
         <a href="#profile">Profile</a>
-        <a href="#barnabas">Barnabas and voice</a>
-        <a href="#calendars">Calendars</a>
+        {!checkinOnly && <a href="#barnabas">Barnabas and voice</a>}
+        {!checkinOnly && <a href="#calendars">Calendars</a>}
         {access.admin && <a href="#team">Team</a>}
         <a href="#privacy">Privacy and data</a>
       </nav>
@@ -245,6 +249,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
             </div>
           </section>
 
+          {!checkinOnly && (
           <section id="barnabas" className="card">
             <h2>Barnabas and voice</h2>
             <div className="form-row">
@@ -343,6 +348,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
               </div>
             </div>
           </section>
+          )}
 
           <div className="row">
             <button className="btn btn-primary" type="submit" disabled={saving}>
@@ -351,6 +357,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
           </div>
         </form>
 
+        {!checkinOnly && (
         <section id="calendars" className="card">
           <h2>Calendars</h2>
           <p className="muted">
@@ -447,6 +454,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
             </div>
           )}
         </section>
+        )}
 
         {access.admin && <TeamSettings myLeaderId={leaderId} />}
 

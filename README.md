@@ -21,7 +21,7 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Services | Sermon series, the preaching rotation and orders of service with scripture linked into The Word | |
 | Events | Registration forms, capacity and waitlist, a public sign-up link, attendee lists with CSV export, event-day check-in, and registration status on the Calendar | Online payment (Stripe) isn't built: paid events are settled at the door |
 | Kids | Check-in station, 4" × 2" child labels with matching parent pickup tags, checkout by pickup code, room counts and ratio warnings, families with allergies and authorized pickups | Restricted to `kids.checkin` and `kids.admin`; Barnabas sees counts only |
-| Roles | Pastor, treasurer, deacon, staff and leader, set by an admin in **Settings → Team**; checked in code on every finance request and tool call | Admins are bootstrapped with `BARNABAS_ADMIN_EMAILS` |
+| Roles | Pastor, treasurer, deacon, staff, leader and kids check-in, set by an admin in **Settings → Team**; checked in code on every finance request and tool call | Admins are bootstrapped with `BARNABAS_ADMIN_EMAILS` |
 | Settings | Profile (name, what Barnabas calls you, role, ministries, about you), time zone, reply language, voice language and speed, calendar connections, team roles (admins), delete all data | Barnabas reads the profile at the start of each conversation |
 
 Design and research: [`docs/barnabas-voice-harness.md`](docs/barnabas-voice-harness.md), [`reports/`](reports/).
@@ -103,21 +103,21 @@ With two-way sync, the leader's Google or Outlook events appear (read-only) on t
 
 Every leader has a role, kept on their leader record (`leader:{church}:{leaderId}`) and read fresh on every request, so a change applies right away. New sign-ins start as **leader**. People listed in `BARNABAS_ADMIN_EMAILS` are admins: they start as **pastor** and can set anyone's role in **Settings → Team**, which lists everyone who has signed in.
 
-| Permission | Pastor | Treasurer | Deacon | Staff | Leader |
-|---|---|---|---|---|---|
-| See finance summaries, budgets, funds, missions and reports (`finance.view`) | Yes | Yes | Yes | No | No |
-| Change budgets, transactions, gifts and missions records; import and reconcile (`finance.edit`) | Yes | Yes | No | No | No |
-| See individual giving: donor names, gifts, pledges, statements (`giving.donors`) | Yes | Yes | No | No | No |
-| See every care case, including confidential ones (`care.view_all`) | Yes | No | No | No | No |
-| Assign care cases to someone else; keep the pathway and classes; make guest-card links (`care.assign`) | Yes | No | Yes | Yes | No |
-| Schedule any team's roster, positions and volunteers (`ops.schedule`); a team's lead can always schedule their own team | Yes | No | No | Yes | No |
-| Plan series, the preaching rotation and orders of service (`services.plan`) | Yes | No | No | Yes | No |
-| Create events, see registrants, export and check people in (`events.manage`) | Yes | No | Yes | Yes | No |
-| Run kids check-in: find families, check in and out, labels, room counts (`kids.checkin`) | Yes | No | No | Yes | No |
-| Add and edit families and children, medical notes and pickups (`kids.admin`) | Yes | No | No | Yes | No |
+| Permission | Pastor | Treasurer | Deacon | Staff | Leader | Kids check-in |
+|---|---|---|---|---|---|---|
+| See finance summaries, budgets, funds, missions and reports (`finance.view`) | Yes | Yes | Yes | No | No | No |
+| Change budgets, transactions, gifts and missions records; import and reconcile (`finance.edit`) | Yes | Yes | No | No | No | No |
+| See individual giving: donor names, gifts, pledges, statements (`giving.donors`) | Yes | Yes | No | No | No | No |
+| See every care case, including confidential ones (`care.view_all`) | Yes | No | No | No | No | No |
+| Assign care cases to someone else; keep the pathway and classes; make guest-card links (`care.assign`) | Yes | No | Yes | Yes | No | No |
+| Schedule any team's roster, positions and volunteers (`ops.schedule`); a team's lead can always schedule their own team | Yes | No | No | Yes | No | No |
+| Plan series, the preaching rotation and orders of service (`services.plan`) | Yes | No | No | Yes | No | No |
+| Create events, see registrants, export and check people in (`events.manage`) | Yes | No | Yes | Yes | No | No |
+| Run kids check-in: find families, check in and out, labels, room counts (`kids.checkin`) | Yes | No | No | Yes | No | Yes |
+| Add and edit families and children, medical notes and pickups (`kids.admin`) | Yes | No | No | Yes | No | No |
 | Set roles (`team.manage`) | Admins only (`BARNABAS_ADMIN_EMAILS`), whatever their role |
 
-The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`, and Kids from roles without `kids.checkin`. Everyone signed in can read rosters, the preaching rotation, orders of service and event counts, and sign up to serve. A check-in volunteer who isn't on staff needs the staff role for the station.
+The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`, and Kids from roles without `kids.checkin`. Everyone signed in can read rosters, the preaching rotation, orders of service and event counts, and sign up to serve. A kids check-in volunteer gets the **Kids check-in** role: the check-in station, room counts and labels, and their own profile, and nothing else (no Talk, The Word, Calendar, Care, Finance or family records). Other pages send them to the station and other APIs return 403; the limit is checked on the server (`isCheckinOnly` / `checkinMayUse` in `src/lib/auth/roles.ts`, applied in `AppShell` and `requireLeader`). An administrator is never limited this way.
 
 Care cases follow their own visibility rules (`src/lib/care/visibility.ts`), checked on every page, API call and Barnabas tool:
 
