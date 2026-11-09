@@ -307,8 +307,9 @@ textarea.plain:where(:not(.word-root *)) { font-family: var(--font-body); font-s
 
 /* ---------- Settings ---------- */
 .settings { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
-@media (max-width: 860px) { .settings { grid-template-columns: minmax(0, 1fr); } .settings-nav { display: none; } }
 .settings-nav { position: sticky; top: 24px; display: grid; gap: 4px; }
+/* After the base rule, so the phone layout really hides the section links. */
+@media (max-width: 860px) { .settings { grid-template-columns: minmax(0, 1fr); } .settings-nav { display: none; } }
 .settings-nav a { text-decoration: none; padding: 8px 12px; border-radius: 10px; color: var(--muted); font-weight: 600; }
 .settings-nav a:hover { color: var(--fg); background: var(--surface-2); }
 .settings section { scroll-margin-top: 24px; }
