@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
 
 /** Sections of the menu, in order. Items with no group sit at the top; "account" sits at the foot. */
 export const NAV_GROUPS = [
@@ -36,6 +36,7 @@ export const NAV: NavItem[] = [
   { href: "/kids", label: "Kids", Icon: KidsIcon, group: "people", kids: true },
   { href: "/word", label: "The Word", Icon: BookIcon, group: "worship" },
   { href: "/services", label: "Services", Icon: ServicesIcon, group: "worship" },
+  { href: "/journal", label: "Journal", Icon: NotebookIcon, group: "worship" },
   { href: "/events", label: "Events", Icon: EventsIcon, group: "worship" },
   { href: "/finance", label: "Finance", Icon: FinanceIcon, group: "office", finance: true },
   { href: "/reports", label: "Reports", Icon: ReportsIcon, group: "office" },

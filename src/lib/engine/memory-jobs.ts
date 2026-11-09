@@ -41,6 +41,7 @@ Rules:
 - ${POLICY_TEXT()}
 - Never record passwords, codes, account numbers or other secrets.
 - Never record the leader's own health conditions anywhere. ${THORN_PATH} holds the only ones they agreed to share; Barnabas changes it only with their spoken permission. Don't edit it, copy from it, or add to it.
+- The leader's Journal (notes, sermons, devotional guides, setlists) is their own writing and lives in the Journal. Never copy journal content (or what was said while building an entry) into memory.
 - If nothing worth remembering was said, change nothing.
 When you're finished, reply with one short sentence describing what you changed.`;
 

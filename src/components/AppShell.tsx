@@ -8,6 +8,8 @@ import { accessFor } from "@/lib/team";
 import { Mark } from "./Mark";
 import { AppThemeSwitch } from "./AppThemeSwitch";
 import { PullToRefresh } from "./PullToRefresh";
+import { ServiceWorkerRegistrar } from "./ServiceWorkerRegistrar";
+import { pushConfig } from "@/lib/push/vapid";
 import { SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton } from "./NavLinks";
 
 function initials(name: string) {
@@ -95,6 +97,7 @@ export async function AppShell({
       </div>
       <TabBar showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
       <PullToRefresh />
+      {pushConfig() && <ServiceWorkerRegistrar />}
     </div>
   );
 }

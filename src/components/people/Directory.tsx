@@ -11,6 +11,8 @@ export type Row = {
   lastName: string;
   status: MemberStatus;
   household: { id: string; name: string } | null;
+  /** From the Leadership role field (Lead Pastor, Deacon…); blank for everyone else. */
+  leadershipRole?: string;
   groups: { name: string }[];
   contact: { email?: string; phone?: string } | null;
   archived: boolean;
@@ -61,7 +63,7 @@ export function Directory({ people, showContacts, showLastSeen }: { people: Row[
     return people.filter(
       (p) =>
         (!status || (status === "missed" ? p.missed : p.status === status)) &&
-        (!t || `${p.name} ${p.household?.name ?? ""} ${p.contact?.email ?? ""} ${p.contact?.phone ?? ""}`.toLowerCase().includes(t)),
+        (!t || `${p.name} ${p.leadershipRole ?? ""} ${p.household?.name ?? ""} ${p.contact?.email ?? ""} ${p.contact?.phone ?? ""}`.toLowerCase().includes(t)),
     );
   }, [people, q, status]);
 
@@ -93,7 +95,7 @@ export function Directory({ people, showContacts, showLastSeen }: { people: Row[
             <path d="m20 20-3.5-3.5" />
           </svg>
           <span className="sr-only">Search people</span>
-          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={showContacts ? "Search name, household, email or phone" : "Search name or household"} />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={showContacts ? "Search name, role, household, email or phone" : "Search name, role or household"} />
         </label>
         <div className="care-chips" role="group" aria-label="Show">
           {chip("", "Everyone", people.length)}
@@ -138,8 +140,8 @@ export function Directory({ people, showContacts, showLastSeen }: { people: Row[
                         </span>
                         <span className="ppl-name">
                           <strong>{p.name}</strong>
-                          {p.household && <span className="small muted ppl-house">{p.household.name}</span>}
-                          <span className="small muted ppl-sub">{[p.household?.name, MEMBER_LABELS[p.status]].filter(Boolean).join(" · ")}</span>
+                          {p.leadershipRole && <span className="small muted ppl-house">{p.leadershipRole}</span>}
+                          <span className="small muted ppl-sub">{[p.leadershipRole, MEMBER_LABELS[p.status]].filter(Boolean).join(" · ")}</span>
                         </span>
                       </Link>
                     </td>

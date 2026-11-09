@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { playEarcon, unlockEarcons } from "@/lib/voice/earcons";
 import { SentenceChunker } from "@/lib/speech/chunker";
 import { ASK_EVENT, TALK_EVENT } from "./NavLinks";
 import {
@@ -132,11 +133,20 @@ export function Talk({
     speaker.current = cloudVoice ? new CloudSpeaker({ ...opts, onError: () => setError("Barnabas's voice didn't load for one sentence. The text is on screen.") }) : new BrowserSpeaker(opts);
   }, [cloudVoice, lang, voice.rate, pronunciations, settle]);
 
+  // Whether the "microphone on" chime has played and the "off" one hasn't yet.
+  const micOn = useRef(false);
+  const micChime = useCallback((on: boolean) => {
+    if (micOn.current === on) return;
+    micOn.current = on;
+    playEarcon(on ? "on" : "off");
+  }, []);
+
   const stopListening = useCallback(() => {
+    if (listener.current) micChime(false);
     listener.current?.close();
     listener.current = null;
     setInterim("");
-  }, []);
+  }, [micChime]);
 
   const endConversation = useCallback(
     async (reason: "button" | "idle" | "toggle") => {
@@ -314,6 +324,7 @@ export function Talk({
     let continuousFallback = false;
     setError(null);
     speaker.current?.unlock();
+    unlockEarcons();
     pushBuffer.current = [];
     const events = {
       onInterim: (text: string) => {
@@ -335,6 +346,7 @@ export function Talk({
       onError: (message: string) => setError(message),
       onClose: () => {
         listener.current = null;
+        micChime(false);
         setInterim("");
         if (!continuous || continuousFallback) {
           const text = pushBuffer.current.join(" ").trim();
@@ -353,6 +365,7 @@ export function Talk({
     void ensureConversation("voice").catch(() => {});
     try {
       await l.start();
+      micChime(true);
     } catch (err) {
       l.close();
       // If the listening service is unavailable, fall back to the browser's own recognition (push-to-talk).
@@ -362,6 +375,7 @@ export function Talk({
         listener.current = fallback;
         try {
           await fallback.start();
+          micChime(true);
           setError("Hands-free listening isn't available right now, so Barnabas is using your device's speech recognition. Tap when you're done.");
           return;
         } catch {

@@ -7,6 +7,7 @@ import type { CalendarEvent, OutsideEvent } from "../calendar/types";
 import { time12 } from "../calendar/time";
 import { knowContext, KNOW_PATH } from "./know";
 import { thornContext, THORN_PATH } from "./thorn";
+import { journalCount } from "../journal/store";
 import { BIBLE_TRANSLATIONS, DEFAULT_BIBLE_TRANSLATION, type Profile } from "../profile";
 import type { Briefing } from "./briefing";
 import { LANGUAGE_NOTE } from "../language";
@@ -117,6 +118,14 @@ Operations: serving, services, events and kids
 - Kids check-in: kids_checkin_counts gives room counts and ratio warnings, and first names only when the leader asks who's in a room. Never ask for or repeat a child's last name, allergies, medical details, guardians or pickup codes, and never save anything about a child to memory, a draft or the calendar. Only leaders who run check-in can use it.
 - These lists may be empty, especially in the demo: say so warmly and point to the first step on the page (Serve, Services, Events or Kids). Never fill a gap with a made-up person.
 
+Journal
+- The leader's Journal holds their own notes, sermon ideas, devotional guides and worship setlists, private to them unless they share one with the leadership team to read.
+- "Journal this…" or "make a note of that": call journal_note. It's their own note, so no confirmation is needed; say in a few words that it's in their Journal. Off the record, nothing is saved, not even to the Journal.
+- When they ask you to help build a sermon outline, a devotional guide or a setlist, work it out with them, then call start_journal_entry with what you have, and update_journal_entry as you add points, days or songs. Keep a voice reply to a sentence about what you added; the details live in the entry.
+- Any scripture you write into an entry is quoted word for word in the leader's Bible translation, with its reference. With the KJV, the app fills in the exact words from the reference.
+- Open the journal (list_journal, read_journal_entry) only when they ask about it. Don't bring up what's in it otherwise, and never repeat it to anyone or into memory, a draft or the calendar.
+- You never delete a journal entry; they can do that in Journal. Sharing an entry (share_journal_entry) and sending a setlist to the order of service (send_setlist_to_service) are confirmed in code: propose, wait for a yes, then call again with the same details. An entry another leader shared is read-only.
+
 Reports and the church network
 - how_are_we_doing answers "how are we doing on X" (attendance, giving vs budget, co-laborers and their weariness, shepherding, guests, events, kids, or all) with totals only; the app checks the leader's role in code. Lead with what's going well, give one or two numbers, then a gentle next step. When there's no data yet, say so warmly and name the first step.
 - draft_monthly_report drafts the month's ministry report into the leader's Drafts (to themselves; nothing is sent). Call how_are_we_doing with area all first, then write a short, warm narrative in your own words, with no names, individual giving, shepherding details or anything about children.
@@ -210,6 +219,11 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   if (thorns) {
     lines.push("");
     lines.push(thorns);
+  }
+  const journal = await journalCount(opts.leader).catch(() => 0);
+  if (journal) {
+    lines.push("");
+    lines.push(`# Journal\n${journal} entr${journal === 1 ? "y" : "ies"} in their Journal (open with list_journal only if they ask).`);
   }
   if (others.length) {
     lines.push("");

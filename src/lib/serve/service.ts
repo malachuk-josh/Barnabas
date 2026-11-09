@@ -9,6 +9,7 @@ import { GATHERING_KEYS, gathering, ISO_RE, meetsOn, type GatheringKey } from ".
 import { checkMemoryText } from "../policy/privacy";
 import { config } from "../config";
 import { accessFor } from "../team";
+import { swapAccepted, swapRequested } from "../notifications/notify";
 import { loadServe, resetServe, updateServe } from "./store";
 import type { Assignment, ServeBook, ServeTeam, SwapRequest, Volunteer } from "./types";
 
@@ -209,6 +210,7 @@ export async function requestSwap(actor: ServeActor, input: z.input<typeof SwapI
     return s;
   });
   await log(actor.leader, "swap.request", `${swap.id} ${swap.assignmentId} -> ${swap.toVolunteerId}`, conversationId);
+  swapRequested(actor, swap);
   return swap;
 }
 
@@ -241,6 +243,7 @@ export async function respondSwap(actor: ServeActor, swapId: string, accept: boo
     return { swap: s, assignment: a };
   });
   await log(actor.leader, accept ? "swap.accept" : "swap.decline", swapId);
+  if (accept) swapAccepted(actor, result.swap);
   return result;
 }
 

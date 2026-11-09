@@ -19,7 +19,7 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
 const GLOBALS = path.join(ROOT, "src/app/globals.css");
 // Other app-wide stylesheets get the same guard: the website builder's, and the public site's and member
 // app's (which are scoped under .cs-root already, so the guard normally changes nothing there).
-const EXTRA = ["src/app/site/editor.css", "src/app/s/site.css"].map((f) => path.join(ROOT, f)).filter((f) => fs.existsSync(f));
+const EXTRA = ["src/app/site/editor.css", "src/app/s/site.css", "src/app/journal/journal.css"].map((f) => path.join(ROOT, f)).filter((f) => fs.existsSync(f));
 const WORD = path.join(ROOT, "src/app/word/word.css");
 const GUARD = ":where(:not(.word-root *))";
 

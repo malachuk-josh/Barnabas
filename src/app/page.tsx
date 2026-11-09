@@ -3,6 +3,8 @@ import { Briefing } from "@/components/Briefing";
 import { Talk } from "@/components/Talk";
 import { VERSES, type VerseKey } from "@/lib/language";
 import { deepgram, elevenLabs } from "@/lib/voice/server";
+import { NotificationsCard } from "@/components/NotificationsCard";
+import { vapidPublicKey } from "@/lib/push/vapid";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,7 @@ export default async function Home() {
   const keys = Object.keys(VERSES) as VerseKey[];
   const todaysVerse = keys[dayNumber % keys.length]!;
   const name = profile.preferredName || profile.name;
+  const pushKey = profile.notifications.enabled ? vapidPublicKey() : null;
   return (
     <AppShell profile={profile}>
       <header className="today-head">
@@ -40,6 +43,7 @@ export default async function Home() {
           {name ? `, ${name}` : ""}.
         </h1>
       </header>
+      {pushKey && <NotificationsCard vapidPublicKey={pushKey} />}
       <div className="home">
         <Talk
           greetingName={profile.preferredName}

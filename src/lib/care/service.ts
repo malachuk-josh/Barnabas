@@ -9,6 +9,7 @@ import { audit, listCare, saveDraft, type Draft } from "../data/records";
 import { checkMemoryText } from "../policy/privacy";
 import { getJSON, setJSON } from "../store";
 import { getLeaderRecord } from "../team";
+import { guestCardAssigned, needAssigned } from "../notifications/notify";
 import { initialTasks, pickAssignee, thankYouText, visitTasks } from "./guests";
 import { careKey, listRest, loadCare, resetCare, saveRest, updateCare } from "./store";
 import { findMember, leaderMemberId, memberName, viewerFor } from "./team";
@@ -144,6 +145,7 @@ export async function openCase(actor: CareActor, input: z.input<typeof OpenCaseI
     book.cases.push(c);
   });
   await log(actor.leader, "case.open", `${c.id} ${c.type}${c.confidential ? " confidential" : ""} -> ${assigneeId ?? "unassigned"}`, conversationId);
+  needAssigned(actor, c);
   return c;
 }
 
@@ -228,6 +230,7 @@ export async function assignCase(actor: CareActor, caseId: string, assigneeId: s
     return c;
   });
   await log(actor.leader, "case.assign", `${caseId} -> ${assigneeId ?? "unassigned"}`, conversationId);
+  needAssigned(actor, result);
   return result;
 }
 
@@ -644,6 +647,7 @@ export async function recordGuest(
   });
   const auditor = actor?.leader ?? owner?.leader;
   if (auditor) await audit(auditor, { action: actor ? "care.guest.record" : "care.guest.self_record", detail: `${card.id} -> ${assignee!.id}`, conversationId });
+  guestCardAssigned(churchId, card, members, actor?.leader.leaderId);
   return card;
 }
 

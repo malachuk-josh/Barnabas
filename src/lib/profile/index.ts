@@ -5,6 +5,7 @@ export type ReplyLanguage = "en" | "es" | "ko";
 export type VoiceLang = "en-US" | "es-US" | "ko-KR";
 
 import { DEFAULT_BIBLE_TRANSLATION, type BibleTranslation } from "./translations";
+import { defaultNotifications, mergeNotifications, type NotificationSettings } from "../notifications/types";
 export { BIBLE_TRANSLATIONS, BIBLE_TRANSLATION_IDS, DEFAULT_BIBLE_TRANSLATION, type BibleTranslation } from "./translations";
 
 export type Profile = {
@@ -32,6 +33,8 @@ export type Profile = {
   pronunciations: { word: string; sayAs: string }[];
   /** Anything the leader wants Barnabas to always know about them. */
   about: string;
+  /** Push notifications: on by default, each type on by default (see `src/lib/notifications/types.ts`). */
+  notifications: NotificationSettings;
   updatedAt: number;
 };
 
@@ -61,6 +64,7 @@ export function defaultProfile(leader: Leader): Profile {
     voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true },
     pronunciations: [],
     about: "",
+    notifications: defaultNotifications(),
     updatedAt: Date.now(),
   };
 }
@@ -69,7 +73,19 @@ export async function getProfile(leader: Leader): Promise<Profile> {
   const saved = await getJSON<Partial<Profile>>(key(leader));
   const base = defaultProfile(leader);
   if (!saved) return base;
-  return { ...base, ...saved, voice: { ...base.voice, ...(saved.voice ?? {}) }, email: leader.email };
+  return { ...base, ...saved, voice: { ...base.voice, ...(saved.voice ?? {}) }, notifications: mergeNotifications(saved.notifications), email: leader.email };
+}
+
+/** A leader's notification settings (defaults if they've never saved any), without needing their session. */
+export async function notificationSettingsFor(churchId: string, leaderId: string): Promise<NotificationSettings> {
+  const saved = await getJSON<Partial<Profile>>(key({ churchId, leaderId }));
+  return mergeNotifications(saved?.notifications);
+}
+
+/** Their time zone, for the morning briefing. */
+export async function timezoneFor(churchId: string, leaderId: string): Promise<string> {
+  const saved = await getJSON<Partial<Profile>>(key({ churchId, leaderId }));
+  return saved?.timezone && isValidTimezone(saved.timezone) ? saved.timezone : DEFAULT_TIMEZONE;
 }
 
 export async function saveProfile(leader: Leader, profile: Profile) {

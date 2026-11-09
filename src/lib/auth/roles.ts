@@ -117,11 +117,13 @@ export function isCheckinOnly(access: Access | null | undefined): boolean {
 }
 
 const CHECKIN_PAGES = ["/kids", "/settings"];
-const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account"];
+const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account", "/api/push"];
 
 /** Whether a check-in-only volunteer may open this path. Family records stay behind kids.admin. */
 export function checkinMayUse(pathname: string): boolean {
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   if (under("/kids/families")) return false;
+  // A leader's journal is their own writing; check-in has none (and no leader's shared entries either).
+  if (under("/journal") || under("/api/journal")) return false;
   return [...CHECKIN_PAGES, ...CHECKIN_APIS].some(under);
 }

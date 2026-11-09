@@ -22,6 +22,7 @@ import { GROWTH_TOOLS } from "./growth-tools";
 import { KNOW_TOOLS } from "./know";
 import { THORN_TOOLS } from "./thorn";
 import { SITE_TOOLS } from "./site-tools";
+import { JOURNAL_TOOLS } from "./journal-tools";
 import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
@@ -1326,6 +1327,7 @@ const ALL: ToolSpec<any>[] = [
   ...THORN_TOOLS,
   ...SITE_TOOLS,
   onlineGivingTool,
+  ...JOURNAL_TOOLS,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */

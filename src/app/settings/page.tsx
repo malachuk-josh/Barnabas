@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppShell, requirePageLeader } from "@/components/AppShell";
 import { SettingsForm } from "@/components/SettingsForm";
 import { accessFor } from "@/lib/team";
+import { vapidPublicKey } from "@/lib/push/vapid";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +15,11 @@ export default async function SettingsPage() {
         <div>
           <span className="eyebrow">Your account</span>
           <h1>Settings</h1>
-          <p className="muted">Your profile, how Barnabas talks with you, calendar connections, your team and your data.</p>
+          <p className="muted">Your profile, how Barnabas talks with you, calendar connections, notifications, your team and your data.</p>
         </div>
       </div>
       <Suspense>
-        <SettingsForm initial={profile} access={access} leaderId={leader.leaderId} />
+        <SettingsForm initial={profile} access={access} leaderId={leader.leaderId} vapidPublicKey={vapidPublicKey()} />
       </Suspense>
     </AppShell>
   );

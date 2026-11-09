@@ -24,6 +24,7 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Shepherding | Shepherding needs with a contact timeline, prayer requests, guest follow-up with a public guest card, the discipleship pathway and classes, and a private care-load tracker; Barnabas notes needs, logs contacts and records guests when asked, and asks before reassigning a need or marking it met | See [Shepherding](#shepherding) below. The demo church starts with example classes only; no one's shepherding records are made up |
 | Serve | Rosters per team per gathering (Sunday 8:30 and 10:45, 9:45 Growth Groups, Wednesday 6:00), sign-ups, swap requests, away dates, monthly limits, auto-fill and reminder drafts; the weariness watch reads real rosters | See [Operations](#operations-serve-services-events-and-kids). Reminders are drafts only |
 | Services | Sermon series, the preaching rotation and orders of service with scripture linked into The Word | |
+| Journal | Private notes, sermon ideas, devotional guides and worship setlists; share one with the leadership team to read; send a setlist to the order of service | See [Journal](#journal) |
 | Events | Registration forms, capacity and waitlist, a public sign-up link, attendee lists with CSV export, event-day check-in, and registration status on the Calendar | With Stripe connected, paid events are paid online through Stripe Checkout as people register; otherwise at the door. See [Online giving](#online-giving-stripe) |
 | Kids | Check-in station, 4" × 2" child labels with matching parent pickup tags, checkout by pickup code, room counts and ratio warnings, families with allergies and authorized pickups | Restricted to `kids.checkin` and `kids.admin`; Barnabas sees counts only |
 | Website | A church website builder at **Website** (`/site`): pages, a block editor, theme, draft and publish with a preview link and version history, a contact inbox; served at `/s` or on the church's own domain | See [Website](#website). The demo site is an unpublished draft (noindex) |
@@ -431,9 +432,38 @@ So a church knows what it still needs before it lets the old platform go:
 | `APP_URL` | The public address for status callbacks and unsubscribe links (`https://barnabas-three.vercel.app`) |
 | `CHURCH_SITE_HOST` | The church's own domain(s) for the public website, comma-separated (see [Website](#website)) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob, for image uploads in the website editor (set by connecting a Blob store) |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional web push for member-app announcements |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional web push: leaders' notifications and member-app announcements (see Notifications) |
+| `CRON_SECRET` | Protects the hourly cron job that sends the morning briefing (see Notifications) |
 
 None is ever returned to the browser or logged: the app reports only which names are missing. (The VAPID public key is the one exception: browsers need it to subscribe, and it's public by design.)
+
+## Notifications
+
+Barnabas sends leaders push notifications, on by default. Each leader can turn them all off, or any one kind, in **Settings → Notifications**; turning them off keeps their devices set up so turning them back on just works. A browser only lets a page subscribe after the person taps to allow it, so Today shows a small card ("Turn on notifications so Barnabas can let you know when someone needs you") until this device is set up; Dismiss hides it on that device for 14 days.
+
+What Barnabas notifies about (each its own toggle, all on by default, sent only to the leaders who can already see the thing under the usual roles and visibility rules):
+
+| Kind | When | Who |
+| --- | --- | --- |
+| Morning briefing | About 7:00 AM in the leader's own time zone (Settings → time zone), and only on days something is waiting: needs whose next step is due today or overdue, newly assigned needs, guest follow-ups due, requests to cover a slot. Counts only. | Every leader with something due |
+| Shepherding | A need assigned to you by someone else; a guest card you're following up; a prayer request from the website or member app | The assignee; for prayer requests, whoever can see the request (shareable: the team; private: the pastors) |
+| Serving | Someone asks you to cover a slot; someone accepts your swap request | The person asked; the person who asked |
+| Event registrations | A new public registration, collapsed into one notification per event with a running count | The leader who created the event (or everyone with events access if they no longer have it) |
+| Website inbox | A new contact-form message | Pastors and staff (site editors) |
+| Kids check-in | A checkout refused because the person wasn't on the family's pickup list | Pastors and staff who keep family records |
+
+The kids check-in role gets the master switch only. **Privacy:** notifications carry counts and first names at most: never a need's type or notes, the words of a prayer or message, health details, pickup codes or giving amounts, and a confidential need has no name at all ("A confidential need was assigned to you.").
+
+**Setup (once):**
+
+1. Generate VAPID keys: `npx web-push generate-vapid-keys`. If you already set up member-app push, reuse those keys: both apps share them (each keeps its own subscriptions).
+2. In Vercel → Settings → Environment Variables, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (e.g. `mailto:office@yourchurch.org`).
+3. Set `CRON_SECRET` to a random string of at least 16 characters (`openssl rand -hex 32`). Vercel Cron sends it as `Authorization: Bearer …` to `/api/cron/notify`, which `vercel.json` schedules hourly (`0 * * * *`); each run sends the briefing to leaders for whom it's 7 AM. Hourly cron jobs need a Vercel Pro (or Enterprise) plan; on Hobby, crons run at most once a day.
+4. Redeploy. Without the VAPID keys, Settings says push isn't set up yet and the Today card doesn't appear; without `CRON_SECRET` the cron route answers 503 and only the morning briefing is missing.
+
+**iPhone and iPad:** web notifications work only from the Home Screen app (iOS 16.4 or later). Open Barnabas in Safari, tap Share → **Add to Home Screen**, open Barnabas from the Home Screen, then tap **Turn on** on Today (or Settings → Notifications → Turn on for this device) and allow. If notifications were blocked, turn them back on in the iPhone's Settings → Notifications → Barnabas. Android, Windows and Mac browsers can turn them on straight from the page.
+
+Under the hood: `public/sw.js` is the leader app's service worker (scope `/`, no caching, no fetch handler), registered from the app shell; the member app keeps its own at `/m/sw.js`. Subscriptions are stored per leader and device (at most 10), and ones the push service reports gone (404/410) are pruned. Test sends are recorded in the audit log.
 
 ## Website
 
@@ -480,6 +510,22 @@ A separate app for the congregation at `/m`, with its own web manifest (`/m/mani
 ### Vercel Blob (image uploads)
 
 In the Vercel project, open **Storage → Create → Blob**, connect it to the project (this sets `BLOB_READ_WRITE_TOKEN`), and redeploy. Without it the editor accepts image addresses only.
+
+## Journal
+
+"Write the vision, and make it plain upon tables, that he may run that readeth it." (Habakkuk 2:2, KJV)
+
+Each leader's own notebook, under **Worship → Journal** (`/journal`). Every role has it except kids check-in.
+
+- **Four kinds.** A **note** (title and markdown). A **sermon**: passages, big idea, an ordered outline (points with sub-points and a scripture), illustrations, application, closing, a status (idea, drafting, ready, preached), and a link to a preaching date and sermon series from Services. A **devotional guide**: passages and days, each with a title, passage, reflection, questions and a prayer prompt. A **worship setlist**: service date and gathering (Sunday 8:30 or 10:45), theme, and songs in order with author, key, BPM, time signature, CCLI #, arrangement, scripture tie-in, who leads, and a transition to the next song.
+- **List** (`/journal`): search across titles, text and tags; filter by kind, tag, Pinned, Shared with me and Archived; a New menu with the four kinds.
+- **Editor** (`/journal/{id}`): autosaves as you type (shows "Saved"); add, reorder (up and down) and remove points, days and songs; a markdown body with a Preview tab; scripture references link into The Word (`/word?b=&c=&v=`, using the Services parser). Pin, duplicate, archive, delete (with a confirm) and share. Setlists and devotional guides print cleanly.
+- **Sharing.** An entry is private to the leader who wrote it. "Share with the leadership team" lets other signed-in leaders read it (never the check-in role); only the author can change it. Checked on the server in every route and tool; sharing is audited.
+- **Send to order of service** (setlists): pastors and staff (`services.plan`), schedulers, and the worship team's lead can add the songs to that Sunday service's order in Services, after a confirm. If the service has no order yet it starts from the usual one, and the songs take the place of its placeholder songs. Sending again updates the same items (stable ids), and sending to the other service moves them. Audited.
+- **Link to preaching date** (sermons): ties the sermon to a Sunday on the rotation and a series. Services itself doesn't change.
+- **Barnabas**: `journal_note` ("journal this…", no confirmation for the leader's own note), `start_journal_entry` (a sermon, devotional or setlist draft he helped build), `update_journal_entry` (a point, a day, a song, a section), `list_journal` and `read_journal_entry` (only when asked), and `share_journal_entry` and `send_setlist_to_service`, both behind the confirmation gate. There is no tool that deletes an entry. Scripture he writes is quoted in the leader's translation with its reference; for the KJV the words come from the text The Word ships (`src/lib/journal/verses.ts`), so a quotation can't drift. Off the record, nothing is saved to the Journal either. The conversation context holds only how many entries there are.
+- **Privacy.** Journal content is the leader's own writing, so the memory policy filter doesn't apply to it. It never goes into memory consolidation (tool inputs and results aren't in the transcript, and the memory agent is told not to copy journal content) or into notifications. Settings → Privacy → delete my data removes the journal, including what was shared.
+- **Storage**: `jrnl:{church}:{leaderId}` (an index of summaries), `jrnl:{church}:{leaderId}:e:{id}` (each entry) and `jrnl:{church}:shared` (shared entries). Code: `src/lib/journal/`, `src/lib/engine/journal-tools.ts`, `src/components/journal/`, `src/app/journal/` (styles in `journal.css`, guarded by `scripts/guard-barnabas-css.mjs`).
 
 ## A thorn in the flesh: the leader's own health
 
