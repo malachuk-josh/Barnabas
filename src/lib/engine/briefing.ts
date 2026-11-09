@@ -48,14 +48,16 @@ export async function followUps(leader: Leader, date = todayIso()): Promise<Foll
 
 export async function briefing(leader: Leader, date = todayIso()): Promise<Briefing> {
   const data = churchData();
-  const [{ radar }, follow, events] = await Promise.all([
+  const [{ radar, people }, follow, events] = await Promise.all([
     radarNow(date),
     followUps(leader, date),
     data.events(date, addDays(date, 45)),
   ]);
+  // The demo congregation is fictional; on the home card show only the church's real leaders.
+  const realLeaders = new Set(people.filter((p) => p.leadership).map((p) => p.id));
   return {
     date,
-    radar: radar.filter((r) => r.band !== "ok"),
+    radar: radar.filter((r) => r.band !== "ok" && (data.source !== "demo" || realLeaders.has(r.personId))),
     followUps: follow,
     // Special events only; the weekly services and groups are on the calendar.
     upcoming: events.filter((e) => !e.recurring).map(({ date, title, time, location }) => ({ date, title, time, location })),

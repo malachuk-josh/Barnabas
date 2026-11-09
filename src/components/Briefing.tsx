@@ -41,7 +41,7 @@ export function Briefing() {
           <strong>Setup</strong>
           {!status.claude && <span>Claude isn&apos;t connected. Add ANTHROPIC_API_KEY in your Vercel project settings.</span>}
           {status.storage === "memory" && <span>Memory isn&apos;t saved between restarts. Add Upstash Redis from the Vercel Marketplace.</span>}
-          {status.churchData === "demo" && <span>Showing a demo congregation until your church database is connected.</span>}
+          {status.churchData === "demo" && <span>Showing Mount Greylock&apos;s demo schedule and leaders until your church database is connected.</span>}
         </div>
       )}
 
