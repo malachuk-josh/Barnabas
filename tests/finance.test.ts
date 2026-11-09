@@ -59,6 +59,7 @@ describe("roles and permissions", () => {
     "finance.edit": ["pastor", "treasurer"],
     "giving.donors": ["pastor", "treasurer"],
     "team.manage": [],
+    "users.manage": [],
     "care.view_all": ["pastor"],
     "care.assign": ["pastor", "deacon", "staff"],
     "ops.schedule": ["pastor", "staff"],
@@ -81,6 +82,8 @@ describe("roles and permissions", () => {
     }
     expect(can({ role: "leader", admin: true }, "team.manage")).toBe(true);
     expect(can({ role: "leader", admin: true }, "finance.view")).toBe(false);
+    expect(can({ role: "pastor", admin: true }, "users.manage")).toBe(false);
+    expect(can({ role: "pastor", admin: true, owner: true }, "users.manage")).toBe(true);
     expect(can(null, "finance.view")).toBe(false);
   });
 
@@ -96,8 +99,8 @@ describe("roles and permissions", () => {
       const sam: Leader = { churchId: "demo", leaderId: "bbbb2222", name: "Sam", email: "sam@example.org", role: "" };
       await recordSignIn(dana);
       await recordSignIn(sam);
-      expect(await accessFor(dana)).toEqual({ role: "pastor", admin: true });
-      expect(await accessFor(sam)).toEqual({ role: "leader", admin: false });
+      expect(await accessFor(dana)).toEqual({ role: "pastor", admin: true, owner: true });
+      expect(await accessFor(sam)).toEqual({ role: "leader", admin: false, owner: false });
       await setLeaderRole("demo", sam.leaderId, "treasurer", dana.leaderId);
       await recordSignIn(sam);
       expect((await accessFor(sam)).role).toBe("treasurer");

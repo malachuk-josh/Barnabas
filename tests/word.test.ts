@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { freshStore, leader } from "./helpers";
+import { freshStore, leader, sessionFor } from "./helpers";
 
 // The session cookie the Word routes read, set per test. next/headers has no
 // request scope under vitest, so cookies() is stood in for.
@@ -10,7 +10,6 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { signSession } from "@/lib/auth/session";
 import { getUserId, wordUserId } from "@/lib/wordAuth";
 import { db, keys } from "@/lib/wordDb";
 import { DEFAULT_DAILY_LIMIT, dailyLimit, giveBack, questionsLeft, takeQuestion } from "@/lib/ask";
@@ -20,7 +19,7 @@ import { GET as search } from "@/app/api/search/route";
 import kjvJohn from "../public/bible/kjv/43.json";
 
 async function signIn() {
-  sessionToken = await signSession(leader);
+  sessionToken = await sessionFor(leader);
 }
 
 beforeEach(() => {

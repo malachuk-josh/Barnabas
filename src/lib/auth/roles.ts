@@ -36,6 +36,8 @@ export type Permission =
   | "giving.donors"
   /** Set other leaders' roles. */
   | "team.manage"
+  /** The owner's Admin console: create and remove users, passwords, sessions, who can join. Owners only. */
+  | "users.manage"
   /** See every shepherding need, including confidential ones. */
   | "care.view_all"
   /** Assign shepherding needs to someone else, and keep the discipleship pathway and classes. */
@@ -64,7 +66,7 @@ export type Permission =
   /** Edit and publish the church website and member app, read its inbox, post announcements. */
   | "site.edit";
 
-const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
+const MATRIX: Record<Exclude<Permission, "team.manage" | "users.manage">, readonly Role[]> = {
   "finance.view": ["pastor", "treasurer", "deacon"],
   "finance.edit": ["pastor", "treasurer"],
   "giving.donors": ["pastor", "treasurer"],
@@ -82,8 +84,12 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "site.edit": ["pastor", "staff"],
 };
 
-/** What a signed-in leader may do: their role, and whether they administer the team. */
-export type Access = { role: Role; admin: boolean };
+/**
+ * What a signed-in leader may do: their role, whether they administer the team, and whether they own this
+ * Barnabas (the Admin console). `accessFor` always sets `owner`; it's optional only so the many fixed
+ * view-level Access values (e.g. a deacon's view of giving) needn't spell it out. Missing means false.
+ */
+export type Access = { role: Role; admin: boolean; owner?: boolean };
 
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
@@ -91,7 +97,8 @@ export function isRole(value: unknown): value is Role {
 
 export function can(access: Access | null | undefined, permission: Permission): boolean {
   if (!access) return false;
-  if (permission === "team.manage") return access.admin;
+  if (permission === "users.manage") return access.owner === true;
+  if (permission === "team.manage") return access.admin || access.owner === true;
   return MATRIX[permission].includes(access.role);
 }
 
@@ -108,12 +115,30 @@ export function isAdminEmail(email: string, env?: string): boolean {
 }
 
 /**
+ * Owners (BARNABAS_OWNER_EMAILS, comma-separated), lowercased. When it isn't set, the owner is the first
+ * email in BARNABAS_ADMIN_EMAILS, so there's always exactly one owner by default and later admins aren't.
+ */
+export function ownerEmails(
+  ownerEnv: string | undefined = process.env.BARNABAS_OWNER_EMAILS,
+  adminEnv: string | undefined = process.env.BARNABAS_ADMIN_EMAILS,
+): string[] {
+  const explicit = adminEmails(ownerEnv);
+  if (explicit.length) return explicit;
+  const first = adminEmails(adminEnv)[0];
+  return first ? [first] : [];
+}
+
+export function isOwnerEmail(email: string, ownerEnv?: string, adminEnv?: string): boolean {
+  return ownerEmails(ownerEnv, adminEnv).includes(email.trim().toLowerCase());
+}
+
+/**
  * A kids check-in volunteer (and not an administrator) may use only the check-in station and their own
  * settings. Enforced for pages in AppShell and for APIs in requireLeader, using the path the middleware
  * passes along.
  */
 export function isCheckinOnly(access: Access | null | undefined): boolean {
-  return Boolean(access && access.role === "checkin" && !access.admin);
+  return Boolean(access && access.role === "checkin" && !access.admin && !access.owner);
 }
 
 const CHECKIN_PAGES = ["/kids", "/settings"];
