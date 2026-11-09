@@ -12,7 +12,7 @@ export default async function ReportsPage() {
   const shown = sections.filter((s) => s.allowed);
   const locked = sections.filter((s) => !s.allowed);
   return (
-    <ReportsFrame profile={profile} title="How we're doing" intro={<>Attendance, giving, volunteers, care, guests, events and kids, as of {friendlyDate(asOf)}. Totals only: names stay where they belong.</>}>
+    <ReportsFrame profile={profile} title="How we're doing" intro={<>Attendance, giving, co-laborers, shepherding, guests, events and kids, as of {friendlyDate(asOf)}. Totals only: names stay where they belong.</>}>
       <nav className="report-jump" aria-label="Jump to a report">
         {shown.map((s) => (
           <a key={s.id} href={`#${s.id}`}>

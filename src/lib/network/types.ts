@@ -8,7 +8,7 @@ export type ItemKind = (typeof ITEM_KINDS)[number];
 export const KIND_LABELS: Record<ItemKind, string> = {
   series_outline: "Sermon series outline",
   service_template: "Service template",
-  training_doc: "Volunteer training",
+  training_doc: "Co-laborer training",
   event_idea: "Event idea",
   prayer_need: "Prayer need",
   mission_need: "Mission partner need",

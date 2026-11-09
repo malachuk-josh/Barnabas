@@ -23,7 +23,7 @@ export type ExportKind = (typeof EXPORT_KINDS)[number];
 
 export const EXPORT_INFO: Record<ExportKind, { label: string; description: string; permission?: Permission; also?: Permission }> = {
   people: { label: "People and households", description: "Everyone in the directory with every field: household, status, contact, address, birthdays, groups and custom fields.", permission: "people.export" },
-  rosters: { label: "Serving rosters", description: "Who serves where for the last 12 weeks and the next 12: date, gathering, team, position, volunteer." },
+  rosters: { label: "Serving rosters", description: "Who serves where for the last 12 weeks and the next 12: date, gathering, team, position, co-laborer." },
   registrations: { label: "Event registrations", description: "Every registration for every event, with party size, status, check-in and payment.", permission: "events.manage" },
   giving: { label: "Giving summary", description: "Giving by month and fund, with the number of gifts. No names.", permission: "finance.view" },
   "giving-donors": { label: "Giving by giver", description: "Each giver's total this year and last year, for statements. Pastor and treasurer only.", permission: "giving.donors" },
@@ -57,7 +57,7 @@ export async function buildExport(leader: Leader, access: Access, kind: ExportKi
     const book = await loadServe(leader.churchId);
     const from = addDays(asOf, -84);
     const to = addDays(asOf, 84);
-    header = ["Date", "Gathering", "Team", "Position", "Volunteer", "Status"];
+    header = ["Date", "Gathering", "Team", "Position", "Co-laborer", "Status"];
     rows = book.assignments
       .filter((a) => a.date >= from && a.date <= to)
       .sort((a, b) => a.date.localeCompare(b.date) || a.gathering.localeCompare(b.gathering))

@@ -155,7 +155,7 @@ export function ShareForm({ starters, mine }: { starters: { series: Starter[]; p
           <section className="fin-card">
             <h2>Shared by your church</h2>
             {mine.length === 0 ? (
-              <EmptyState compact title="Nothing shared yet">Share a series outline, a service template or volunteer training, and connected churches can find it.</EmptyState>
+              <EmptyState compact title="Nothing shared yet">Share a series outline, a service template or co-laborer training, and connected churches can find it.</EmptyState>
             ) : (
               <ul className="list">
                 {mine.map((m) => (

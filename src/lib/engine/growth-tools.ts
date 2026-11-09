@@ -21,7 +21,7 @@ const howAreWeDoing = tool({
   def: {
     name: "how_are_we_doing",
     description:
-      "Totals for 'how are we doing on X' questions: attendance, giving vs budget, volunteer health (burnout radar over time, serving load per team), care pipeline, guest follow-up, events, kids check-in, or all. Aggregates only (no names); areas the leader's role doesn't include say so.",
+      "Totals for 'how are we doing on X' questions: attendance, giving vs budget, co-laborer health (the weariness radar over time, serving load per team), the shepherding pipeline, guest follow-up, events, kids check-in, or all. Aggregates only (no names); areas the leader's role doesn't include say so.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { area: { type: "string", enum: [...SECTION_IDS, "all"] } }, required: ["area"] },
   },
@@ -69,7 +69,7 @@ const searchNetworkTool = tool({
   def: {
     name: "search_network",
     description:
-      "Search Mesa, the network of connected churches, for shared resources: sermon series outlines, service templates, volunteer training, event ideas, prayer needs and mission partner needs (e.g. 'a series on James'). Only this church's and connected churches' items; nothing about people.",
+      "Search Mesa, the network of connected churches, for shared resources: sermon series outlines, service templates, co-laborer training, event ideas, prayer needs and mission partner needs (e.g. 'a series on James'). Only this church's and connected churches' items; nothing about people.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { query: { type: "string" }, kind: { type: "string", enum: [...ITEM_KINDS] } }, required: ["query"] },
   },
