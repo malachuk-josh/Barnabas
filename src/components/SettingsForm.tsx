@@ -3,7 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile";
+import { ROLE_DESCRIPTIONS, ROLE_LABELS, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
+import { TeamSettings } from "./TeamSettings";
 
 type ProviderStatus = {
   id: "google" | "microsoft";
@@ -30,7 +32,7 @@ function timezones(): string[] {
   }
 }
 
-export function SettingsForm({ initial }: { initial: Profile }) {
+export function SettingsForm({ initial, access, leaderId }: { initial: Profile; access: Access; leaderId: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const [p, setP] = useState<Profile>(initial);
@@ -158,6 +160,7 @@ export function SettingsForm({ initial }: { initial: Profile }) {
         <a href="#profile">Profile</a>
         <a href="#barnabas">Barnabas and voice</a>
         <a href="#calendars">Calendars</a>
+        {access.admin && <a href="#team">Team</a>}
         <a href="#privacy">Privacy and data</a>
       </nav>
 
@@ -191,6 +194,14 @@ export function SettingsForm({ initial }: { initial: Profile }) {
                 <input id="email" type="email" value={p.email} readOnly aria-describedby="email-note" />
                 <span id="email-note" className="small muted">Your sign-in email. Ask your administrator to change it.</span>
               </div>
+            </div>
+            <div className="field">
+              <span className="label" style={{ textTransform: "none", letterSpacing: 0, fontSize: "0.92rem", color: "var(--fg)" }}>Your Barnabas role</span>
+              <span>
+                <strong>{ROLE_LABELS[access.role]}</strong>
+                <span className="muted">: {ROLE_DESCRIPTIONS[access.role]}.</span>
+              </span>
+              <span className="small muted">{access.admin ? "You're an administrator: change roles in Team below." : "Your church administrator sets this."}</span>
             </div>
             <div className="field">
               <label htmlFor="ministry-input">Ministries you lead</label>
@@ -430,6 +441,8 @@ export function SettingsForm({ initial }: { initial: Profile }) {
             </div>
           )}
         </section>
+
+        {access.admin && <TeamSettings myLeaderId={leaderId} />}
 
         <section id="privacy" className="card danger-zone">
           <h2>Privacy and data</h2>

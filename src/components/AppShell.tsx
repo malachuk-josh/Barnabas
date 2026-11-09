@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentLeader, type Leader } from "@/lib/auth/session";
+import { can } from "@/lib/auth/roles";
 import { getProfile, type Profile } from "@/lib/profile";
+import { accessFor } from "@/lib/team";
 import { Mark } from "./Mark";
 import { SideNav, SignOutButton, TabBar } from "./NavLinks";
 
@@ -21,7 +23,7 @@ export async function requirePageLeader(): Promise<{ leader: Leader; profile: Pr
   return { leader, profile: await getProfile(leader) };
 }
 
-export function AppShell({
+export async function AppShell({
   profile,
   fill = false,
   children,
@@ -31,6 +33,9 @@ export function AppShell({
   fill?: boolean;
   children: React.ReactNode;
 }) {
+  // The Finance entry shows only for roles that can see finance; the server checks again on every request.
+  const leader = await currentLeader();
+  const showFinance = leader ? can(await accessFor(leader), "finance.view") : false;
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -38,7 +43,7 @@ export function AppShell({
           <Mark light />
           Barnabas
         </Link>
-        <SideNav />
+        <SideNav showFinance={showFinance} />
         <div className="side-foot">
           <Link href="/settings" className="me-card">
             <span className="avatar" aria-hidden="true">
@@ -70,7 +75,7 @@ export function AppShell({
           </main>
         )}
       </div>
-      <TabBar />
+      <TabBar showFinance={showFinance} />
     </div>
   );
 }

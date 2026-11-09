@@ -2,26 +2,35 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookIcon, CalendarIcon, DraftsIcon, MemoryIcon, SettingsIcon, TalkIcon } from "./icons";
+import { useEffect, useState } from "react";
+import { BookIcon, CalendarIcon, DraftsIcon, FinanceIcon, MemoryIcon, MoreIcon, SettingsIcon, TalkIcon } from "./icons";
 
 export const NAV = [
   { href: "/", label: "Talk", Icon: TalkIcon },
   { href: "/word", label: "The Word", Icon: BookIcon },
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon },
+  { href: "/finance", label: "Finance", Icon: FinanceIcon, finance: true },
   { href: "/memory", label: "Memory", Icon: MemoryIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
+/** The phone tab bar shows at most this many items; past that, the rest go under More. */
+const TAB_SLOTS = 5;
+
 function active(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function SideNav() {
+function items(showFinance: boolean) {
+  return NAV.filter((n) => !n.finance || showFinance);
+}
+
+export function SideNav({ showFinance = false }: { showFinance?: boolean }) {
   const pathname = usePathname();
   return (
     <nav className="side-nav" aria-label="Main">
-      {NAV.map(({ href, label, Icon }) => (
+      {items(showFinance).map(({ href, label, Icon }) => (
         <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
           <Icon />
           {label}
@@ -31,17 +40,51 @@ export function SideNav() {
   );
 }
 
-export function TabBar() {
+export function TabBar({ showFinance = false }: { showFinance?: boolean }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const all = items(showFinance);
+  const primary = all.length > TAB_SLOTS ? all.slice(0, TAB_SLOTS - 1) : all;
+  const overflow = all.length > TAB_SLOTS ? all.slice(TAB_SLOTS - 1) : [];
+  const moreActive = overflow.some((n) => active(pathname, n.href));
+
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
-    <nav className="tabbar" aria-label="Main">
-      {NAV.map(({ href, label, Icon }) => (
-        <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
-          <Icon />
-          {label}
-        </Link>
-      ))}
-    </nav>
+    <>
+      {open && (
+        <div className="more-backdrop" onClick={() => setOpen(false)}>
+          <nav className="more-sheet" id="more-sheet" aria-label="More" onClick={(e) => e.stopPropagation()}>
+            {overflow.map(({ href, label, Icon }) => (
+              <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined} onClick={() => setOpen(false)}>
+                <Icon />
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+      <nav className="tabbar" aria-label="Main" style={{ gridTemplateColumns: `repeat(${primary.length + (overflow.length ? 1 : 0)}, minmax(0, 1fr))` }}>
+        {primary.map(({ href, label, Icon }) => (
+          <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
+            <Icon />
+            {label}
+          </Link>
+        ))}
+        {overflow.length > 0 && (
+          <button type="button" className="tab-more" aria-expanded={open} aria-controls="more-sheet" aria-current={moreActive ? "page" : undefined} onClick={() => setOpen((o) => !o)}>
+            <MoreIcon />
+            More
+          </button>
+        )}
+      </nav>
+    </>
   );
 }
 

@@ -46,3 +46,16 @@ export const ChevronRight = () => (
     <path d="m9 18 6-6-6-6" />
   </svg>
 );
+export const FinanceIcon = () => (
+  <svg {...common}>
+    <path d="M3.5 9.5 12 4.5l8.5 5" />
+    <path d="M5 20h14M4 9.5h16M6.5 12v5.5M10 12v5.5M14 12v5.5M17.5 12v5.5" />
+  </svg>
+);
+export const MoreIcon = () => (
+  <svg {...common}>
+    <circle cx="5.5" cy="12" r="1.3" />
+    <circle cx="12" cy="12" r="1.3" />
+    <circle cx="18.5" cy="12" r="1.3" />
+  </svg>
+);
