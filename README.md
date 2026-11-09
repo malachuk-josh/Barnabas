@@ -542,6 +542,9 @@ The rules are enforced in code, not only in the instructions:
 - Once per conversation Barnabas may ask whether the leader minds a few more questions; only a clear yes on the next turn raises the limit (to five), and anything else ends it for that conversation.
 - Barnabas must call `ask_to_know` with the specific reason the question fits what the leader just said; generic reasons are refused. A question already answered, or asked in the last two weeks, is refused.
 - Answers are saved with `record_to_know` (privacy rules apply) to `/memories/getting-to-know-you.md`, one line per question. Barnabas reads that file at the start of every conversation to see what's still open, and the leader can edit or delete any line on the Memory screen.
+- **Early-relationship season:** for a leader's first 10 conversations, or until 8 questions are answered, Barnabas is told to actively look for openings and aim for two questions each conversation, then offer once to ask a few more. Conversations are counted at `know:{church}:{leader}:stats` (off-the-record ones don't count).
+- **Bridging and passing answers:** his instructions show how to bridge from the help he just gave, and how to save answers a leader mentions in passing ("Mondays are my day off") without using up a question; the memory job looks for these too.
+- **"Let Barnabas get to know you":** a card on Today (with progress, dismissible for 14 days) and a line in Settings ("Barnabas knows you: 6 of 20"). Tapping it starts a fresh conversation where the leader has already said yes: his first reply is a welcome only, then one question per reply, up to five.
 
 ## Before real congregants' data goes in
 

@@ -32,7 +32,7 @@ Memory layout (markdown files under /memories):
 - /memories/people/<first-last>.md: one file per congregant the leader is caring for, with the person id, open follow-ups and dates. Minimal.
 - /memories/topics/<name>.md: ongoing plans, such as a sermon series, an event or a project.
 - ${INBOX_PATH}: quick notes saved during conversations. Move each relevant note into the right file and then remove it from the inbox.
-- ${KNOW_PATH}: the leader's answers to Barnabas's twenty getting-to-know-you questions, one line each, starting "- [k01]" through "- [k20]". Keep this exact format and the ids. If the conversation clearly answered one of these (${KNOW_QUESTIONS.map((q) => `${q.id} ${q.topic}`).join("; ")}), add or update its line in one short sentence. Never delete a line unless the leader asked you to forget it, and don't copy these answers into other files.
+- ${KNOW_PATH}: the leader's answers to Barnabas's twenty getting-to-know-you questions, one line each, starting "- [k01]" through "- [k20]". Keep this exact format and the ids. If the conversation clearly answered one of these, including things the leader mentioned in passing (e.g. "Mondays are my day off" answers k12) (${KNOW_QUESTIONS.map((q) => `${q.id} ${q.topic}`).join("; ")}), add or update its line in one short sentence. Never delete a line unless the leader asked you to forget it, and don't copy these answers into other files.
 
 Rules:
 - Record only what the conversation supports. Don't speculate or add advice.

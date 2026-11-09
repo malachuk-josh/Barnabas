@@ -13,6 +13,7 @@ import { accessFor } from "../team";
 import { careSnapshot } from "../care/views";
 import { briefing } from "./briefing";
 import { buildLeaderContext } from "./prompt";
+import { noteConversationStarted } from "./know";
 
 export async function startConversation(
   leader: Leader,
@@ -33,10 +34,12 @@ export async function startConversation(
       return undefined;
     }),
   ]);
+  const knowStats = await noteConversationStarted(leader, opts.offRecord).catch(() => ({ conversations: 0, firstAt: 0 }));
   const context = await buildLeaderContext({
     leader,
     mode: opts.mode,
     offRecord: opts.offRecord,
+    knowConversations: knowStats.conversations,
     localDate,
     briefing: brief,
     profile,

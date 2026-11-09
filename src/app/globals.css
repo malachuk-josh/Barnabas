@@ -1238,3 +1238,10 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
   .care-filters > * { flex: none; }
   .care-filters .care-view { margin-left: 0; }
 }
+
+/* Today: "Let Barnabas get to know you" */
+.know-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-bottom: 16px; border-left: 4px solid var(--brass); }
+.know-card-text { display: grid; gap: 4px; flex: 1 1 260px; min-width: 0; }
+.know-card-actions { gap: 8px; }
+.know-meter { display: block; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 4px; max-width: 320px; }
+.know-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--brass); }

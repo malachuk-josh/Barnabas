@@ -32,6 +32,8 @@ export type TurnInput = {
   localTime?: string;
   /** The leader spoke this turn (rather than typed it): use the faster voice model. */
   voice?: boolean;
+  /** The leader tapped "Let Barnabas get to know you": questions are welcome in this conversation. */
+  knowInvite?: boolean;
 };
 
 const MAX_STEPS = 8;
@@ -100,6 +102,10 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
 
   // If Barnabas asked "may I ask a few more questions?" last reply, these words are the answer.
   resolvePermission(meta, input.text);
+  // Started from "Let Barnabas get to know you": the leader has already said yes to questions.
+  if (input.knowInvite && meta.turns === 0 && !meta.offRecord) {
+    meta.know = { ...(meta.know ?? { asked: [] }), invited: true, permission: { status: "granted", turn: -1 } };
+  }
 
   const added: Message[] = [{ role: "user", content: input.text }];
   const note = operatorNote(input, crisis);

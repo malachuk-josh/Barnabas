@@ -90,6 +90,8 @@ export type KnowState = {
   /** Question asked in which turn (one per reply). */
   lastAskTurn?: number;
   permission?: { status: "asked" | "granted" | "declined"; turn: number };
+  /** The leader started this conversation from "Let Barnabas get to know you": questions are welcome. */
+  invited?: boolean;
 };
 
 export function knowState(meta: ConversationMeta): KnowState {
@@ -148,7 +150,7 @@ export function askRefusal(opts: {
       : `You've asked ${s.asked.length} in this conversation, the limit before ${OPEN_AFTER_EXCHANGES} exchanges. If it feels welcome, you may ask once whether they'd mind a few more questions (ask_permission_to_know); otherwise wait for another conversation.`;
   }
   const why = whyNow.trim();
-  if (why.length < 20 || GENERIC.test(why)) return "Give the specific reason this question fits what they just said. If there isn't one, don't ask.";
+  if (!s.invited && (why.length < 20 || GENERIC.test(why))) return "Give the specific reason this question fits what they just said. If there isn't one, don't ask.";
   return null;
 }
 
@@ -166,8 +168,32 @@ export async function readAnswers(leader: Pick<Leader, "churchId" | "leaderId">)
   return new MemoryFS({ churchId: leader.churchId, leaderId: leader.leaderId }).read(KNOW_PATH);
 }
 
+/** How many conversations Barnabas has had with this leader (on the record), for the early-relationship season. */
+type KnowStats = { conversations: number; firstAt: number };
+const statsKey = (l: Pick<Leader, "churchId" | "leaderId">) => `know:${l.churchId}:${l.leaderId}:stats`;
+export const EARLY_CONVERSATIONS = 10;
+export const EARLY_ANSWERED = 8;
+
+export async function noteConversationStarted(leader: Pick<Leader, "churchId" | "leaderId">, offRecord: boolean): Promise<KnowStats> {
+  const stats = (await getJSON<KnowStats>(statsKey(leader))) ?? { conversations: 0, firstAt: Date.now() };
+  if (offRecord) return stats;
+  const next = { ...stats, conversations: stats.conversations + 1 };
+  await setJSON(statsKey(leader), next);
+  return next;
+}
+
+/** How much Barnabas knows: answered of twenty (for the Today card and Settings). */
+export async function knowProgress(leader: Pick<Leader, "churchId" | "leaderId">): Promise<{ answered: number; total: number }> {
+  return { answered: answersFile(await readAnswers(leader)).size, total: KNOW_QUESTIONS.length };
+}
+
+/** Early in the relationship (first ten conversations, or fewer than eight answers), Barnabas looks harder for openings. */
+export function isEarlySeason(conversations: number, answered: number): boolean {
+  return conversations <= EARLY_CONVERSATIONS || answered < EARLY_ANSWERED;
+}
+
 /** The per-leader context section: what's known, and which questions are still open, in rank order. */
-export async function knowContext(leader: Pick<Leader, "churchId" | "leaderId">, offRecord: boolean): Promise<string> {
+export async function knowContext(leader: Pick<Leader, "churchId" | "leaderId">, offRecord: boolean, conversations = 0): Promise<string> {
   const file = await readAnswers(leader);
   const answers = answersFile(file);
   const open = KNOW_QUESTIONS.filter((q) => !answers.has(q.id));
@@ -179,6 +205,13 @@ export async function knowContext(leader: Pick<Leader, "churchId" | "leaderId">,
   if (offRecord) {
     lines.push("This conversation is off the record: don't ask getting-to-know-you questions.");
   } else if (open.length) {
+    if (isEarlySeason(conversations, answers.size)) {
+      lines.push(
+        `You're early in getting to know this leader (conversation ${conversations || 1}, ${answers.size} of ${KNOW_QUESTIONS.length} answered). ` +
+          "In this conversation, actively look for natural openings and aim to ask two of the open questions, bridging from what you've just helped with. " +
+          "Once you've asked two and the conversation is relaxed, offer once to ask a few more (ask_permission_to_know). Every rule still applies.",
+      );
+    }
     lines.push(`Still open (${open.length} of ${KNOW_QUESTIONS.length}), highest priority first. Ask only through ask_to_know, following the rules in your instructions:`);
     for (const q of open) lines.push(`- ${q.id} (${q.topic}): "${q.question}" Fits when: ${q.moments}.`);
   } else {

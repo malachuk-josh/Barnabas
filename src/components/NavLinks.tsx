@@ -71,6 +71,9 @@ function sections(items: NavItem[]) {
 export const TALK_EVENT = "barnabas:talk";
 /** Hands Barnabas a request in words, as if typed (the briefing's "Draft a thank-you" buttons). */
 export const ASK_EVENT = "barnabas:ask";
+/** Starts a fresh conversation in which the leader has invited Barnabas to get to know them. */
+export const KNOW_EVENT = "barnabas:know";
+export const KNOW_INVITE_TEXT = "I'd like you to get to know me better.";
 
 function useTalk() {
   const pathname = usePathname();

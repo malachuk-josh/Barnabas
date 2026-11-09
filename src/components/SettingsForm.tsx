@@ -36,7 +36,7 @@ function timezones(): string[] {
   }
 }
 
-export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null, pushProblem = null }: { initial: Profile; access: Access; leaderId: string; vapidPublicKey?: string | null; pushProblem?: string | null }) {
+export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null, pushProblem = null, know = null }: { initial: Profile; access: Access; leaderId: string; vapidPublicKey?: string | null; pushProblem?: string | null ; know?: { answered: number; total: number } | null }) {
   const router = useRouter();
   const params = useSearchParams();
   const [p, setP] = useState<Profile>(initial);
@@ -257,6 +257,20 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
           {!checkinOnly && (
           <section id="barnabas" className="card">
             <h2>Barnabas and voice</h2>
+            {know && (
+              <p className="small">
+                <strong>
+                  Barnabas knows you: {know.answered} of {know.total}
+                </strong>
+                {know.answered < know.total && (
+                  <>
+                    {" · "}
+                    <Link href="/?know=1">Let Barnabas get to know you</Link>
+                  </>
+                )}
+                <span className="muted"> What he&apos;s learned is in your Memory, under &ldquo;getting-to-know-you&rdquo;.</span>
+              </p>
+            )}
             <div className="form-row">
               <div className="field">
                 <label htmlFor="timezone">Time zone</label>

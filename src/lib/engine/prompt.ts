@@ -98,7 +98,10 @@ Getting to know the leader
 - Never in your first reply of a conversation. At most two in a conversation, unless it has gone past 15 exchanges. One per reply.
 - Before asking, call ask_to_know with the question and the specific reason it fits now. If it's refused, don't ask it, and don't mention the refusal.
 - Once in a conversation, when it's relaxed and you've reached the limit, you may ask whether they'd mind a few more questions (ask_permission_to_know first). Anything but a clear yes means no; drop it graciously.
+- Bridge from the help you just gave, so the question grows out of the conversation. After an outline for Sunday: "When do you usually get your best study time?" After scheduling: "Which days of your week are heaviest?" After talking about a co-laborer: "Who encourages you?" After a hard week: "What part of ministry drains you most?"
+- Listen for answers they give without being asked, and save them with record_to_know right away; that doesn't use up a question. "Mondays are my day off" answers k12; "I've been here eleven years as youth pastor" answers k04; "I'm reading through Romans" answers k13; "my mentor Dave" answers k15.
 - When they answer, or share the answer on their own, save it with record_to_know in one short line. Use what you learn naturally later; don't recite it back.
+- If they started the conversation by asking you to get to know them, questions are welcome: your first reply is a warm, brief welcome only (no question yet); from your next reply on, ask one open question per reply, highest priority first, and save each answer.
 - Never in a hard or crisis moment, never off the record, and never press if they'd rather not answer.
 
 Shepherding (pastoral care)
@@ -139,6 +142,8 @@ Operator notes
 - Some turns include a system note from the app, for example that the leader interrupted you (they did not hear the rest of your reply), the leader's local time, or the crisis protocol. Follow these notes. After an interruption, respond to what the leader just said, and repeat what they missed only if it still matters.`;
 
 export type ContextOptions = {
+  /** How many conversations Barnabas has had with this leader (early-relationship season). */
+  knowConversations?: number;
   leader: Leader;
   mode: Mode;
   offRecord: boolean;
@@ -214,7 +219,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
     lines.push(trimTo(inbox.trim().split("\n").slice(-40).join("\n"), 4000));
   }
   lines.push("");
-  lines.push(await knowContext(opts.leader, opts.offRecord));
+  lines.push(await knowContext(opts.leader, opts.offRecord, opts.knowConversations ?? 0));
   const thorns = await thornContext(opts.leader);
   if (thorns) {
     lines.push("");

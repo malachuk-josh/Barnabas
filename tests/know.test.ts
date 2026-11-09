@@ -142,3 +142,37 @@ describe("the tools", () => {
     expect(KNOW_PATH).toBe("/memories/getting-to-know-you.md");
   });
 });
+
+describe("eagerness, within the rules", () => {
+  beforeEach(() => freshStore());
+
+  it("counts on-the-record conversations and marks the early-relationship season", async () => {
+    const { noteConversationStarted, isEarlySeason } = await import("@/lib/engine/know");
+    expect((await noteConversationStarted(leader, false)).conversations).toBe(1);
+    expect((await noteConversationStarted(leader, true)).conversations).toBe(1); // off the record doesn't count
+    expect((await noteConversationStarted(leader, false)).conversations).toBe(2);
+    expect(isEarlySeason(3, 2)).toBe(true);
+    expect(isEarlySeason(25, 5)).toBe(true); // still fewer than 8 answers
+    expect(isEarlySeason(25, 12)).toBe(false);
+  });
+
+  it("tells Barnabas to look for openings early on, and not later", async () => {
+    expect(await knowContext(leader, false, 2)).toMatch(/early in getting to know this leader \(conversation 2, 0 of 20 answered\)/);
+    expect(await knowContext(leader, true, 2)).not.toMatch(/early in getting to know/); // off the record
+  });
+
+  it("an invited conversation welcomes questions but still never in the first reply", () => {
+    const invited = { asked: [] as string[], invited: true, permission: { status: "granted" as const, turn: -1 } };
+    expect(refusal(meta({ turns: 0, know: invited }))).toMatch(/first reply/);
+    expect(refusal(meta({ turns: 1, know: invited }), { whyNow: "" })).toBeNull(); // no "fits now" reason needed
+    const four = { ...invited, asked: ["k01", "k02", "k03", "k04"], lastAskTurn: 4 };
+    expect(refusal(meta({ turns: 5, know: four }), { questionId: "k05" })).toBeNull(); // up to five with permission
+    const five = { ...four, asked: [...four.asked, "k05"] };
+    expect(refusal(meta({ turns: 6, know: five }), { questionId: "k06" })).toMatch(/limit/);
+  });
+
+  it("Barnabas's instructions teach bridging and catching answers given in passing", () => {
+    expect(BARNABAS_SYSTEM).toMatch(/Bridge from the help you just gave/);
+    expect(BARNABAS_SYSTEM).toMatch(/"Mondays are my day off" answers k12/);
+  });
+});

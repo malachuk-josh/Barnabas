@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEarcon, unlockEarcons } from "@/lib/voice/earcons";
 import { SentenceChunker } from "@/lib/speech/chunker";
-import { ASK_EVENT, TALK_EVENT } from "./NavLinks";
+import { ASK_EVENT, TALK_EVENT, KNOW_EVENT, KNOW_INVITE_TEXT } from "./NavLinks";
 import {
   BrowserListener,
   BrowserSpeaker,
@@ -215,7 +215,7 @@ export function Talk({
     }
   }
 
-  async function send(text: string, via: "voice" | "text") {
+  async function send(text: string, via: "voice" | "text", opts: { knowInvite?: boolean } = {}) {
     const clean = text.trim();
     if (!clean) return;
     timing.current = { start: performance.now() };
@@ -249,7 +249,7 @@ export function Talk({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: id, text: clean, interruptedAfter, localTime: localTime(), voice: via === "voice" }),
+        body: JSON.stringify({ conversationId: id, text: clean, interruptedAfter, localTime: localTime(), voice: via === "voice", ...(opts.knowInvite ? { knowInvite: true } : {}) }),
       });
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}));
@@ -413,6 +413,8 @@ export function Talk({
   onOrbRef.current = onOrb;
   const sendRef = useRef(send);
   sendRef.current = send;
+  const endConversationRef = useRef(endConversation);
+  endConversationRef.current = endConversation;
   const orbRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const onTalk = () => {
@@ -425,13 +427,27 @@ export function Talk({
       orbRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
       void sendRef.current(text, "text");
     };
+    // "Let Barnabas get to know you": a fresh conversation where questions are welcome.
+    const onKnow = () => {
+      orbRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      void (async () => {
+        if (convRef.current) await endConversationRef.current("toggle");
+        await sendRef.current(KNOW_INVITE_TEXT, "text", { knowInvite: true });
+      })();
+    };
     window.addEventListener(TALK_EVENT, onTalk);
     window.addEventListener(ASK_EVENT, onAsk);
+    window.addEventListener(KNOW_EVENT, onKnow);
     // Arriving from another page's Talk button: the mic needs a tap here, so put the orb in reach.
     const params = new URLSearchParams(window.location.search);
     if (params.get("talk") === "1") {
       orbRef.current?.focus();
       window.history.replaceState(null, "", "/");
+    }
+    // From Settings: "Let Barnabas get to know you".
+    if (params.get("know") === "1") {
+      window.history.replaceState(null, "", "/");
+      void sendRef.current(KNOW_INVITE_TEXT, "text", { knowInvite: true });
     }
     // "Ask Barnabas" on a person's page arrives with the question, as if typed.
     const ask = params.get("ask")?.trim().slice(0, 300);
@@ -442,6 +458,7 @@ export function Talk({
     return () => {
       window.removeEventListener(TALK_EVENT, onTalk);
       window.removeEventListener(ASK_EVENT, onAsk);
+      window.removeEventListener(KNOW_EVENT, onKnow);
     };
   }, []);
 

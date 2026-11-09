@@ -4,6 +4,8 @@ import { Talk } from "@/components/Talk";
 import { VERSES, type VerseKey } from "@/lib/language";
 import { deepgram, elevenLabs } from "@/lib/voice/server";
 import { NotificationsCard } from "@/components/NotificationsCard";
+import { KnowCard } from "@/components/KnowCard";
+import { knowProgress } from "@/lib/engine/know";
 import { vapidPublicKey } from "@/lib/push/vapid";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +29,8 @@ function todayIn(timezone: string) {
 }
 
 export default async function Home() {
-  const { profile } = await requirePageLeader();
+  const { leader, profile } = await requirePageLeader();
+  const know = await knowProgress(leader).catch(() => null);
   const { date, part, dayNumber } = todayIn(profile.timezone);
   // The verse for today: one of Barnabas's KJV verses, a different one each day.
   const keys = Object.keys(VERSES) as VerseKey[];
@@ -44,6 +47,7 @@ export default async function Home() {
         </h1>
       </header>
       {pushKey && <NotificationsCard vapidPublicKey={pushKey} />}
+      {know && <KnowCard answered={know.answered} total={know.total} />}
       <div className="home">
         <Talk
           greetingName={profile.preferredName}
