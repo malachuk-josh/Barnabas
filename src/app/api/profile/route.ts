@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isResponse, requireLeader } from "@/lib/auth/require";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
-import { getProfile, isValidTimezone, saveProfile, BIBLE_TRANSLATION_IDS } from "@/lib/profile";
+import { getProfile, saveProfile } from "@/lib/profile";
+import { NotificationsPatch as Notifications, ProfileBody as Body } from "@/lib/profile/schema";
 import { updateLeaderDisplay } from "@/lib/team";
-import { NOTIFICATION_TYPES, type NotificationType } from "@/lib/notifications/types";
+import type { NotificationType } from "@/lib/notifications/types";
 
 export const runtime = "nodejs";
 
@@ -13,33 +14,6 @@ export async function GET() {
   if (isResponse(leader)) return leader;
   return NextResponse.json({ profile: await getProfile(leader) });
 }
-
-const Body = z.object({
-  name: z.string().trim().min(1).max(80),
-  preferredName: z.string().trim().min(1).max(80),
-  role: z.string().trim().max(80),
-  ministries: z.array(z.string().trim().min(1).max(60)).max(12),
-  timezone: z.string().refine(isValidTimezone, "Unknown time zone"),
-  replyLanguage: z.enum(["en", "es", "ko"]),
-  bibleTranslation: z.enum(BIBLE_TRANSLATION_IDS).optional(),
-  voice: z.object({
-    speakReplies: z.boolean(),
-    language: z.enum(["en-US", "es-US", "ko-KR"]),
-    rate: z.number().min(0.7).max(1.4),
-    voiceId: z.string().regex(/^[A-Za-z0-9]{8,40}$/).optional().or(z.literal("")),
-    handsFree: z.boolean(),
-    readTyped: z.boolean().optional(),
-    pauseMs: z.number().int().min(200).max(2000).optional(),
-    fillers: z.boolean().optional(),
-  }),
-  pronunciations: z.array(z.object({ word: z.string().trim().min(1).max(40), sayAs: z.string().trim().min(1).max(60) })).max(50),
-  about: z.string().max(1500),
-});
-
-const Notifications = z.object({
-  enabled: z.boolean().optional(),
-  types: z.partialRecord(z.enum(NOTIFICATION_TYPES), z.boolean()).optional(),
-});
 
 /** Changes only the notification settings (the Settings toggles save as they're flipped). */
 export async function PATCH(request: Request) {
