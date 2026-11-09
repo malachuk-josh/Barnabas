@@ -16,11 +16,11 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  pastor: "Full access, including finance, individual giving and every care case",
-  treasurer: "Full finance access, including individual giving",
-  deacon: "Finance summaries without donor names; sees care cases assigned to them and non-confidential ones",
-  staff: "Everything except finance; sees the care cases assigned to them",
-  leader: "Everything except finance; sees the care cases assigned to them",
+  pastor: "Full access, including finance, individual giving, every care case, scheduling, service planning, events and kids check-in",
+  treasurer: "Full finance access, including individual giving; can sign up to serve",
+  deacon: "Finance summaries without donor names; sees care cases assigned to them and non-confidential ones; manages events; leads their own serving team",
+  staff: "Everything except finance; schedules every team, plans services, manages events, runs kids check-in and keeps family records",
+  leader: "Everything except finance and kids check-in; sees the care cases assigned to them; signs up to serve and leads their own team",
 };
 
 export const DEFAULT_ROLE: Role = "leader";
@@ -37,7 +37,17 @@ export type Permission =
   /** See every pastoral care case, including confidential ones. */
   | "care.view_all"
   /** Assign care cases to someone else, and keep the discipleship pathway and classes. */
-  | "care.assign";
+  | "care.assign"
+  /** Edit any team's roster, positions and volunteers (team leads may always edit their own team). */
+  | "ops.schedule"
+  /** Plan sermon series, the preaching rotation and orders of service. */
+  | "services.plan"
+  /** Create events, see registrants, export them and check people in. */
+  | "events.manage"
+  /** Run the kids check-in station: find families, check children in and out, print labels, see room counts. */
+  | "kids.checkin"
+  /** Add and edit families and children, including allergies, medical notes and authorized pickups. */
+  | "kids.admin";
 
 const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "finance.view": ["pastor", "treasurer", "deacon"],
@@ -45,6 +55,11 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "giving.donors": ["pastor", "treasurer"],
   "care.view_all": ["pastor"],
   "care.assign": ["pastor", "deacon", "staff"],
+  "ops.schedule": ["pastor", "staff"],
+  "services.plan": ["pastor", "staff"],
+  "events.manage": ["pastor", "deacon", "staff"],
+  "kids.checkin": ["pastor", "staff"],
+  "kids.admin": ["pastor", "staff"],
 };
 
 /** What a signed-in leader may do: their role, and whether they administer the team. */

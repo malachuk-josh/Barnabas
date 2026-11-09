@@ -61,6 +61,11 @@ describe("roles and permissions", () => {
     "team.manage": [],
     "care.view_all": ["pastor"],
     "care.assign": ["pastor", "deacon", "staff"],
+    "ops.schedule": ["pastor", "staff"],
+    "services.plan": ["pastor", "staff"],
+    "events.manage": ["pastor", "deacon", "staff"],
+    "kids.checkin": ["pastor", "staff"],
+    "kids.admin": ["pastor", "staff"],
   };
 
   it("follows the role matrix", () => {

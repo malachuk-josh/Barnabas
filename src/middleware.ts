@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-// /welcome/{token} and its API are the public guest card: the token is checked and the API is rate-limited there.
-const PUBLIC_PATHS = ["/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/manifest.webmanifest", "/icon.svg"];
+// /welcome/{token} and /register/{token} (and their APIs) are the public guest card and event registration:
+// the token is checked and the API is rate-limited there.
+const PUBLIC_PATHS = ["/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg"];
 
 function secret(): Uint8Array | null {
   const value = process.env.SESSION_SECRET;

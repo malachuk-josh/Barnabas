@@ -423,6 +423,14 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
               {longDate(viewing.date)} · {whenText(viewing)}
             </p>
             {viewing.location && <p className="muted">{viewing.location}</p>}
+            {viewing.registration && (
+              <p className="row">
+                <span className="pill pill-ok">{viewing.registration.status}</span>
+                <a className="btn" href={viewing.registration.href}>
+                  Registrations
+                </a>
+              </p>
+            )}
             <p className="small muted">
               {viewing.source === "church"
                 ? "This is on the church calendar. Change it in your church database."
@@ -449,7 +457,9 @@ function EventRow({ item, onOpen }: { item: Item; onOpen: () => void }) {
           {item.title}
           {item.kind === "mine" && item.event.createdBy === "barnabas" && <span className="badge badge-barnabas">Barnabas</span>}
           {item.kind === "outside" && <span className="badge">{SOURCE_LABEL[item.source]}</span>}
+          {item.kind === "outside" && item.event.registration && <span className="badge badge-barnabas">Registration</span>}
         </strong>
+        {item.kind === "outside" && item.event.registration && <span className="small muted">{item.event.registration.status}</span>}
         {item.kind === "mine" && item.event.location && <span className="small muted">{item.event.location}</span>}
         {item.kind === "outside" && item.event.location && <span className="small muted">{item.event.location}</span>}
       </span>

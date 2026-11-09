@@ -43,6 +43,8 @@ export type OutsideEvent = {
   end?: string;
   allDay: boolean;
   location?: string;
+  /** For church events that take registration: its status, and where to manage it in Barnabas. */
+  registration?: { status: string; href: string };
 };
 
 export type EventInput = {

@@ -3,6 +3,9 @@ import type { Leader } from "../auth/session";
 import { addDays, lastSunday, today as todayIso } from "../dates";
 import { careFollowUps, careFor } from "../care/views";
 import { scoreVolunteers, type RadarEntry } from "../radar/burnout";
+import { config } from "../config";
+import { loadServe } from "../serve/store";
+import { rosterServing } from "../serve/views";
 
 export type FollowUp = { id: string; personId: string; name: string; reason: string; due?: string; overdue?: boolean; href?: string; source: "care" | "guest" | "attendance" };
 
@@ -13,17 +16,34 @@ export type Briefing = {
   upcoming: { date: string; title: string; time: string; location: string }[];
 };
 
-export async function radarNow(date = todayIso()) {
+/**
+ * The radar's inputs. Teams with rosters in Barnabas (Serve) use them; any team without roster data in
+ * the window falls back to the church database's serving history.
+ */
+export async function radarNow(date = todayIso(), churchId = config.churchId) {
   const data = churchData();
   const sunday = lastSunday(date);
   const since = addDays(sunday, -7 * 11);
-  const [people, teams, serving, attendance] = await Promise.all([
+  const [people, teams, chmsServing, attendance, serveBook] = await Promise.all([
     data.listPeople(),
     data.teams(),
     data.serving(since),
     data.attendance(since),
+    loadServe(churchId).catch((err) => {
+      console.warn("[barnabas] roster data unavailable for the radar", err);
+      return null;
+    }),
   ]);
-  return { radar: scoreVolunteers({ people, teams, serving, attendance, mostRecentSunday: sunday, today: date }), people, serving, attendance, sunday };
+  let serving = chmsServing;
+  let allPeople = people;
+  let allTeams = teams;
+  if (serveBook) {
+    const roster = rosterServing(serveBook, since, date);
+    serving = [...chmsServing.filter((s) => !roster.teamsWithData.has(s.teamId)), ...roster.records];
+    allPeople = [...people, ...roster.people.filter((p) => !people.some((x) => x.id === p.id))];
+    allTeams = [...teams, ...roster.teams.filter((t) => !teams.some((x) => x.id === t.id))];
+  }
+  return { radar: scoreVolunteers({ people: allPeople, teams: allTeams, serving, attendance, mostRecentSunday: sunday, today: date }), people: allPeople, serving, attendance, sunday };
 }
 
 export async function followUps(leader: Leader, date = todayIso()): Promise<FollowUp[]> {

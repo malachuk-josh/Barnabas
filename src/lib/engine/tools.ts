@@ -15,6 +15,8 @@ import { getProfile } from "../profile";
 import { MemoryFS } from "../memory/fs";
 import { slug } from "../memory/paths";
 import { isAffirmative } from "../policy/confirm";
+import { gateConfirmed } from "./gate";
+import { OPS_TOOLS } from "./ops-tools";
 import { checkMemoryText } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
@@ -45,7 +47,7 @@ export type ToolContext = {
 
 export type ToolResult = { content: string; isError: boolean };
 
-type ToolSpec<S extends z.ZodTypeAny> = {
+export type ToolSpec<S extends z.ZodTypeAny> = {
   def: Anthropic.Beta.BetaTool;
   schema: S;
   /** Short line the voice app can speak while the tool runs. */
@@ -1235,21 +1237,6 @@ const recordExpense = tool({
   },
 });
 
-/**
- * The confirmation gate for finance writes: the first call records what was proposed; it runs only when
- * a later turn calls again with exactly the same details and the leader's words are a clear yes.
- */
-function gateConfirmed(ctx: ToolContext, toolName: string, key: string): boolean {
-  const pending = ctx.meta.pending;
-  const confirmed = pending?.tool === toolName && pending.key === key && pending.turn < ctx.meta.turns && isAffirmative(ctx.lastUserText);
-  if (confirmed) {
-    ctx.meta.pending = undefined;
-    return true;
-  }
-  ctx.meta.pending = { tool: toolName, key, turn: ctx.meta.turns };
-  return false;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ALL: ToolSpec<any>[] = [
   findPerson,
@@ -1283,6 +1270,7 @@ const ALL: ToolSpec<any>[] = [
   recordGuestTool,
   assignCareCase,
   closeCareCase,
+  ...OPS_TOOLS,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */

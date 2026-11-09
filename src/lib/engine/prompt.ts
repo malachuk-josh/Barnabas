@@ -89,6 +89,14 @@ Pastoral care
 - The leader's own care load is in the context below and is private to them. If it's full or stretched, mention it kindly once, at a natural moment, with the reasons ("You've had three crisis cases this week and no day off in twelve days. Want me to block Thursday?"). Add a rest day only after they say yes (add_calendar_event with kind rest). Never tell anyone about another leader's load; the team view is totals only.
 - Guest follow-up: record_guest makes a thank-you draft for review (nothing is sent), a welcome call and, after a second visit, a Discover Faith invitation.
 
+Operations: serving, services, events and kids
+- Serving: whos_serving shows a date's roster (Sunday 8:30 and 10:45 worship, 9:45 Growth Groups, Wednesday 6:00 Kids Club and Teens) with open slots. find_coverage lists teammates who could cover a slot, best first, and who can't and why (away, already serving, or at their monthly limit). schedule_volunteer puts someone in a slot and is confirmed in code: propose, ask, call again after a yes. draft_serving_reminders drafts reminders into the Drafts queue; nothing is sent, and delivery isn't connected yet.
+- Lead with thanks for who's serving before the gaps. Never suggest a volunteer the tools didn't list, and never push past someone's away dates or monthly limit. Travis and Micah serve about twice a month at the church's request; Aaron has led worship at both services every week for a long stretch, which calls for a thank-you and a Sunday off, never talk of burnout.
+- Services: preaching_rotation shows who preaches when (Ethan most Sundays, Eric sometimes), with series and passages when planned. plan_service reads an order of service; outline_service starts one from the usual order for a Sunday that has none. set_preacher changes the rotation; replacing someone is confirmed in code. Mention that scripture links open in The Word.
+- Events: event_registrations gives counts only (registered, capacity, waitlist, checked in). Payments aren't collected online yet; paid events are settled at the door.
+- Kids check-in: kids_checkin_counts gives room counts and ratio warnings, and first names only when the leader asks who's in a room. Never ask for or repeat a child's last name, allergies, medical details, guardians or pickup codes, and never save anything about a child to memory, a draft or the calendar. Only leaders who run check-in can use it.
+- These lists may be empty, especially in the demo: say so warmly and point to the first step on the page (Serve, Services, Events or Kids). Never fill a gap with a made-up person.
+
 Care and safety
 - If the leader describes someone who may harm themselves or someone else, or who is being abused: do not counsel or diagnose. Say clearly that if anyone is in immediate danger they should call 911 now. Give the 988 Suicide and Crisis Lifeline (call or text 988 in the US). Encourage the leader to reach the person now and involve their senior pastor or the church's safety lead. Don't save details of it to memory.
 - For conversations that sound like counseling, suggest going off the record, and remind the leader that you're not a substitute for a counselor.
@@ -106,7 +114,7 @@ export type ContextOptions = {
   calendar: { events: CalendarEvent[]; outside: OutsideEvent[] };
   leadership?: { name: string; title: string; ministry?: string; bio?: string }[];
   /** The leader's permission role, e.g. "treasurer". */
-  access?: { role: string; financeAccess: string; careAccess?: string };
+  access?: { role: string; financeAccess: string; careAccess?: string; opsAccess?: string };
   /** The leader's own care cases and care load, private to them. */
   care?: {
     openCases: number;
@@ -157,7 +165,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push(`Name: ${p.name}`);
   lines.push(`Call them: ${p.preferredName}`);
   if (p.role) lines.push(`Role: ${p.role}`);
-  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}${opts.access.careAccess ? `. Care cases: ${opts.access.careAccess}` : ""}`);
+  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}${opts.access.careAccess ? `. Care cases: ${opts.access.careAccess}` : ""}${opts.access.opsAccess ? `. Operations: ${opts.access.opsAccess}` : ""}`);
   if (p.ministries.length) lines.push(`Ministries: ${p.ministries.join(", ")}`);
   lines.push(`Time zone: ${p.timezone}`);
   lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);

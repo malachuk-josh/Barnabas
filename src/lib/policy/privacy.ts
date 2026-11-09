@@ -11,11 +11,21 @@ const SECRET_PATTERNS: { re: RegExp; label: string }[] = [
   { re: /\b(?:\d[ -]?){13,19}\b/, label: "card or account numbers" },
   { re: /\b(routing|account) (number|no\.?|#)\s*[:=]?\s*\d{4,}/i, label: "bank account details" },
   { re: /\bsk-[A-Za-z0-9_-]{16,}/, label: "API keys" },
+  { re: /\b(pick-?up|check-?in|security|claim) (code|tag|number)\b/i, label: "children's pickup codes" },
 ];
+
+/**
+ * Children's check-in records stay in Kids check-in, never in memory, whatever the church's policy:
+ * a child together with allergies, medical or custody details, who may pick them up, or which room
+ * they were checked into.
+ */
+const CHILD = "(kid|kids|child|children|son|daughter|toddler|infant|baby|boy|girl|grandson|granddaughter|niece|nephew|preschooler|kindergartner|\\d{1,2}[- ]?(year|yr)[- ]?old|age \\d{1,2})s?";
+const CHILD_DETAIL = "(allerg\\w*|epi-?pen|inhaler|asthma|seizure\\w*|diabet\\w*|medical|medication|meds|diagnos\\w*|custody|authori[sz]ed pick-?ups?|picks? (him|her|them) up|pick-?up list|not allowed to pick|checked (into|out)|check-?in room|nursery room)";
+const CHILD_PATTERNS: RegExp[] = [new RegExp(`\\b${CHILD}\\b[^.]{0,80}\\b${CHILD_DETAIL}`, "i"), new RegExp(`\\b${CHILD_DETAIL}\\b[^.]{0,80}\\b${CHILD}\\b`, "i")];
 
 /** Topics that need the church's written opt-in before Barnabas may remember them. */
 const SENSITIVE_PATTERNS: { re: RegExp; label: string }[] = [
-  { re: /\b(diagnos\w*|cancer|chemo\w*|dementia|alzheimer\w*|hiv|std|pregnan\w*|miscarr\w*|mental illness|bipolar|schizophren\w*|depress\w*|anxiety disorder|ptsd|medication|prescription|rehab|overdos\w*)\b/i, label: "health details" },
+  { re: /\b(allerg\w*|epi-?pen|diagnos\w*|cancer|chemo\w*|dementia|alzheimer\w*|hiv|std|pregnan\w*|miscarr\w*|mental illness|bipolar|schizophren\w*|depress\w*|anxiety disorder|ptsd|medication|prescription|rehab|overdos\w*)\b/i, label: "health details" },
   { re: /\b(counsel(?:ing|ed|or)?|therapy|therapist|confess\w*|confided)\b/i, label: "counseling content" },
   { re: /\b(divorc\w*|separat(?:ed|ion)|affair|infidelity|cheat(?:ed|ing) on|custody|restraining order|domestic (?:violence|abuse)|abus\w*)\b/i, label: "family conflict or abuse" },
   { re: /\b(addict\w*|alcoholi\w*|drunk|relapse\w*|porn\w*)\b/i, label: "addiction details" },
@@ -28,6 +38,9 @@ export function checkMemoryText(text: string, options: PolicyOptions): string | 
     if (re.test(text)) {
       return `Not saved: Barnabas never stores ${label}. Leave that detail out.`;
     }
+  }
+  if (CHILD_PATTERNS.some((re) => re.test(text))) {
+    return "Not saved: children's check-in, pickup and medical details stay in Kids check-in and are never kept in memory. Leave them out.";
   }
   if (!options.allowSensitive) {
     for (const { re, label } of SENSITIVE_PATTERNS) {

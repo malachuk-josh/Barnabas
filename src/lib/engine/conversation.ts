@@ -1,3 +1,4 @@
+import { opsAccessLine } from "./ops-tools";
 import type { Leader } from "../auth/session";
 import { createConversation, type ConversationMeta, type Mode } from "../data/conversations";
 import { newId } from "../data/ids";
@@ -53,6 +54,7 @@ export async function startConversation(
         : access.role === "deacon"
           ? "their own and every non-confidential case"
           : "only the cases assigned to them",
+      opsAccess: await opsAccessLine({ leader }),
     },
     care,
   });

@@ -1,4 +1,6 @@
 import { churchData } from "../chms";
+import { counts } from "../events/service";
+import { loadEvents } from "../events/store";
 import type { Leader } from "../auth/session";
 import { audit } from "../data/records";
 import { getProfile } from "../profile";
@@ -92,9 +94,8 @@ export async function outsideEvents(leader: Leader, from: string, to: string, op
       await recordError(leader, c.provider, message);
     }
   });
-  const church = churchData()
-    .events(from, to)
-    .then((events) => {
+  const church = Promise.all([churchData().events(from, to), loadEvents(leader.churchId).catch(() => null)])
+    .then(([events, regBook]) => {
       const to24 = (t?: string) => {
         const m = t ? /^(\d{1,2}):(\d{2}) (AM|PM)/.exec(t) : null;
         if (!m) return undefined;
@@ -106,6 +107,20 @@ export async function outsideEvents(leader: Leader, from: string, to: string, op
         const startTime = to24(e.time);
         const endTime = to24(e.endTime) ?? (startTime ? `${String(Math.min(23, Number(startTime.slice(0, 2)) + 1)).padStart(2, "0")}:${startTime.slice(3)}` : undefined);
         out.push({ id: `church:${e.id}`, source: "church", title: e.title, date: e.date, start: startTime, end: endTime, allDay: !startTime, location: e.location });
+      }
+      // Events that take registration (Events): marked on their church event, or added when they're Barnabas-only.
+      for (const ev of regBook?.events ?? []) {
+        if (ev.date < from || ev.date > to) continue;
+        const c = counts(regBook!, ev.id);
+        const status = !ev.open ? "Registration closed" : c.spotsLeft === 0 ? (ev.waitlist ? "Full: waitlist open" : "Full") : "Registration open";
+        const registration = { status: `${status} · ${c.registered}${ev.capacity ? ` of ${ev.capacity}` : ""} registered`, href: `/events/${ev.id}` };
+        const existing = ev.churchEventId ? out.find((o) => o.id === `church:${ev.churchEventId}`) : undefined;
+        if (existing) existing.registration = registration;
+        else {
+          const startTime = to24(ev.time);
+          const endTime = to24(ev.endTime) ?? (startTime ? `${String(Math.min(23, Number(startTime.slice(0, 2)) + 1)).padStart(2, "0")}:${startTime.slice(3)}` : undefined);
+          out.push({ id: `event:${ev.id}`, source: "church", title: ev.title, date: ev.date, start: startTime, end: endTime, allDay: !startTime, location: ev.location, registration });
+        }
       }
     });
   const all = Promise.allSettled([...tasks, church]);
