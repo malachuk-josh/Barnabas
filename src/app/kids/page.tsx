@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { requirePageLeader } from "@/components/AppShell";
+import { ChildCare } from "@/components/ops/ChildCare";
 import { KidsNoAccess } from "@/components/ops/KidsViews";
 import { CheckInStation } from "@/components/ops/CheckInStation";
 import { KIDS_TABS, OpsFrame } from "@/components/ops/OpsFrame";
 import { today as todayIso } from "@/lib/dates";
+import { myChildCare } from "@/lib/kids/parents";
 import { roomRows } from "@/lib/kids/service";
 import { kidsFor } from "@/lib/kids/views";
 import { GATHERINGS, gatheringsOn, nextMeeting } from "@/lib/ops/gatherings";
@@ -14,6 +16,8 @@ export const metadata: Metadata = { title: "Kids check-in · Barnabas" };
 export default async function KidsStationPage({ searchParams }: { searchParams: Promise<{ date?: string; g?: string }> }) {
   const { leader, profile } = await requirePageLeader();
   const { actor, book } = await kidsFor(leader);
+  // Members see their own children here (Child care), never the station or anyone else's family.
+  if (actor.access.level === "member" && !actor.access.admin) return <ChildCare profile={profile} {...await myChildCare(leader)} />;
   if (!actor.station) return <KidsNoAccess profile={profile} />;
   const q = await searchParams;
   const today = todayIso();

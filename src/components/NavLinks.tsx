@@ -65,7 +65,18 @@ export type NavAccess = {
   only?: string[];
   /** Members see Kids as Child care. */
   member?: boolean;
+  /** Unread messages, shown on Messages. */
+  unread?: number;
 };
+
+function Badge({ href, unread }: { href: string; unread?: number }) {
+  if (href !== "/inbox" || !unread) return null;
+  return (
+    <span className="nav-badge" aria-label={`${unread} unread`}>
+      {unread > 99 ? "99+" : unread}
+    </span>
+  );
+}
 
 export function navItems({ showFinance = false, showKids = false, showSite = false, showAdmin = false, checkinOnly = false, only, member = false }: NavAccess) {
   if (checkinOnly) return NAV.filter((n) => n.href === "/kids" || n.href === "/inbox" || n.href === "/settings");
@@ -127,6 +138,7 @@ export function SideNav(access: NavAccess) {
             <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
               <Icon />
               {label}
+              <Badge href={href} unread={access.unread} />
             </Link>
           ))}
         </div>
@@ -172,7 +184,10 @@ export function TabBar(access: NavAccess) {
       <nav className="tabbar" aria-label="Main" style={{ gridTemplateColumns: `repeat(${all.length}, minmax(0, 1fr))` }}>
         {all.map(({ href, label, Icon }) => (
           <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
-            <Icon />
+            <span className="nav-tab-icon">
+              <Icon />
+              <Badge href={href} unread={access.unread} />
+            </span>
             {label}
           </Link>
         ))}
@@ -190,7 +205,10 @@ export function TabBar(access: NavAccess) {
   const right = tabs.filter((n) => !left.includes(n));
   const tab = ({ href, label, Icon }: NavItem) => (
     <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
-      <Icon />
+      <span className="nav-tab-icon">
+        <Icon />
+        <Badge href={href} unread={access.unread} />
+      </span>
       {label}
     </Link>
   );
@@ -222,6 +240,7 @@ export function TabBar(access: NavAccess) {
                   <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined} onClick={() => setOpen(false)}>
                     <Icon />
                     {label}
+                    <Badge href={href} unread={access.unread} />
                   </Link>
                 ))}
               </div>
@@ -239,7 +258,10 @@ export function TabBar(access: NavAccess) {
         {right.map(tab)}
         {overflow.length > 0 && (
           <button type="button" className="tab-more" aria-expanded={open} aria-controls="more-sheet" aria-current={moreActive ? "page" : undefined} onClick={() => setOpen((o) => !o)}>
-            <MoreIcon />
+            <span className="nav-tab-icon">
+              <MoreIcon />
+              {!tabs.some((n) => n.href === "/inbox") && <Badge href="/inbox" unread={access.unread} />}
+            </span>
             More
           </button>
         )}

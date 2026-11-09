@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
+import { MessageParent } from "@/components/inbox/MessageParent";
 import type { RoomRow } from "@/lib/kids/service";
 import { longDate, opsApi, Status } from "./client";
 
 type StationChild = { id: string; firstName: string; lastName: string; grade?: string; allergies?: string; roomId?: string; checkin: { id: string; roomId: string; at: number } | null };
-type StationFamily = { id: string; name: string; guardians: { name: string; relationship?: string; phoneLast4?: string }[]; pickups: { name: string; relationship?: string }[]; children: StationChild[] };
+type StationFamily = { id: string; name: string; parents: string[]; guardians: { name: string; relationship?: string; phoneLast4?: string }[]; pickups: { name: string; relationship?: string }[]; children: StationChild[] };
 type RoomInfo = { id: string; name: string; ages: string; gatherings: string[] };
 
 /**
@@ -236,6 +237,7 @@ function FamilyCard({ family, rooms, date, gathering, onCheckedIn, onCheckedOut,
                     <strong>{c.firstName}</strong> <span className="small muted">in {rooms.find((r) => r.id === c.checkin!.roomId)?.name ?? "their room"}</span>
                   </span>
                 </label>
+                <MessageParent parents={family.parents ?? []} child={c.firstName} />
               </li>
             ))}
           </ul>

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isResponse, requirePermission } from "@/lib/auth/require";
 import { today } from "@/lib/dates";
 import { CheckInInput, CheckOutInput, checkInChildren, checkOutChildren, HouseholdInput, removeHousehold, roomRows, saveHousehold, setStaffing } from "@/lib/kids/service";
+import { parentLookup } from "@/lib/kids/parents";
 import { kidsFor, stationFamily, stationSearch } from "@/lib/kids/views";
 import { GATHERING_KEYS, gatheringsOn, type GatheringKey } from "@/lib/ops/gatherings";
 import { rawBody, respondOps } from "@/lib/ops/http";
@@ -18,11 +19,11 @@ export async function GET(request: Request) {
     const g = z.enum(GATHERING_KEYS).catch((gatheringsOn(date)[0]?.key ?? "sun-0945") as GatheringKey).parse(url.searchParams.get("gathering"));
     const { actor, book } = await kidsFor(leader);
     const q = url.searchParams.get("q");
-    if (q !== null) return { families: stationSearch(book, actor, q.slice(0, 40), date, g) };
+    if (q !== null) return { families: stationSearch(book, actor, q.slice(0, 40), date, g, await parentLookup(leader.churchId)) };
     const fam = url.searchParams.get("family");
     if (fam) {
       const h = book.households.find((x) => x.id === fam);
-      return { family: h ? stationFamily(book, h, date, g) : null };
+      return { family: h ? stationFamily(book, h, date, g, await parentLookup(leader.churchId)) : null };
     }
     return { date, gathering: g, rooms: roomRows(book, date, g), families: book.households.length };
   });

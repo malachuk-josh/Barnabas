@@ -69,7 +69,7 @@ const ChildInput = z.object({
 
 export const HouseholdInput = z.object({
   name: Short(60).min(1, "Add the family's last name."),
-  guardians: z.array(z.object({ name: Short(80).min(1, "Add the guardian's name."), phone: Phone.optional(), relationship: Short(30).optional() })).min(1, "Add at least one parent or guardian.").max(4),
+  guardians: z.array(z.object({ name: Short(80).min(1, "Add the guardian's name."), phone: Phone.optional(), email: z.string().trim().toLowerCase().max(120).email("Check the guardian's email.").optional().or(z.literal("")), relationship: Short(30).optional() })).min(1, "Add at least one parent or guardian.").max(4),
   children: z.array(ChildInput).max(10).default([]),
   pickups: z.array(z.object({ name: Short(80).min(1), relationship: Short(30).optional() })).max(8).default([]),
   notes: Short(300).optional(),
@@ -89,11 +89,11 @@ export async function saveHousehold(actor: KidsActor, input: z.input<typeof Hous
     const now = Date.now();
     if (id) {
       const h = household(book, id);
-      Object.assign(h, { name: v.name, guardians: v.guardians.map((g) => ({ ...g, phone: g.phone || undefined, relationship: g.relationship || undefined })), children: cleanChildren(v.children, book), pickups: v.pickups, notes: v.notes || undefined, updatedAt: now });
+      Object.assign(h, { name: v.name, guardians: v.guardians.map((g) => ({ ...g, phone: g.phone || undefined, email: g.email || undefined, relationship: g.relationship || undefined })), children: cleanChildren(v.children, book), pickups: v.pickups, notes: v.notes || undefined, updatedAt: now });
       entry(book, actor, "family", `updated ${h.id}`);
       return h;
     }
-    const h: Household = { id: newId("fam"), name: v.name, guardians: v.guardians.map((g) => ({ ...g, phone: g.phone || undefined, relationship: g.relationship || undefined })), children: cleanChildren(v.children, book), pickups: v.pickups, notes: v.notes || undefined, createdAt: now, updatedAt: now };
+    const h: Household = { id: newId("fam"), name: v.name, guardians: v.guardians.map((g) => ({ ...g, phone: g.phone || undefined, email: g.email || undefined, relationship: g.relationship || undefined })), children: cleanChildren(v.children, book), pickups: v.pickups, notes: v.notes || undefined, createdAt: now, updatedAt: now };
     book.households.push(h);
     entry(book, actor, "family", `added ${h.id}`);
     return h;
