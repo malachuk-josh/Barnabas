@@ -15,9 +15,9 @@ export async function GET() {
 }
 
 const Body = z.object({
-  textModel: z.enum(MODEL_IDS).nullable(),
-  voiceModel: z.enum(MODEL_IDS).nullable(),
-  textEffort: z.enum(EFFORT_IDS).nullable(),
+  textModel: z.enum(MODEL_IDS).nullable().optional(),
+  voiceModel: z.enum(MODEL_IDS).nullable().optional(),
+  textEffort: z.enum(EFFORT_IDS).nullable().optional(),
   voiceEffort: z.enum(EFFORT_IDS).nullable().optional(),
   voiceStability: z.number().min(0).max(1).nullable().optional(),
   voiceStyle: z.number().min(0).max(1).nullable().optional(),
@@ -34,7 +34,7 @@ export async function PUT(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
     const domainIssue = parsed.error.issues.find((i) => i.path[0] === "webDomains");
-    return NextResponse.json({ error: domainIssue ? `Check the site list: ${domainIssue.message}` : "Choose a model and thinking level from the lists." }, { status: 400 });
+    return NextResponse.json({ error: domainIssue ? `Check the site list: ${domainIssue.message}` : "Choose a model and thinking level from the lists, and keep the voice sliders between 0 and 1." }, { status: 400 });
   }
   const view = await saveAiSettings(leader.churchId, leader.name, parsed.data);
   await audit(leader, { action: "settings.ai", detail: `typed ${view.textModel} (${view.textEffort}), voice ${view.voiceModel} (${view.voiceEffort}), stability ${view.voiceStability}, style ${view.voiceStyle}, web ${view.webSearch ? "on" : "off"}${view.webDomains.length ? ` (${view.webDomains.join(", ")})` : ""}` });

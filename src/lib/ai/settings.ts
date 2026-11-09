@@ -67,17 +67,28 @@ export async function aiSettingsView(churchId: string): Promise<AiSettingsView> 
 }
 
 /** null for a field means "use the default". */
-export async function saveAiSettings(churchId: string, by: string, next: { textModel: ModelId | null; voiceModel: ModelId | null; textEffort: TextEffort | null; voiceEffort?: TextEffort | null; voiceStability?: number | null; voiceStyle?: number | null; webSearch?: boolean; webDomains?: string[] }) {
-  const value: Stored = { updatedBy: by, updatedAt: Date.now() };
-  if (next.textModel) value.textModel = next.textModel;
-  if (next.voiceModel) value.voiceModel = next.voiceModel;
-  if (next.textEffort) value.textEffort = next.textEffort;
-  if (next.voiceEffort) value.voiceEffort = next.voiceEffort;
+export type AiSettingsChange = { textModel?: ModelId | null; voiceModel?: ModelId | null; textEffort?: TextEffort | null; voiceEffort?: TextEffort | null; voiceStability?: number | null; voiceStyle?: number | null; webSearch?: boolean; webDomains?: string[] };
+
+/**
+ * Saves the fields given and keeps the rest, so the AI card and the voice sliders
+ * (which live with the voice settings) can save separately. null resets a field to its default.
+ */
+export async function saveAiSettings(churchId: string, by: string, next: AiSettingsChange) {
+  const value: Stored = { ...(await stored(churchId).catch(() => ({}) as Stored)), updatedBy: by, updatedAt: Date.now() };
   const two = (n: number) => Math.round(n * 100) / 100;
-  if (typeof next.voiceStability === "number") value.voiceStability = two(next.voiceStability);
-  if (typeof next.voiceStyle === "number") value.voiceStyle = two(next.voiceStyle);
-  if (next.webSearch) value.webSearch = true;
-  if (next.webDomains?.length) value.webDomains = [...new Set(next.webDomains.map((d) => d.toLowerCase()))];
+  const put = <K extends keyof Stored>(k: K, v: Stored[K] | null | undefined) => {
+    if (v === undefined) return;
+    if (v === null || v === false || (Array.isArray(v) && v.length === 0)) delete value[k];
+    else value[k] = v;
+  };
+  put("textModel", next.textModel || (next.textModel === undefined ? undefined : null));
+  put("voiceModel", next.voiceModel || (next.voiceModel === undefined ? undefined : null));
+  put("textEffort", next.textEffort || (next.textEffort === undefined ? undefined : null));
+  put("voiceEffort", next.voiceEffort || (next.voiceEffort === undefined ? undefined : null));
+  put("voiceStability", typeof next.voiceStability === "number" ? two(next.voiceStability) : next.voiceStability);
+  put("voiceStyle", typeof next.voiceStyle === "number" ? two(next.voiceStyle) : next.voiceStyle);
+  put("webSearch", next.webSearch);
+  put("webDomains", next.webDomains === undefined ? undefined : [...new Set(next.webDomains.map((d) => d.toLowerCase()))]);
   await setJSON(key(churchId), value);
   cache.set(churchId, { at: Date.now(), value });
   return aiSettingsView(churchId);

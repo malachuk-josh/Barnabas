@@ -107,6 +107,17 @@ describe("voice stability and style sliders", () => {
     expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.6, style: 0.35 });
   });
 
+  it("save on their own from the voice settings without touching the AI card, and the AI card leaves them alone", async () => {
+    session.current = admin;
+    await put({ textModel: "claude-haiku-5-5", voiceModel: null, textEffort: "low", webSearch: true });
+    const r = await put({ voiceStability: 0.7, voiceStyle: 0.4 });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({ textModel: "claude-haiku-5-5", textEffort: "low", webSearch: true, voiceStability: 0.7, voiceStyle: 0.4 });
+    // The AI card's save sends no slider values, so they stay.
+    const r2 = await put({ textModel: null, voiceModel: null, textEffort: null, voiceEffort: null, webSearch: false, webDomains: [] });
+    expect(await r2.json()).toMatchObject({ voiceStability: 0.7, voiceStyle: 0.4, webSearch: false, chosen: { textModel: false } });
+  });
+
   it("are admin-only and must be between 0 and 1", async () => {
     session.current = plain;
     expect((await put({ textModel: null, voiceModel: null, textEffort: null, voiceStyle: 0.4 })).status).toBe(403);
