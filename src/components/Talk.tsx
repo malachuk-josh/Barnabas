@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SentenceChunker } from "@/lib/speech/chunker";
+import { ASK_EVENT, TALK_EVENT } from "./NavLinks";
 import {
   BrowserListener,
   BrowserSpeaker,
@@ -42,14 +43,17 @@ function localTime() {
 
 let nextId = 1;
 
+/** Things a leader can ask, offered before the first turn. */
+const SUGGESTIONS = ["Who needs a call this week?", "Help me plan Sunday", "Which co-laborers could use encouragement?"];
+
 export function Talk({
-  greetingName,
   voice,
   pronunciations,
   cloudVoice,
   cloudListening,
 }: {
-  greetingName: string;
+  /** The name the leader goes by (Today's header greets them, so the panel no longer does). */
+  greetingName?: string;
   voice: VoicePrefs;
   pronunciations: { word: string; sayAs: string }[];
   /** Barnabas's own ElevenLabs voice is set up. */
@@ -389,6 +393,37 @@ export function Talk({
     void startListening(false);
   }
 
+  // The tab bar's and sidebar's Talk buttons, and the briefing's "Draft a thank-you" buttons, reach the
+  // panel through window events. Refs keep the listeners on the latest handlers without re-subscribing.
+  const onOrbRef = useRef(onOrb);
+  onOrbRef.current = onOrb;
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const orbRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const onTalk = () => {
+      orbRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      onOrbRef.current();
+    };
+    const onAsk = (e: Event) => {
+      const text = (e as CustomEvent<string>).detail;
+      if (typeof text !== "string" || !text.trim()) return;
+      orbRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      void sendRef.current(text, "text");
+    };
+    window.addEventListener(TALK_EVENT, onTalk);
+    window.addEventListener(ASK_EVENT, onAsk);
+    // Arriving from another page's Talk button: the mic needs a tap here, so put the orb in reach.
+    if (new URLSearchParams(window.location.search).get("talk") === "1") {
+      orbRef.current?.focus();
+      window.history.replaceState(null, "", "/");
+    }
+    return () => {
+      window.removeEventListener(TALK_EVENT, onTalk);
+      window.removeEventListener(ASK_EVENT, onAsk);
+    };
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const text = draft;
@@ -411,25 +446,34 @@ export function Talk({
 
   return (
     <section className="talk" aria-label="Talk with Barnabas">
-      <div className="stack" style={{ gap: 6 }}>
-        <h1>How can I encourage you today{greetingName ? `, ${greetingName}` : ""}?</h1>
-        <p className="sub">
-          Ask who needs a call, get ready for a visit, encourage your co-laborers, or plan your week.
-          {offRecord ? " This conversation is off the record: nothing will be saved." : ""}
-        </p>
-      </div>
-
-      <div className="orb-row">
-        <button type="button" className="orb" data-state={status} onClick={onOrb} disabled={!voiceSupported} aria-label={statusText(status, handsFree)}>
+      <div className="talk-head">
+        <button ref={orbRef} type="button" className="orb" data-state={status} onClick={onOrb} disabled={!voiceSupported} aria-label={statusText(status, handsFree)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="9" y="3" width="6" height="11" rx="3" />
             <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
           </svg>
         </button>
-        <p className="orb-status" aria-live="polite">
-          {voiceSupported ? statusText(status, handsFree) : "Voice isn't available in this browser. You can type below."}
-        </p>
+        <div className="talk-intro">
+          <h2>How can I encourage you today?</h2>
+          <p className="orb-status" aria-live="polite">
+            {voiceSupported ? statusText(status, handsFree) : "Voice isn't available in this browser. You can type below."}
+          </p>
+          <p className="sub">
+            Nothing is sent without your yes.
+            {offRecord ? " This conversation is off the record: nothing will be saved." : ""}
+          </p>
+        </div>
       </div>
+
+      {turns.length === 0 && (
+        <div className="talk-suggestions" role="group" aria-label="Things to ask">
+          {SUGGESTIONS.map((q) => (
+            <button key={q} type="button" className="talk-chip" onClick={() => void send(q, "text")}>
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showTiming && lastTiming && <p className="small muted" aria-live="off">{lastTiming}</p>}
       {notice && (
@@ -443,7 +487,7 @@ export function Talk({
         </div>
       )}
 
-      <div className="transcript" aria-live="polite">
+      <div className="transcript" aria-live="polite" hidden={turns.length === 0 && !interim}>
         {turns.map((t) => (
           <div key={t.id} className={`bubble ${t.role === "leader" ? "bubble-leader" : "bubble-barnabas"}`}>
             {t.tools.length > 0 && t.role === "barnabas" && !t.text && !t.unheard && <span className="tool-line">Looking that up…</span>}

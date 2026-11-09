@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TERMS } from "@/lib/language";
+import { ASK_EVENT } from "./NavLinks";
 import { VerseNote } from "./VerseNote";
 
 type RadarEntry = { personId: string; name: string; band: "high" | "watch" | "ok"; drivers: string[]; suggestion: string };
@@ -15,9 +16,30 @@ function day(iso: string) {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
+function dateTile(iso: string) {
+  const d = new Date(`${iso}T12:00:00Z`);
+  return {
+    weekday: d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
+    num: d.toLocaleDateString("en-US", { day: "numeric", timeZone: "UTC" }),
+  };
+}
+
 function localDate() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+}
+
+function ask(text: string) {
+  window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: text }));
 }
 
 export function Briefing() {
@@ -36,88 +58,145 @@ export function Briefing() {
       .catch(() => {});
   }, []);
 
+  const setup = status
+    ? [
+        !status.claude && "Claude isn't connected. Add ANTHROPIC_API_KEY in your Vercel project settings.",
+        status.storage === "memory" && "Memory isn't saved between restarts. Add Upstash Redis from the Vercel Marketplace.",
+        status.churchData === "demo" && "Showing Mount Greylock's demo schedule and leaders until your church database is connected.",
+      ].filter((s): s is string => Boolean(s))
+    : [];
+  const demo = status?.churchData === "demo";
+
+  // Those to encourage first, then the ones to watch, then open follow-ups (overdue first).
+  const radar = (data?.radar ?? []).filter((r) => r.band !== "ok").sort((a, b) => (a.band === b.band ? 0 : a.band === "high" ? -1 : 1));
+  const followUps = [...(data?.followUps ?? [])].sort((a, b) => Number(Boolean(b.overdue)) - Number(Boolean(a.overdue)));
+  const shownRadar = radar.slice(0, 5);
+  const shownFollowUps = followUps.slice(0, 6);
+
   return (
-    <aside className="side" aria-label="This week">
-      {status && (!status.claude || status.storage === "memory" || status.churchData === "demo") && (
-        <div className="notice small stack" style={{ gap: 6 }}>
-          <strong>Setup</strong>
-          {!status.claude && <span>Claude isn&apos;t connected. Add ANTHROPIC_API_KEY in your Vercel project settings.</span>}
-          {status.storage === "memory" && <span>Memory isn&apos;t saved between restarts. Add Upstash Redis from the Vercel Marketplace.</span>}
-          {status.churchData === "demo" && <span>Showing Mount Greylock&apos;s demo schedule and leaders until your church database is connected.</span>}
-        </div>
+    <>
+      {setup.length > 0 && (
+        <details className="setup-strip">
+          <summary>
+            <span className="setup-text">
+              <strong>{demo ? "Demo mode." : "Setup."}</strong>{" "}
+              {setup.length === 1 ? "One setup step left." : `${setup.length} setup steps left.`}
+            </span>
+            <span className="setup-more">Details</span>
+          </summary>
+          <ul>
+            {setup.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        </details>
       )}
 
-      <div className="card stack">
-        <h2>{TERMS.colaborer.Many} to {TERMS.encourage.one}</h2>
+      <section className="needs" aria-labelledby="needs-head">
+        <div className="section-head">
+          <h2 id="needs-head">Needs you</h2>
+          <span className="small muted">Most important first</span>
+        </div>
         <VerseNote verse="encourage" />
-        {!data && !failed && <p className="muted">Loading…</p>}
-        {failed && <p className="muted">Couldn&apos;t load the briefing.</p>}
-        {data && data.radar.length === 0 && <p className="muted">Every {TERMS.colaborer.one} on the rosters is serving at a healthy pace this week.</p>}
-        {data && data.radar.length > 0 && (
-          <ul className="list">
-            {data.radar.slice(0, 5).map((r) => (
-              <li key={r.personId}>
-                <div className="row">
+        <div className="list-card">
+          {!data && !failed && <p className="list-empty muted">Loading…</p>}
+          {failed && <p className="list-empty muted">Couldn&apos;t load the briefing.</p>}
+          {shownRadar.map((r) => (
+            <div key={r.personId} className="need-row">
+              <span className={`need-avatar band-${r.band}`} aria-hidden="true">
+                {initials(r.name)}
+              </span>
+              <div className="need-text">
+                <div className="row" style={{ gap: 8 }}>
                   <strong>{r.name}</strong>
                   <span className={`pill pill-${r.band}`}>{r.band === "high" ? TERMS.encourage.One : "Watch"}</span>
                 </div>
                 <span className="small muted">{r.drivers.join(" · ")}</span>
                 <span className="small">{r.suggestion}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="card stack">
-        <h2>Follow-ups</h2>
-        {data && data.followUps.length === 0 && <p className="muted">Nothing open.</p>}
-        {data && data.followUps.length > 0 && (
-          <ul className="list">
-            {data.followUps.slice(0, 6).map((f) => (
-              <li key={f.id}>
-                <div className="row">
-                  {f.href ? (
-                    <Link href={f.href}>
-                      <strong>{f.name}</strong>
-                    </Link>
-                  ) : (
-                    <strong>{f.name}</strong>
-                  )}
+              </div>
+              <div className="need-actions">
+                <button type="button" className="btn btn-primary" onClick={() => ask(`Draft a thank-you to ${r.name} for serving so faithfully.`)}>
+                  Draft a thank-you
+                </button>
+              </div>
+            </div>
+          ))}
+          {shownFollowUps.map((f) => (
+            <div key={f.id} className="need-row">
+              <span className="need-avatar" aria-hidden="true">
+                {initials(f.name)}
+              </span>
+              <div className="need-text">
+                <div className="row" style={{ gap: 8 }}>
+                  <strong>{f.name}</strong>
                   {f.overdue && <span className="pill pill-watch">Overdue</span>}
                 </div>
                 <span className="small muted">
                   {f.reason}
                   {f.due ? ` By ${day(f.due)}.` : ""}
                 </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {data && data.followUps.length > 6 && (
-          <Link href="/shepherding" className="small">
-            {data.followUps.length - 6} more in {TERMS.shepherding.One}
-          </Link>
-        )}
-      </div>
+              </div>
+              {f.href && (
+                <div className="need-actions">
+                  <Link href={f.href} className="btn">
+                    Open
+                  </Link>
+                </div>
+              )}
+            </div>
+          ))}
+          {data && followUps.length > 6 && (
+            <Link href="/shepherding" className="need-row need-more">
+              {followUps.length - 6} more follow-ups in {TERMS.shepherding.One}
+            </Link>
+          )}
+          {data && (
+            <p className="need-row need-calm small muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="m5 12 4.5 4.5L19 7" />
+              </svg>
+              {followUps.length === 0 ? "No open follow-ups. " : ""}
+              {radar.length === 0
+                ? `Every ${TERMS.colaborer.one} on the rosters is serving at a healthy pace this week.`
+                : `Every other ${TERMS.colaborer.one} is serving at a healthy pace.`}
+            </p>
+          )}
+        </div>
+      </section>
 
-      <div className="card stack">
-        <h2>Coming up</h2>
-        {data && data.upcoming.length === 0 && <p className="muted">Nothing on the calendar.</p>}
-        {data && data.upcoming.length > 0 && (
-          <ul className="list">
-            {data.upcoming.slice(0, 5).map((e) => (
-              <li key={`${e.date}-${e.title}`}>
-                <strong>{e.title}</strong>
-                <span className="small muted">
-                  {day(e.date)}
-                  {e.time ? `, ${e.time}` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </aside>
+      <aside className="week" aria-labelledby="week-head">
+        <section className="list-card week-card">
+          <div className="section-head">
+            <h2 id="week-head">Coming up</h2>
+            <Link href="/calendar" className="small">
+              Calendar
+            </Link>
+          </div>
+          {data && data.upcoming.length === 0 && <p className="muted">Nothing on the calendar.</p>}
+          {data && data.upcoming.length > 0 && (
+            <ul className="week-list">
+              {data.upcoming.slice(0, 5).map((e) => {
+                const t = dateTile(e.date);
+                return (
+                  <li key={`${e.date}-${e.title}`}>
+                    <span className="date-tile" aria-hidden="true">
+                      <small>{t.weekday}</small>
+                      <strong>{t.num}</strong>
+                    </span>
+                    <span className="week-what">
+                      <strong>{e.title}</strong>
+                      <span className="small muted">
+                        <span className="sr-only">{day(e.date)}</span>
+                        {e.time}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </aside>
+    </>
   );
 }
