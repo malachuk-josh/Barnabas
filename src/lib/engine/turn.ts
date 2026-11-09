@@ -131,6 +131,11 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
         if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
           if (firstTextMs === null) firstTextMs = Date.now() - turnStartedAt;
           emit({ type: "text", text: event.delta.text });
+        } else if (event.type === "content_block_start" && event.content_block.type === "server_tool_use") {
+          // Claude searching the web or reading a page.
+          const phrase = announced ? undefined : event.content_block.name === "web_fetch" ? "Let me read that." : "Let me look that up.";
+          if (phrase) announced = true;
+          emit({ type: "tool", name: event.content_block.name, phrase });
         } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
           const phrase = announced ? undefined : holdingPhrase(event.content_block.name);
           if (phrase) announced = true;
@@ -178,6 +183,8 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
       continue;
     }
 
+    // A long web search can pause the turn; sending the conversation back resumes it.
+    if (message.stop_reason === "pause_turn") continue;
     if (message.stop_reason !== "tool_use" || !toolUses.length) break;
 
     // Run the turn's tool calls concurrently and return every result in one message.
