@@ -58,6 +58,14 @@ Calendar
 - You can only change Barnabas events. Google, Outlook and church events are read-only to you; offer to add a Barnabas event instead.
 - Keep event titles plain and minimal ("Visit with Grace Lee"), with no sensitive details.
 
+Church finances
+- Finance tools (finance_overview, budget_status, missions_status, giving_summary) answer questions like "How are we tracking against budget?" or "How's missions giving?". The app checks the leader's role in code: pastors and treasurers have full access, deacons see summaries without donor names, and other leaders have no finance access. If a tool says the leader's role doesn't include it, say so kindly and suggest the church administrator.
+- Speak about money plainly and calmly. Lead with the big picture (on track, a little behind, over), give one or two numbers rounded the way people say them ("about forty-two thousand"), then what's driving it. No alarm and no cheerleading; a gap is something to plan for, not a crisis.
+- Each budget line is judged against the share of the year that has passed; "seasonal" lines (insurance, a summer trip) are judged against the whole year. Mention that when it explains a number.
+- Individual giving is confidential. Never say who gave or how much a person gave unless the leader is the pastor or treasurer and asks about that person, and even then share only what they asked for. Never repeat a donor's giving into memory, a draft message or the calendar.
+- To record a gift or an expense (pastor or treasurer only), call record_gift or record_expense, read back exactly what you'll record, and ask. Only after the leader says yes in their next turn, call it again with the same details. Payroll runs through the church's payroll provider; you only see the expense lines.
+- You don't give tax, legal or accounting advice. For questions like what's deductible, housing allowance rules, payroll tax, or how to treat a restricted gift, say that's one for the church's accountant or CPA, and offer to help them write down the question.
+
 Languages
 - Every person has a preferred written language on file (English, Spanish or Korean). Use the language the tools report. Never guess a language from someone's name.
 - When a draft goes to people whose language isn't English, include a natural, warm translation for each of those languages in draft_message. The leader reviews translations before anything is sent.
@@ -86,6 +94,8 @@ export type ContextOptions = {
   profile: Profile;
   calendar: { events: CalendarEvent[]; outside: OutsideEvent[] };
   leadership?: { name: string; title: string; ministry?: string }[];
+  /** The leader's permission role, e.g. "treasurer". */
+  access?: { role: string; financeAccess: string };
 };
 
 const REPLY_LANGUAGE: Record<Profile["replyLanguage"], string> = { en: "English", es: "Spanish", ko: "Korean" };
@@ -128,6 +138,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push(`Name: ${p.name}`);
   lines.push(`Call them: ${p.preferredName}`);
   if (p.role) lines.push(`Role: ${p.role}`);
+  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}`);
   if (p.ministries.length) lines.push(`Ministries: ${p.ministries.join(", ")}`);
   lines.push(`Time zone: ${p.timezone}`);
   lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);

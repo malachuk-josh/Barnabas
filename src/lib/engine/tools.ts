@@ -19,6 +19,15 @@ import { checkMemoryText } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
 import { INBOX_PATH } from "./prompt";
+import { can } from "../auth/roles";
+import { accessFor } from "../team";
+import { HEALTH_LABELS } from "../finance/budget";
+import { donorSummaries, lastMonths, monthLabel } from "../finance/giving";
+import { dollars, wholeDollars } from "../finance/money";
+import { addTransaction, recordGifts } from "../finance/service";
+import { loadBooks } from "../finance/store";
+import { GIFT_METHODS, METHOD_LABELS, type Books, type GiftMethod } from "../finance/types";
+import { budgetView, financeOverview, givingSummary, missionsView, sameDayLastYear } from "../finance/views";
 
 export type ToolContext = {
   leader: Leader;
@@ -557,6 +566,284 @@ const deleteCalendarEvent = tool({
   },
 });
 
+
+/* ---------- Finance (permission-checked in code on every call) ---------- */
+
+const NO_FINANCE = "This leader's role doesn't include church finances. Tell them kindly that finance is limited to the pastor, treasurer and deacons, and they can ask the church administrator.";
+const NO_DONORS = "Individual giving is confidential: only the pastor and treasurer can see who gave what. Offer the church-wide totals instead.";
+
+async function financeAccess(ctx: ToolContext) {
+  return accessFor(ctx.leader);
+}
+
+const pct = (n: number | null) => (n === null ? null : `${Math.round(n)}%`);
+
+function findFund(books: Books, name: string | undefined) {
+  if (!name) return books.chart.funds.find((f) => !f.restricted) ?? null;
+  const q = name.trim().toLowerCase();
+  return books.chart.funds.find((f) => f.id === q || f.name.toLowerCase() === q) ?? books.chart.funds.find((f) => f.name.toLowerCase().includes(q) || q.includes(f.id)) ?? null;
+}
+
+const financeOverviewTool = tool({
+  phrase: "Let me look at the books.",
+  def: {
+    name: "finance_overview",
+    description:
+      "Church finances at a glance for this year to date: income vs expenses, General fund balance, restricted fund balances, giving this month vs the same time last year, budget health by ministry, and missions giving vs pledged. Aggregates only; no donor names. Only pastors, treasurers and deacons can use it.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: {} },
+  },
+  schema: z.object({}).passthrough(),
+  async run(_input, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.view")) return fail(NO_FINANCE);
+    const o = financeOverview(await loadBooks(ctx.leader.churchId), today());
+    return ok({
+      as_of: o.asOf,
+      demo_data: o.demo,
+      year_to_date: { income: wholeDollars(o.ytd.income), expenses: wholeDollars(o.ytd.expenses), net: wholeDollars(o.ytd.net) },
+      general_fund_balance: wholeDollars(o.generalFund.balance),
+      restricted_funds: o.restrictedFunds.map((f) => ({ fund: f.name, balance: wholeDollars(f.balance) })),
+      giving_this_month: { so_far: wholeDollars(o.giving.monthToDate), same_days_last_year: wholeDollars(o.giving.lastYearSamePeriod), whole_month_last_year: wholeDollars(o.giving.lastYearMonth) },
+      budget: o.budgetHealth.hasBudget
+        ? { year_elapsed: `${Math.round(o.budgetHealth.elapsed * 100)}%`, ministries: o.budgetHealth.groups.map((g) => ({ ministry: g.group, status: HEALTH_LABELS[g.health], spent: wholeDollars(g.actual), budget_for_year: wholeDollars(g.annual), percent_spent: pct(g.pctUsed) })) }
+        : "No budget for this year yet.",
+      missions: o.missions.campaign
+        ? { campaign: o.missions.campaign.name, goal: wholeDollars(o.missions.campaign.goal), pledged: wholeDollars(o.missions.campaign.pledged), received: wholeDollars(o.missions.campaign.received), missions_fund_balance: wholeDollars(o.missions.fundBalance) }
+        : { missions_fund_balance: wholeDollars(o.missions.fundBalance) },
+    });
+  },
+});
+
+const budgetStatusTool = tool({
+  phrase: "Let me check the budget.",
+  def: {
+    name: "budget_status",
+    description:
+      "How the church is tracking against this year's budget, by ministry or category (Salaries and benefits, Missions, Facilities, Utilities, Ministries, Benevolence, Administration, and income). With a ministry, returns its line items. Shows actual vs budget, variance, percent spent and on track / watch / over.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { ministry: { type: "string", description: "Optional ministry or category, e.g. 'Facilities' or 'teens'" } } },
+  },
+  schema: z.object({ ministry: z.string().max(60).optional() }),
+  async run({ ministry }, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.view")) return fail(NO_FINANCE);
+    const books = await loadBooks(ctx.leader.churchId);
+    const asOf = today();
+    const year = Number(asOf.slice(0, 4));
+    const report = budgetView(books, year, asOf);
+    if (!report.exists) return ok(`There's no ${year} budget yet.`);
+    const fmt = (r: { actual: number; annual: number; toDate: number; variance: number; pctUsed: number | null; health: keyof typeof HEALTH_LABELS; kind: string }) => ({
+      status: HEALTH_LABELS[r.health],
+      actual: wholeDollars(r.actual),
+      budget_for_year: wholeDollars(r.annual),
+      budget_to_date: wholeDollars(r.toDate),
+      [r.kind === "income" ? "ahead_of_budget" : "under_budget"]: wholeDollars(r.variance),
+      percent_of_year_budget: pct(r.pctUsed),
+    });
+    if (ministry) {
+      const q = ministry.toLowerCase();
+      const rows = report.rows.filter((r) => r.group.toLowerCase().includes(q) || r.account.name.toLowerCase().includes(q));
+      if (!rows.length) return fail(`No budget lines match "${ministry}". Categories: ${[...new Set(report.groups.map((g) => g.group))].join(", ")}.`);
+      return ok({ year, year_elapsed: `${Math.round(report.elapsed * 100)}%`, lines: rows.map((r) => ({ line: r.account.name, category: r.group, ...fmt(r), seasonal: r.timing === "seasonal" || undefined })) });
+    }
+    return ok({
+      year,
+      year_elapsed: `${Math.round(report.elapsed * 100)}%`,
+      income: { actual: wholeDollars(report.totals.income.actual), budget_to_date: wholeDollars(report.totals.income.toDate), budget_for_year: wholeDollars(report.totals.income.annual) },
+      expenses: { actual: wholeDollars(report.totals.expense.actual), budget_to_date: wholeDollars(report.totals.expense.toDate), budget_for_year: wholeDollars(report.totals.expense.annual) },
+      by_category: report.groups.map((g) => ({ category: g.group, kind: g.kind, ...fmt(g) })),
+    });
+  },
+});
+
+const missionsStatusTool = tool({
+  phrase: "Let me check on missions.",
+  def: {
+    name: "missions_status",
+    description: "Missions giving and support: the faith-promise campaign (goal, pledged, received), the Missions fund balance, and each missions partner's monthly commitment vs what's been paid this year, with their latest prayer update date. No donor names.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: {} },
+  },
+  schema: z.object({}).passthrough(),
+  async run(_input, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.view")) return fail(NO_FINANCE);
+    // Always the aggregate view here: pledges by name aren't needed to answer how missions is doing.
+    const m = missionsView(await loadBooks(ctx.leader.churchId), { role: "deacon", admin: false }, today());
+    return ok({
+      missions_fund_balance: wholeDollars(m.fund?.balance ?? 0),
+      missions_giving_this_year: wholeDollars(m.missionsGivingYtd),
+      campaigns: m.campaigns.map((c) => ({ name: c.campaign.name, goal: wholeDollars(c.campaign.goal), pledged: wholeDollars(c.pledged), received: wholeDollars(c.received), pledges: c.pledgeCount, percent_of_goal: pct(c.pctOfGoal), ends: c.campaign.end })),
+      partners: m.partners.filter((p) => p.partner.active).map((p) => ({ name: p.partner.name, field: p.partner.field, work: p.partner.type, monthly: wholeDollars(p.partner.monthly), committed_this_year: wholeDollars(p.committed), paid_this_year: wholeDollars(p.paid), last_prayer_update: p.lastUpdate ?? null })),
+    });
+  },
+});
+
+const givingSummaryTool = tool({
+  phrase: "Let me look at giving.",
+  def: {
+    name: "giving_summary",
+    description:
+      "Church-wide giving totals for a period (this month, last month, or this year), by fund and method, with the same period last year and the monthly trend. Totals only. Pass donor (a name or person_id) for one person's giving this year: that works only for the pastor or treasurer, and returns just their totals, not every gift.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        period: { type: "string", enum: ["this_month", "last_month", "this_year"] },
+        donor: { type: "string", description: "Only for pastor or treasurer: a person's name or person_id" },
+      },
+    },
+  },
+  schema: z.object({ period: z.enum(["this_month", "last_month", "this_year"]).optional(), donor: z.string().max(100).optional() }),
+  async run({ period = "this_year", donor }, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.view")) return fail(NO_FINANCE);
+    if (donor && !can(access, "giving.donors")) return fail(NO_DONORS);
+    const books = await loadBooks(ctx.leader.churchId);
+    const asOf = today();
+    const year = Number(asOf.slice(0, 4));
+    if (donor) {
+      const person = /^p\d+$/.test(donor) ? await churchData().getPerson(donor) : (await churchData().findPeople(donor))[0] ?? null;
+      const key = person ? `p:${person.id}` : `n:${donor.trim().toLowerCase().replace(/\s+/g, " ")}`;
+      const summary = donorSummaries(books.gifts, year).find((d) => d.key === key || d.name.toLowerCase() === donor.trim().toLowerCase());
+      if (!summary) return ok(`No gifts from ${person?.name ?? donor} recorded in ${year}.`);
+      return ok({ confidential: "Share only with this leader.", donor: summary.name, year, given_this_year: wholeDollars(summary.total), gifts: summary.count, last_gift: summary.lastGift, given_last_year: wholeDollars(summary.previousTotal) });
+    }
+    const month = asOf.slice(0, 7);
+    const lastMonth = lastMonths(asOf, 2)[0];
+    const ranges = {
+      this_month: [`${month}-01`, asOf],
+      last_month: [`${lastMonth}-01`, `${lastMonth}-31`],
+      this_year: [`${year}-01-01`, asOf],
+    } as const;
+    const [from, to] = ranges[period];
+    const g = givingSummary(books, { role: "deacon", admin: false }, from, to < asOf ? to : asOf, { trendMonths: 6 });
+    const ly = givingSummary(books, { role: "deacon", admin: false }, sameDayLastYear(from), sameDayLastYear(to < asOf ? to : asOf), { trendMonths: 1 });
+    return ok({
+      period: { from: g.from, to: g.to },
+      total: wholeDollars(g.total),
+      same_period_last_year: wholeDollars(ly.total),
+      gifts: g.count,
+      givers: g.givers,
+      by_fund: g.byFund.filter((f) => f.total).map((f) => ({ fund: f.name, total: wholeDollars(f.total) })),
+      by_method: Object.fromEntries(Object.entries(g.byMethod).filter(([, v]) => v).map(([k, v]) => [METHOD_LABELS[k as GiftMethod], wholeDollars(v)])),
+      last_six_months: g.trend.map((p) => ({ month: monthLabel(p.month, "long"), total: wholeDollars(p.total) })),
+    });
+  },
+});
+
+const recordGift = tool({
+  def: {
+    name: "record_gift",
+    description:
+      "Record one gift (pastor or treasurer only). First call proposes it; tell the leader exactly what you'll record and ask. Call again with the same details after they say yes. Amount is in dollars.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        donor: { type: "string", description: "A person_id from find_person, or a name for someone not in the directory" },
+        amount: { type: "number", description: "Dollars, e.g. 250" },
+        fund: { type: "string", description: "General (default), Missions, Building or Benevolence" },
+        method: { type: "string", enum: [...GIFT_METHODS] },
+        date: { type: "string", description: "yyyy-mm-dd; default today" },
+      },
+      required: ["donor", "amount", "method"],
+    },
+  },
+  schema: z.object({
+    donor: z.string().min(1).max(100),
+    amount: z.number().positive().max(10_000_000),
+    fund: z.string().max(60).optional(),
+    method: z.enum(GIFT_METHODS),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  }),
+  async run(input, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.edit") || !can(access, "giving.donors")) return fail("Only the pastor or treasurer can record gifts. Tell the leader kindly.");
+    const books = await loadBooks(ctx.leader.churchId);
+    const fund = findFund(books, input.fund);
+    if (!fund) return fail(`No fund called "${input.fund}". Funds: ${books.chart.funds.map((f) => f.name).join(", ")}.`);
+    const byId = /^p\d+$/.test(input.donor);
+    const person = byId ? await churchData().getPerson(input.donor) : (await churchData().findPeople(input.donor)).find((p) => p.name.toLowerCase() === input.donor.trim().toLowerCase()) ?? null;
+    if (byId && !person) return fail(`No person with id ${input.donor}. Use find_person.`);
+    const date = input.date ?? today();
+    const cents = Math.round(input.amount * 100);
+    const donorName = person?.name ?? input.donor.trim();
+    const key = JSON.stringify(["gift", person?.id ?? donorName.toLowerCase(), cents, fund.id, input.method, date]);
+    const summary = `${dollars(cents)} from ${donorName} to the ${fund.name}, ${METHOD_LABELS[input.method].toLowerCase()}, dated ${friendlyDate(date)}`;
+    if (!gateConfirmed(ctx, "record_gift", key)) return fail(`Not confirmed yet. Ask the leader: record ${summary}? Call record_gift again with the same details after they say yes.`);
+    const r = await recordGifts(ctx.leader, { depositDate: date, gifts: [{ date, personId: person?.id, donorName: person ? undefined : donorName, amount: cents, fundId: fund.id, method: input.method }] }, { source: "barnabas", conversationId: ctx.meta.id });
+    return ok(`Recorded ${summary}. Deposit ${r.txn.id} is in the ledger, not yet cleared.`);
+  },
+});
+
+const recordExpense = tool({
+  def: {
+    name: "record_expense",
+    description:
+      "Record a church expense paid from a bank account (pastor or treasurer only). First call proposes it; tell the leader exactly what you'll record and ask. Call again with the same details after they say yes. Amount is in dollars. Payroll runs through the payroll provider; don't calculate pay.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        description: { type: "string", description: "Payee and what for, e.g. 'Hardware store: classroom shelves'" },
+        amount: { type: "number", description: "Dollars" },
+        account: { type: "string", description: "Expense account name or number, e.g. 'Kids ministry' or '5400'" },
+        fund: { type: "string", description: "Default: the account's usual fund, otherwise General" },
+        date: { type: "string", description: "yyyy-mm-dd; default today" },
+      },
+      required: ["description", "amount", "account"],
+    },
+  },
+  schema: z.object({
+    description: z.string().trim().min(1).max(160),
+    amount: z.number().positive().max(10_000_000),
+    account: z.string().min(1).max(80),
+    fund: z.string().max(60).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  }),
+  async run(input, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.edit")) return fail("Only the pastor or treasurer can record expenses. Tell the leader kindly.");
+    const books = await loadBooks(ctx.leader.churchId);
+    const q = input.account.trim().toLowerCase();
+    const expenses = books.chart.accounts.filter((a) => a.type === "expense" && !a.archived);
+    const exact = expenses.find((a) => a.number === q || a.name.toLowerCase() === q);
+    const matches = exact ? [exact] : expenses.filter((a) => a.name.toLowerCase().includes(q) || a.group.toLowerCase() === q);
+    if (matches.length !== 1) {
+      return fail(matches.length ? `"${input.account}" could mean ${matches.map((a) => `${a.number} ${a.name}`).join(", ")}. Ask which.` : `No expense account matches "${input.account}". Ask the leader which account, or use budget_status to see categories.`);
+    }
+    const account = matches[0];
+    const fund = input.fund ? findFund(books, input.fund) : books.chart.funds.find((f) => f.id === account.defaultFundId) ?? findFund(books, undefined);
+    if (!fund) return fail(`No fund called "${input.fund}".`);
+    const bank = books.chart.accounts.find((a) => a.bank && !a.archived);
+    if (!bank) return fail("There's no bank account in the books yet.");
+    const date = input.date ?? today();
+    const cents = Math.round(input.amount * 100);
+    const key = JSON.stringify(["expense", input.description.toLowerCase(), cents, account.id, fund.id, date]);
+    const summary = `${dollars(cents)} for "${input.description}" to ${account.name} (${account.number}), ${fund.name}, paid from ${bank.name} on ${friendlyDate(date)}`;
+    if (!gateConfirmed(ctx, "record_expense", key)) return fail(`Not confirmed yet. Ask the leader: record ${summary}? Call record_expense again with the same details after they say yes.`);
+    const txn = await addTransaction(ctx.leader, { date, description: input.description, bankAccountId: bank.id, direction: "out", lines: [{ accountId: account.id, fundId: fund.id, amount: cents }] }, "barnabas", ctx.meta.id);
+    return ok(`Recorded ${summary}. Transaction ${txn.id}, not yet cleared.`);
+  },
+});
+
+/**
+ * The confirmation gate for finance writes: the first call records what was proposed; it runs only when
+ * a later turn calls again with exactly the same details and the leader's words are a clear yes.
+ */
+function gateConfirmed(ctx: ToolContext, toolName: string, key: string): boolean {
+  const pending = ctx.meta.pending;
+  const confirmed = pending?.tool === toolName && pending.key === key && pending.turn < ctx.meta.turns && isAffirmative(ctx.lastUserText);
+  if (confirmed) {
+    ctx.meta.pending = undefined;
+    return true;
+  }
+  ctx.meta.pending = { tool: toolName, key, turn: ctx.meta.turns };
+  return false;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ALL: ToolSpec<any>[] = [
   findPerson,
@@ -573,6 +860,12 @@ const ALL: ToolSpec<any>[] = [
   addCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
+  financeOverviewTool,
+  budgetStatusTool,
+  missionsStatusTool,
+  givingSummaryTool,
+  recordGift,
+  recordExpense,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */

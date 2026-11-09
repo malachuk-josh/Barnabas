@@ -7,6 +7,8 @@ import { outsideEvents } from "../calendar/service";
 import { addDaysIso } from "../calendar/time";
 import { churchData } from "../chms";
 import { getProfile } from "../profile";
+import { can, ROLE_LABELS } from "../auth/roles";
+import { accessFor } from "../team";
 import { briefing } from "./briefing";
 import { buildLeaderContext } from "./prompt";
 
@@ -16,13 +18,14 @@ export async function startConversation(
 ): Promise<ConversationMeta> {
   const localDate = opts.localDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.localDate) ? opts.localDate : today();
   const until = addDaysIso(localDate, 2);
-  const [leadership, profile, brief, events, outside] = await Promise.all([
+  const [leadership, profile, brief, events, outside, access] = await Promise.all([
     churchData().leadership(),
     getProfile(leader),
     briefing(leader, localDate),
     listEvents(leader, localDate, until),
     // Don't hold up the conversation for a slow calendar connection.
     outsideEvents(leader, localDate, until, { timeoutMs: 2500 }),
+    accessFor(leader),
   ]);
   const context = await buildLeaderContext({
     leader,
@@ -33,6 +36,14 @@ export async function startConversation(
     profile,
     calendar: { events, outside: outside.events },
     leadership,
+    access: {
+      role: ROLE_LABELS[access.role],
+      financeAccess: can(access, "giving.donors")
+        ? "full, including individual giving"
+        : can(access, "finance.view")
+          ? "summaries and reports only, no donor names, can't record anything"
+          : "none",
+    },
   });
   const now = Date.now();
   const meta: ConversationMeta = {
