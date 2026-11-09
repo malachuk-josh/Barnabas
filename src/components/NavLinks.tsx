@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { levelMayUse, type Access } from "@/lib/auth/roles";
 import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MessagesIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, ShieldIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
 
 /** Sections of the menu, in order. Items with no group sit at the top; "account" sits at the foot. */
@@ -61,15 +62,15 @@ export type NavAccess = {
   checkinOnly?: boolean;
   /** Team and Member levels: Barnabas by typing only, so no microphone button. */
   limited?: boolean;
-  /** Only these pages (Team and Member levels), worked out on the server. */
-  only?: string[];
+  /** Team and Member levels: their access, to show only the pages they may use. */
+  levelAccess?: Access;
   /** Members see Kids as Child care. */
   member?: boolean;
 };
 
-export function navItems({ showFinance = false, showKids = false, showSite = false, showAdmin = false, checkinOnly = false, only, member = false }: NavAccess) {
+export function navItems({ showFinance = false, showKids = false, showSite = false, showAdmin = false, checkinOnly = false, levelAccess, member = false }: NavAccess) {
   if (checkinOnly) return NAV.filter((n) => n.href === "/kids" || n.href === "/inbox" || n.href === "/settings");
-  return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids || member) && (!n.site || showSite) && (!n.admin || showAdmin) && (!only || only.includes(n.href))).map((n) =>
+  return NAV.filter((n) => (!n.finance || showFinance) && (!n.kids || showKids || member) && (!n.site || showSite) && (!n.admin || showAdmin) && (!levelAccess || levelMayUse(levelAccess, n.href))).map((n) =>
     member && n.href === "/kids" ? { ...n, label: "Child care", group: "worship" as const } : n,
   );
 }

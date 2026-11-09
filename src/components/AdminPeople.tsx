@@ -117,7 +117,7 @@ export function AdminPeople() {
           <div className="admin-add-grid">
             <div className="field">
               <label htmlFor="add-name">Name</label>
-              <input id="add-name" value={add.name} onChange={(e) => setAdd({ ...add, name: e.target.value })} required maxLength={80} autoComplete="off" />
+              <input id="add-name" type="text" value={add.name} onChange={(e) => setAdd({ ...add, name: e.target.value })} required maxLength={80} autoComplete="off" />
             </div>
             <div className="field">
               <label htmlFor="add-email">Email</label>

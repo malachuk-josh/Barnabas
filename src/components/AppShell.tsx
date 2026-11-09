@@ -10,7 +10,7 @@ import { AppThemeSwitch } from "./AppThemeSwitch";
 import { PullToRefresh } from "./PullToRefresh";
 import { ServiceWorkerRegistrar } from "./ServiceWorkerRegistrar";
 import { pushConfig } from "@/lib/push/vapid";
-import { NAV, SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton, type NavAccess } from "./NavLinks";
+import { SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton, type NavAccess } from "./NavLinks";
 
 function initials(name: string) {
   return name
@@ -61,7 +61,7 @@ export async function AppShell({
     checkinOnly,
     limited,
     member: access?.level === "member" && !access.admin,
-    only: limited && access ? NAV.map((n) => n.href).filter((h) => levelMayUse(access, h)) : undefined,
+    levelAccess: limited && access ? access : undefined,
   };
   return (
     <div className="shell">
