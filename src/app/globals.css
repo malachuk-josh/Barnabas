@@ -1422,3 +1422,41 @@ input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 .ops-item.is-reading .ops-item-view > span:last-child { display: grid; gap: 1px; min-width: 0; }
 .plan-edit-bar { justify-content: space-between; }
 .plan-edit-end { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Kids check-in station ---------- */
+/* When: a slim bar; open it to change the date or gathering */
+.kids-when-bar { border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
+.kids-when-bar > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 18px; }
+.kids-when-bar > summary::-webkit-details-marker { display: none; }
+.kids-when-change { font-weight: 700; color: var(--accent); text-decoration: underline; flex: none; }
+.kids-when-bar[open] .kids-when-change { text-decoration: none; }
+.kids-when-bar .kids-when { padding: 0 18px 16px; }
+/* Families and children: big, calm touch targets for the welcome desk */
+.kids-family { border: 0; box-shadow: var(--shadow-card); background: var(--surface); }
+.kids-children > li { border-color: var(--line-soft); background: var(--surface); min-height: 64px; }
+.kids-children > li.on:where(:not(.word-root *)) { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.kids-child { align-items: center; gap: 12px; cursor: pointer; }
+.kids-child input { width: 24px; height: 24px; margin-top: 0; accent-color: var(--accent); }
+.kids-initial { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--accent); font-weight: 700; font-family: var(--font-display); font-size: 1.1rem; }
+.kids-children > li.on .kids-initial:where(:not(.word-root *)) { background: var(--accent); color: var(--accent-fg); }
+.kids-child > .kids-child-text { display: grid; gap: 1px; min-width: 0; overflow-wrap: anywhere; }
+.kids-child-text strong { font-size: 1.05rem; }
+.kids-allergy { justify-self: start; }
+.btn.kids-big:where(:not(.word-root *)) { justify-self: stretch; min-height: 52px; }
+/* Checked in: the pickup code is the one thing the volunteer must not miss */
+.kids-done { background: var(--talk-bg); color: var(--talk-fg); padding: 16px 18px; border-radius: var(--radius); }
+.kids-done .muted { color: var(--talk-muted); }
+.kids-done .kids-code { background: var(--brass); color: var(--night); border: 0; font-size: 2rem; padding: 6px 14px; }
+.kids-done .btn-primary:where(:not(.word-root *)) { background: var(--chalk); border-color: var(--chalk); color: var(--night); }
+/* Rooms: a summary strip; rooms that need adults get a red tag rather than a red edge */
+.kids-summary { margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kids-summary dd.is-warn { color: var(--danger); }
+@media (max-width: 640px) {
+  .kids-summary > div { padding: 10px 12px; }
+  .kids-summary > div:nth-child(3) { border-left: 1px solid var(--line-soft); }
+  .kids-summary > div:nth-child(n + 3) { border-top: 0; }
+}
+.kids-room-list > li.warn, .kids-room.warn { box-shadow: var(--shadow-card); }
+.kids-room-list > li.warn { box-shadow: none; background: var(--danger-bg); }
+.kids-room.warn .kids-warning { justify-self: start; padding: 2px 10px; border-radius: 999px; background: var(--danger-bg); }
+.kids-roster li { background: var(--surface-2); }

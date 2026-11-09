@@ -37,18 +37,23 @@ export default async function KidsRoomsPage({ searchParams }: { searchParams: Pr
           </Link>
         ))}
       </nav>
-      <div className="fin-grid ops-stats">
-        <section className="fin-card">
-          <span className="label">Checked in now</span>
-          <div className="fin-stat">{total}</div>
-          <span className="muted small">{rooms.reduce((n, r) => n + r.checkedOut, 0)} already picked up</span>
-        </section>
-        <section className="fin-card">
-          <span className="label">Ratio warnings</span>
-          <div className="fin-stat">{rooms.filter((r) => r.warning).length}</div>
-          <span className="muted small">Two adults per room, and within each room&apos;s ratio.</span>
-        </section>
-      </div>
+      <dl className="fact-strip kids-summary">
+        <div>
+          <dt>Checked in now</dt>
+          <dd>{total}</dd>
+        </div>
+        <div>
+          <dt>Picked up</dt>
+          <dd>{rooms.reduce((n, r) => n + r.checkedOut, 0)}</dd>
+        </div>
+        <div>
+          <dt>Ratio warnings</dt>
+          <dd className={rooms.some((r) => r.warning) ? "is-warn" : undefined}>{rooms.filter((r) => r.warning).length}</dd>
+        </div>
+      </dl>
+      <p className="small muted" style={{ marginTop: -10, marginBottom: 16 }}>
+        Two adults per room, and within each room&apos;s ratio.
+      </p>
       {total === 0 && (
         <EmptyState title="No children checked in for this gathering" actions={[{ label: "Open the check-in station", href: `/kids?date=${date}&g=${g.key}`, primary: true }]}>
           As children are checked in, each room fills in here with first names, allergy flags and a live count.
