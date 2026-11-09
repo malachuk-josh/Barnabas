@@ -422,10 +422,17 @@ pre.file:where(:not(.word-root *)) { white-space: pre-wrap; overflow-wrap: anywh
 .src-church { --chip-color: #b37e1c; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .src-barnabas { --chip-color: #8cc5b8;} :root:not([data-theme="light"]) .src-google { --chip-color: #8ab4f8;} :root:not([data-theme="light"]) .src-microsoft { --chip-color: #a6a7e8;} :root:not([data-theme="light"]) .src-church { --chip-color: #e5b75c;} }
 :root[data-theme="dark"] .src-barnabas { --chip-color: #8cc5b8;} :root[data-theme="dark"] .src-google { --chip-color: #8ab4f8;} :root[data-theme="dark"] .src-microsoft { --chip-color: #a6a7e8;} :root[data-theme="dark"] .src-church { --chip-color: #e5b75c;}
+/* Stacked layout (tablets and phones): the selected day's events come first, the month below it. */
+@media (max-width: 1100px) {
+  .cal-layout > .cal-day-panel { order: -1; scroll-margin-top: 80px; }
+}
+/* Phones: a compact month with a dot per event (up to three), so the whole month fits on one screen. */
 @media (max-width: 640px) {
-  .day { min-height: 64px; padding: 4px; }
-  .day .chip:where(:not(.word-root *)) { font-size: 0; padding: 0; height: 6px; border-left-width: 0; background: var(--chip-color); border-radius: 3px; }
+  .day { min-height: 52px; padding: 4px 2px 6px; display: grid; grid-template-columns: repeat(3, 6px); grid-auto-rows: min-content; justify-content: center; align-content: start; gap: 4px 3px; }
+  .day .num { grid-column: 1 / -1; justify-self: center; width: 28px; height: 28px; font-size: 0.85rem; }
+  .day .chip:where(:not(.word-root *)) { font-size: 0; padding: 0; width: 6px; height: 6px; border-left-width: 0; background: var(--chip-color); border-radius: 50%; }
   .day .more { display: none; }
+  .month-head div { padding: 8px 0; text-align: center; font-size: 0.68rem; letter-spacing: 0.04em; }
 }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted); margin-top: 10px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }

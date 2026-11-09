@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addDaysIso, time12, todayIn } from "@/lib/calendar/time";
 import { EVENT_KINDS, type CalendarEvent, type EventKind, type OutsideEvent } from "@/lib/calendar/types";
 import { ChevronLeft, ChevronRight } from "./icons";
@@ -60,6 +60,15 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
   const initialToday = todayIn(timezone);
   const [month, setMonth] = useState(monthStart(initialToday));
   const [selected, setSelected] = useState(initialToday);
+  // On phones the selected day's events sit above the month; bring them into view when a day is tapped.
+  const dayPanel = useRef<HTMLElement | null>(null);
+  const pickDay = (date: string) => {
+    setSelected(date);
+    const el = dayPanel.current;
+    if (el && window.matchMedia("(max-width: 1100px)").matches && el.getBoundingClientRect().top < 64) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
   const [view, setView] = useState<"month" | "agenda">("month");
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
@@ -263,7 +272,7 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
                       className={classes}
                       aria-pressed={date === selected}
                       aria-label={`${longDate(date)}, ${items.length} event${items.length === 1 ? "" : "s"}`}
-                      onClick={() => setSelected(date)}
+                      onClick={() => pickDay(date)}
                       onDoubleClick={() => { setFormError(null); setEditing(emptyDraft(date)); }}
                     >
                       <span className="num">{Number(date.slice(8))}</span>
@@ -305,7 +314,7 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
         </div>
 
         {view === "month" && (
-          <aside className="card stack" aria-label={`Events on ${longDate(selected)}`}>
+          <aside ref={dayPanel} className="card stack cal-day-panel" aria-label={`Events on ${longDate(selected)}`}>
             <div className="row" style={{ justifyContent: "space-between" }}>
               <h2 style={{ fontSize: "1.2rem" }}>{selected === today ? "Today" : longDate(selected)}</h2>
               <button className="btn" type="button" onClick={() => { setFormError(null); setEditing(emptyDraft(selected)); }}>
