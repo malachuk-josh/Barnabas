@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EFFORT_CHOICES, MODEL_CHOICES, type AiSettingsView } from "@/lib/ai/choices";
+import { EFFORT_CHOICES, MODEL_CHOICES, toneLabel, type AiSettingsView } from "@/lib/ai/choices";
 
 const label = (id: string) => MODEL_CHOICES.find((m) => m.id === id)?.label ?? id;
 const effortLabel = (id: string) => EFFORT_CHOICES.find((e) => e.id === id)?.label ?? id;
@@ -11,6 +11,8 @@ export function AiSettings() {
   const [view, setView] = useState<AiSettingsView | null>(null);
   const [form, setForm] = useState({ textModel: "", voiceModel: "", textEffort: "", voiceEffort: "" });
   const [web, setWeb] = useState({ on: false, domains: "" });
+  // null = his usual tone
+  const [tone, setTone] = useState<number | null>(null);
   const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -18,6 +20,7 @@ export function AiSettings() {
     setView(v);
     setForm({ textModel: v.chosen.textModel ? v.textModel : "", voiceModel: v.chosen.voiceModel ? v.voiceModel : "", textEffort: v.chosen.textEffort ? v.textEffort : "", voiceEffort: v.chosen.voiceEffort ? v.voiceEffort : "" });
     setWeb({ on: v.webSearch, domains: v.webDomains.join("\n") });
+    setTone(v.chosen.tone ? v.tone : null);
   };
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function AiSettings() {
     const res = await fetch("/api/admin/ai", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null, webSearch: web.on, webDomains: web.domains.split(/[\s,]+/).map((d) => d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "")).filter(Boolean) }),
+      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null, tone, webSearch: web.on, webDomains: web.domains.split(/[\s,]+/).map((d) => d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "")).filter(Boolean) }),
     });
     setSaving(false);
     if (res.ok) {
@@ -102,6 +105,28 @@ export function AiSettings() {
             </select>
             <span className="small muted">
               {EFFORT_CHOICES.find((x) => x.id === (form.voiceEffort || view.defaults.voiceEffort))?.note} More thinking means a longer pause before Barnabas starts speaking.
+            </span>
+          </div>
+          <div className="field">
+            <label htmlFor="ai-tone">
+              Tone: {toneLabel(tone ?? view.defaults.tone)}
+              {tone === null && <span className="muted small"> (default)</span>}
+            </label>
+            <input id="ai-tone" type="range" min={0} max={1} step={0.05} value={tone ?? view.defaults.tone} onChange={(e) => setTone(Number(e.target.value))} />
+            <div className="row small muted" style={{ justifyContent: "space-between" }}>
+              <span>Plain and steady</span>
+              <span>Very warm</span>
+            </div>
+            <span className="small muted">
+              How warm and encouraging his words are, typed and spoken. He stays honest, never flatters, and is always gentle in hard moments. Takes effect from his next reply.
+              {tone !== null && (
+                <>
+                  {" "}
+                  <button type="button" className="linklike" onClick={() => setTone(null)}>
+                    Use his usual tone
+                  </button>
+                </>
+              )}
             </span>
           </div>
           <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0, gap: 8 }}>

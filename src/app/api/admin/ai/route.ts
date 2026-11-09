@@ -21,6 +21,7 @@ const Body = z.object({
   voiceEffort: z.enum(EFFORT_IDS).nullable().optional(),
   voiceStability: z.number().min(0).max(1).nullable().optional(),
   voiceStyle: z.number().min(0).max(1).nullable().optional(),
+  tone: z.number().min(0).max(1).nullable().optional(),
   webSearch: z.boolean().optional(),
   webDomains: z
     .array(z.string().trim().toLowerCase().regex(HOST_RE, "Use plain site names like biblegateway.com."))
@@ -34,9 +35,9 @@ export async function PUT(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
     const domainIssue = parsed.error.issues.find((i) => i.path[0] === "webDomains");
-    return NextResponse.json({ error: domainIssue ? `Check the site list: ${domainIssue.message}` : "Choose a model and thinking level from the lists, and keep the voice sliders between 0 and 1." }, { status: 400 });
+    return NextResponse.json({ error: domainIssue ? `Check the site list: ${domainIssue.message}` : "Choose a model and thinking level from the lists, and keep the sliders between 0 and 1." }, { status: 400 });
   }
   const view = await saveAiSettings(leader.churchId, leader.name, parsed.data);
-  await audit(leader, { action: "settings.ai", detail: `typed ${view.textModel} (${view.textEffort}), voice ${view.voiceModel} (${view.voiceEffort}), stability ${view.voiceStability}, style ${view.voiceStyle}, web ${view.webSearch ? "on" : "off"}${view.webDomains.length ? ` (${view.webDomains.join(", ")})` : ""}` });
+  await audit(leader, { action: "settings.ai", detail: `typed ${view.textModel} (${view.textEffort}), voice ${view.voiceModel} (${view.voiceEffort}), stability ${view.voiceStability}, style ${view.voiceStyle}, tone ${view.tone}, web ${view.webSearch ? "on" : "off"}${view.webDomains.length ? ` (${view.webDomains.join(", ")})` : ""}` });
   return NextResponse.json(view);
 }
