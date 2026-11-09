@@ -28,6 +28,7 @@ import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
 import { INBOX_PATH } from "./prompt";
 import { can, isLimited, type Access } from "../auth/roles";
+import type { ActionLink } from "./links";
 import { accessFor } from "../team";
 import { HEALTH_LABELS } from "../finance/budget";
 import { donorSummaries, lastMonths, monthLabel } from "../finance/giving";
@@ -56,7 +57,12 @@ export type ToolContext = {
   toolNames?: string[] | null;
 };
 
-export type ToolResult = { content: string; isError: boolean };
+export type ToolResult = {
+  content: string;
+  isError: boolean;
+  /** Buttons for the leader under the reply, e.g. "Open Ruth's record" (paths inside the app only). */
+  links?: ActionLink[];
+};
 
 export type ToolSpec<S extends z.ZodTypeAny> = {
   def: Anthropic.Beta.BetaTool;

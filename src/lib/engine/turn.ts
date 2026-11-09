@@ -13,10 +13,12 @@ import { withLock } from "../store";
 import { aiForLeader, claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
 import { resolvePermission } from "./know";
 import { executeTool, holdingPhrase, type ToolContext } from "./tools";
+import { cleanLinks } from "./links";
 
 export type TurnEvent =
   | { type: "text"; text: string }
   | { type: "tool"; name: string; phrase?: string }
+  | { type: "link"; label: string; href: string }
   | { type: "notice"; kind: "crisis"; text: string }
   | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null; totalMs: number }
   | { type: "done"; stopReason: string | null }
@@ -191,6 +193,7 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
     const results = await Promise.all(
       toolUses.map(async (t): Promise<Anthropic.Beta.BetaToolResultBlockParam> => {
         const r = await executeTool(t.name, t.input, ctx);
+        if (!r.isError) for (const l of cleanLinks(r.links)) emit({ type: "link", ...l });
         return { type: "tool_result", tool_use_id: t.id, content: r.content, ...(r.isError ? { is_error: true } : {}) };
       }),
     );
