@@ -46,10 +46,13 @@ export function Briefing() {
       )}
 
       <div className="card stack">
-        <h2>Volunteers to check on</h2>
+        <h2>Co-laborers to encourage</h2>
+        <p className="term-verse">
+          &ldquo;Wherefore comfort yourselves together, and edify one another, even as also ye do.&rdquo; <cite>1 Thessalonians 5:11</cite>
+        </p>
         {!data && !failed && <p className="muted">Loading…</p>}
         {failed && <p className="muted">Couldn&apos;t load the briefing.</p>}
-        {data && data.radar.length === 0 && <p className="muted">Everyone on the rosters is serving at a healthy pace this week.</p>}
+        {data && data.radar.length === 0 && <p className="muted">Every co-laborer on the rosters is serving at a healthy pace this week.</p>}
         {data && data.radar.length > 0 && (
           <ul className="list">
             {data.radar.slice(0, 5).map((r) => (

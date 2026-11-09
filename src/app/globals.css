@@ -747,3 +747,7 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 
 /* The More sheet holds more items now: let it scroll on short phones. */
 @media (max-width: 860px) { .more-sheet { max-height: calc(100vh - 140px - env(safe-area-inset-bottom)); overflow-y: auto; } }
+
+/* A KJV verse shown under a heading that uses a biblical term */
+.term-verse { margin: -4px 0 2px; font-size: 0.82rem; line-height: 1.45; color: var(--muted); font-style: italic; }
+.term-verse cite { font-style: normal; font-weight: 600; white-space: nowrap; }
