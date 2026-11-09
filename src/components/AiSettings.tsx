@@ -10,12 +10,15 @@ const effortLabel = (id: string) => EFFORT_CHOICES.find((e) => e.id === id)?.lab
 export function AiSettings() {
   const [view, setView] = useState<AiSettingsView | null>(null);
   const [form, setForm] = useState({ textModel: "", voiceModel: "", textEffort: "", voiceEffort: "" });
+  // null = use the default (Vercel's value or the built-in one)
+  const [voice, setVoice] = useState<{ stability: number | null; style: number | null }>({ stability: null, style: null });
   const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = (v: AiSettingsView) => {
     setView(v);
     setForm({ textModel: v.chosen.textModel ? v.textModel : "", voiceModel: v.chosen.voiceModel ? v.voiceModel : "", textEffort: v.chosen.textEffort ? v.textEffort : "", voiceEffort: v.chosen.voiceEffort ? v.voiceEffort : "" });
+    setVoice({ stability: v.chosen.voiceStability ? v.voiceStability : null, style: v.chosen.voiceStyle ? v.voiceStyle : null });
   };
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export function AiSettings() {
     const res = await fetch("/api/admin/ai", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null }),
+      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null, voiceStability: voice.stability, voiceStyle: voice.style }),
     });
     setSaving(false);
     if (res.ok) {
@@ -102,6 +105,51 @@ export function AiSettings() {
               {EFFORT_CHOICES.find((x) => x.id === (form.voiceEffort || view.defaults.voiceEffort))?.note} More thinking means a longer pause before Barnabas starts speaking.
             </span>
           </div>
+          <div className="field">
+            <label htmlFor="ai-stability">
+              Voice stability: {(voice.stability ?? view.defaults.voiceStability).toFixed(2)}
+              {voice.stability === null && <span className="muted small"> (default)</span>}
+            </label>
+            <input
+              id="ai-stability"
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={voice.stability ?? view.defaults.voiceStability}
+              onChange={(e) => setVoice({ ...voice, stability: Number(e.target.value) })}
+            />
+            <span className="small muted">
+              Lower is more expressive and varied; higher is steadier and more even. Most voices sound best between 0.35 and 0.55.
+              {voice.stability !== null && (
+                <>
+                  {" "}
+                  <button type="button" className="linklike" onClick={() => setVoice({ ...voice, stability: null })}>
+                    Use default ({view.defaults.voiceStability.toFixed(2)})
+                  </button>
+                </>
+              )}
+            </span>
+          </div>
+          <div className="field">
+            <label htmlFor="ai-style">
+              Voice style: {(voice.style ?? view.defaults.voiceStyle).toFixed(2)}
+              {voice.style === null && <span className="muted small"> (default)</span>}
+            </label>
+            <input id="ai-style" type="range" min={0} max={1} step={0.01} value={voice.style ?? view.defaults.voiceStyle} onChange={(e) => setVoice({ ...voice, style: Number(e.target.value) })} />
+            <span className="small muted">
+              How much of the recorded speaker&apos;s character and warmth comes through. Small steps make a big difference; above about 0.5 can sound overdone.
+              {voice.style !== null && (
+                <>
+                  {" "}
+                  <button type="button" className="linklike" onClick={() => setVoice({ ...voice, style: null })}>
+                    Use default ({view.defaults.voiceStyle.toFixed(2)})
+                  </button>
+                </>
+              )}
+            </span>
+          </div>
+          <PreviewVoice />
           {state && (
             <p className={`notice small ${state.ok ? "success" : "notice-danger"}`} role="status">
               {state.text}
@@ -121,5 +169,31 @@ export function AiSettings() {
         </form>
       )}
     </section>
+  );
+}
+
+/** Plays a sample in Barnabas's voice with the saved settings (save first to hear a change). */
+function PreviewVoice() {
+  const [busy, setBusy] = useState(false);
+  async function play() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/voice/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: "Good morning! It sounds like a full week, and you've got a wonderful team around you. Want me to look at who's serving Sunday?" }) });
+      if (!res.ok) return;
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <p className="small muted" style={{ margin: 0 }}>
+      Save, then{" "}
+      <button type="button" className="btn" onClick={() => void play()} disabled={busy}>
+        {busy ? "Playing…" : "Preview the voice"}
+      </button>
+    </p>
   );
 }

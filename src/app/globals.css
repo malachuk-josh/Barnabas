@@ -1245,3 +1245,6 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .know-card-actions { gap: 8px; }
 .know-meter { display: block; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 4px; max-width: 320px; }
 .know-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--brass); }
+
+/* Sliders in the brand colour */
+input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
