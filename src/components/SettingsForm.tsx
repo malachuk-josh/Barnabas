@@ -8,7 +8,7 @@ import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@/lib/profile/transla
 import { ROLE_DESCRIPTIONS, ROLE_LABELS, isCheckinOnly, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
 import { TeamSettings } from "./TeamSettings";
-import { AiSettings } from "./AiSettings";
+import { AiSettings, VoiceTuning } from "./AiSettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { typesFor } from "@/lib/notifications/types";
 
@@ -454,6 +454,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
                 </span>
               )}
             </div>
+            {access.admin && voices?.voiceReady && <VoiceTuning />}
 
             <h3 className="settings-group">Names he says wrong</h3>
             <div className="field">

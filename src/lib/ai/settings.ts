@@ -1,15 +1,15 @@
 import { config } from "../config";
 import { deliverySettings } from "../voice/server";
 import { getJSON, setJSON } from "../store";
-import type { AiSettingsView, ModelId, TextEffort } from "./choices";
+import { DEFAULT_TONE, type AiSettingsView, type ModelId, type TextEffort } from "./choices";
 
 /**
  * The church's choice of Claude models for Barnabas, set by an admin in Settings → Barnabas AI.
  * Anything not chosen falls back to the deployment's defaults (BARNABAS_MODEL, BARNABAS_VOICE_MODEL,
  * BARNABAS_EFFORT, then the built-in defaults).
  */
-type Stored = { textModel?: ModelId; voiceModel?: ModelId; textEffort?: TextEffort; voiceEffort?: TextEffort; voiceStability?: number; voiceStyle?: number; webSearch?: boolean; webDomains?: string[]; updatedBy?: string; updatedAt?: number };
-export type ResolvedAi = { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; webSearch?: boolean; webDomains?: string[] };
+type Stored = { textModel?: ModelId; voiceModel?: ModelId; textEffort?: TextEffort; voiceEffort?: TextEffort; voiceStability?: number; voiceStyle?: number; tone?: number; webSearch?: boolean; webDomains?: string[]; updatedBy?: string; updatedAt?: number };
+export type ResolvedAi = { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; tone?: number; webSearch?: boolean; webDomains?: string[] };
 
 const key = (churchId: string) => `cfg:${churchId}:ai`;
 const cache = new Map<string, { at: number; value: Stored }>();
@@ -34,6 +34,7 @@ export async function resolvedAi(churchId: string): Promise<ResolvedAi> {
     voiceModel: s.voiceModel ?? d.voiceModel,
     textEffort: s.textEffort ?? d.textEffort,
     voiceEffort: s.voiceEffort ?? d.voiceEffort,
+    tone: s.tone ?? DEFAULT_TONE,
     webSearch: s.webSearch === true,
     webDomains: s.webDomains ?? [],
   };
@@ -50,6 +51,7 @@ export async function aiSettingsView(churchId: string): Promise<AiSettingsView> 
     voiceEffort: s.voiceEffort ?? d.voiceEffort,
     voiceStability: s.voiceStability ?? envVoice.stability,
     voiceStyle: s.voiceStyle ?? envVoice.style,
+    tone: s.tone ?? DEFAULT_TONE,
     webSearch: s.webSearch === true,
     webDomains: s.webDomains ?? [],
     chosen: {
@@ -59,25 +61,38 @@ export async function aiSettingsView(churchId: string): Promise<AiSettingsView> 
       voiceEffort: Boolean(s.voiceEffort),
       voiceStability: s.voiceStability !== undefined,
       voiceStyle: s.voiceStyle !== undefined,
+      tone: s.tone !== undefined,
     },
-    defaults: { ...d, voiceStability: envVoice.stability, voiceStyle: envVoice.style },
+    defaults: { ...d, voiceStability: envVoice.stability, voiceStyle: envVoice.style, tone: DEFAULT_TONE },
     updatedBy: s.updatedBy,
     updatedAt: s.updatedAt,
   };
 }
 
 /** null for a field means "use the default". */
-export async function saveAiSettings(churchId: string, by: string, next: { textModel: ModelId | null; voiceModel: ModelId | null; textEffort: TextEffort | null; voiceEffort?: TextEffort | null; voiceStability?: number | null; voiceStyle?: number | null; webSearch?: boolean; webDomains?: string[] }) {
-  const value: Stored = { updatedBy: by, updatedAt: Date.now() };
-  if (next.textModel) value.textModel = next.textModel;
-  if (next.voiceModel) value.voiceModel = next.voiceModel;
-  if (next.textEffort) value.textEffort = next.textEffort;
-  if (next.voiceEffort) value.voiceEffort = next.voiceEffort;
+export type AiSettingsChange = { textModel?: ModelId | null; voiceModel?: ModelId | null; textEffort?: TextEffort | null; voiceEffort?: TextEffort | null; voiceStability?: number | null; voiceStyle?: number | null; tone?: number | null; webSearch?: boolean; webDomains?: string[] };
+
+/**
+ * Saves the fields given and keeps the rest, so the AI card and the voice sliders
+ * (which live with the voice settings) can save separately. null resets a field to its default.
+ */
+export async function saveAiSettings(churchId: string, by: string, next: AiSettingsChange) {
+  const value: Stored = { ...(await stored(churchId).catch(() => ({}) as Stored)), updatedBy: by, updatedAt: Date.now() };
   const two = (n: number) => Math.round(n * 100) / 100;
-  if (typeof next.voiceStability === "number") value.voiceStability = two(next.voiceStability);
-  if (typeof next.voiceStyle === "number") value.voiceStyle = two(next.voiceStyle);
-  if (next.webSearch) value.webSearch = true;
-  if (next.webDomains?.length) value.webDomains = [...new Set(next.webDomains.map((d) => d.toLowerCase()))];
+  const put = <K extends keyof Stored>(k: K, v: Stored[K] | null | undefined) => {
+    if (v === undefined) return;
+    if (v === null || v === false || (Array.isArray(v) && v.length === 0)) delete value[k];
+    else value[k] = v;
+  };
+  put("textModel", next.textModel || (next.textModel === undefined ? undefined : null));
+  put("voiceModel", next.voiceModel || (next.voiceModel === undefined ? undefined : null));
+  put("textEffort", next.textEffort || (next.textEffort === undefined ? undefined : null));
+  put("voiceEffort", next.voiceEffort || (next.voiceEffort === undefined ? undefined : null));
+  put("voiceStability", typeof next.voiceStability === "number" ? two(next.voiceStability) : next.voiceStability);
+  put("voiceStyle", typeof next.voiceStyle === "number" ? two(next.voiceStyle) : next.voiceStyle);
+  put("tone", typeof next.tone === "number" ? two(next.tone) : next.tone);
+  put("webSearch", next.webSearch);
+  put("webDomains", next.webDomains === undefined ? undefined : [...new Set(next.webDomains.map((d) => d.toLowerCase()))]);
   await setJSON(key(churchId), value);
   cache.set(churchId, { at: Date.now(), value });
   return aiSettingsView(churchId);

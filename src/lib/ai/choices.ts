@@ -24,12 +24,14 @@ export type AiSettingsView = {
   voiceEffort: string;
   voiceStability: number;
   voiceStyle: number;
+  /** How warm his words are, 0 (plain and steady) to 1 (very warm); 0.5 is his usual tone. */
+  tone: number;
   /** Barnabas may search the web and read pages (off unless an admin turns it on). */
   webSearch: boolean;
   /** Optional: only these sites. */
   webDomains: string[];
-  chosen: { textModel: boolean; voiceModel: boolean; textEffort: boolean; voiceEffort: boolean; voiceStability: boolean; voiceStyle: boolean };
-  defaults: { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; voiceStability: number; voiceStyle: number };
+  chosen: { textModel: boolean; voiceModel: boolean; textEffort: boolean; voiceEffort: boolean; voiceStability: boolean; voiceStyle: boolean; tone: boolean };
+  defaults: { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; voiceStability: number; voiceStyle: number; tone: number };
   updatedBy?: string;
   updatedAt?: number;
 };
@@ -37,3 +39,14 @@ export type AiSettingsView = {
 /** A bare host name like "biblegateway.com" or "www.ccli.com" (no scheme, path or port). */
 export const HOST_RE = /^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 export const MAX_WEB_DOMAINS = 20;
+
+export const DEFAULT_TONE = 0.5;
+
+/** The five steps of the tone slider, from plain to very warm (browser-safe labels). */
+export function toneLabel(tone: number) {
+  if (tone < 0.2) return "Plain and steady";
+  if (tone < 0.4) return "Calm";
+  if (tone <= 0.6) return "Warm (his usual)";
+  if (tone <= 0.8) return "Warmer";
+  return "Very warm";
+}

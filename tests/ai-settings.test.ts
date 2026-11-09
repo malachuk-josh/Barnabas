@@ -44,7 +44,7 @@ describe("Settings → Barnabas AI", () => {
     const r = await put({ textModel: "claude-sonnet-5-5", voiceModel: "claude-opus-5-5", textEffort: "high", voiceEffort: "medium" });
     expect(r.status).toBe(200);
     const ai = await resolvedAi("demo");
-    expect(ai).toEqual({ textModel: "claude-sonnet-5-5", voiceModel: "claude-opus-5-5", textEffort: "high", voiceEffort: "medium", webSearch: false, webDomains: [] });
+    expect(ai).toEqual({ textModel: "claude-sonnet-5-5", voiceModel: "claude-opus-5-5", textEffort: "high", voiceEffort: "medium", tone: 0.5, webSearch: false, webDomains: [] });
 
     const meta = { id: "c1", context: "ctx", mode: "text" } as never;
     const typed = turnParams(meta, [{ role: "user", content: "hi" }], "text", ai);
@@ -56,7 +56,7 @@ describe("Settings → Barnabas AI", () => {
     expect(modelFor("voice", { ...ai, voiceModel: "claude-sonnet-5-5", voiceEffort: "high" })).toMatchObject({ thinking: { type: "between_tools" }, effort: "high" });
 
     await put({ textModel: null, voiceModel: null, textEffort: null, voiceEffort: null });
-    expect(await resolvedAi("demo")).toEqual({ textModel: "claude-opus-5-5", voiceModel: "claude-sonnet-5-5", textEffort: "low", voiceEffort: "low", webSearch: false, webDomains: [] });
+    expect(await resolvedAi("demo")).toEqual({ textModel: "claude-opus-5-5", voiceModel: "claude-sonnet-5-5", textEffort: "low", voiceEffort: "low", tone: 0.5, webSearch: false, webDomains: [] });
   });
 
   it("only accepts models and levels from the list", async () => {
@@ -107,6 +107,17 @@ describe("voice stability and style sliders", () => {
     expect(await voiceDelivery("demo")).toMatchObject({ stability: 0.6, style: 0.35 });
   });
 
+  it("save on their own from the voice settings without touching the AI card, and the AI card leaves them alone", async () => {
+    session.current = admin;
+    await put({ textModel: "claude-haiku-5-5", voiceModel: null, textEffort: "low", webSearch: true });
+    const r = await put({ voiceStability: 0.7, voiceStyle: 0.4 });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({ textModel: "claude-haiku-5-5", textEffort: "low", webSearch: true, voiceStability: 0.7, voiceStyle: 0.4 });
+    // The AI card's save sends no slider values, so they stay.
+    const r2 = await put({ textModel: null, voiceModel: null, textEffort: null, voiceEffort: null, webSearch: false, webDomains: [] });
+    expect(await r2.json()).toMatchObject({ voiceStability: 0.7, voiceStyle: 0.4, webSearch: false, chosen: { textModel: false } });
+  });
+
   it("are admin-only and must be between 0 and 1", async () => {
     session.current = plain;
     expect((await put({ textModel: null, voiceModel: null, textEffort: null, voiceStyle: 0.4 })).status).toBe(403);
@@ -134,3 +145,44 @@ describe("web search switch", () => {
     expect((await put({ textModel: null, voiceModel: null, textEffort: null, webSearch: true })).status).toBe(403);
   });
 });
+
+describe("tone slider", () => {
+  beforeEach(async () => {
+    freshStore();
+    vi.stubEnv("BARNABAS_ADMIN_EMAILS", "admin@example.org");
+    await recordSignIn(admin);
+    await recordSignIn(plain);
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  const meta = { context: "Leader context", mode: "text" } as unknown as Parameters<typeof turnParams>[0];
+  const systemText = async () => (turnParams(meta, [], "text", await resolvedAi("demo")).system as { text: string }[]).map((b) => b.text);
+
+  it("leaves the prompt unchanged at the usual setting, and adds a tone note when an admin moves it", async () => {
+    expect(await systemText()).toHaveLength(2);
+    session.current = admin;
+    const r = await put({ tone: 0.1 });
+    expect(await r.json()).toMatchObject({ tone: 0.1, chosen: { tone: true } });
+    let sys = await systemText();
+    expect(sys).toHaveLength(3);
+    expect(sys[1]).toContain("Plain and steady");
+    expect(sys[2]).toBe("Leader context");
+
+    await put({ tone: 0.95 });
+    sys = await systemText();
+    expect(sys[1]).toContain("Very warm");
+
+    await put({ tone: 0.5 });
+    expect(await systemText()).toHaveLength(2);
+    await put({ tone: null });
+    expect((await resolvedAi("demo")).tone).toBe(0.5);
+  });
+
+  it("is admin-only and must be between 0 and 1", async () => {
+    session.current = admin;
+    expect((await put({ tone: 2 })).status).toBe(400);
+    session.current = plain;
+    expect((await put({ tone: 0.9 })).status).toBe(403);
+  });
+});
+

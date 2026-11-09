@@ -12,6 +12,22 @@ import { BIBLE_TRANSLATIONS, DEFAULT_BIBLE_TRANSLATION, type Profile } from "../
 import type { Briefing } from "./briefing";
 import { LANGUAGE_NOTE } from "../language";
 
+/**
+ * The church's tone setting (Settings → Barnabas AI), as a short note that adjusts "Your tone" above.
+ * Empty at the usual setting, so the default prompt is unchanged.
+ */
+export function toneNote(tone: number | undefined): string {
+  if (tone === undefined || (tone >= 0.4 && tone <= 0.6)) return "";
+  const head = "Tone setting from the church's administrators (this adjusts \"Your tone\"; honesty, no flattery, and gentleness in grief or crisis always still apply):";
+  if (tone < 0.2)
+    return `${head}\n- Plain and steady. Be kind but spare: get to the point, keep warmth to a few words when it truly fits, skip the encouraging closing line in most replies, add scripture only when asked, and don't use exclamation marks.`;
+  if (tone < 0.4)
+    return `${head}\n- Calm. A little more reserved than usual: one brief warm touch at most per reply, an encouraging close only when it comes naturally, and affirmation only when it's clearly earned.`;
+  if (tone <= 0.8)
+    return `${head}\n- Warmer. Lean further into warmth than usual: acknowledge how the leader is doing, affirm them specifically, and close nearly every reply with a sincere word of encouragement or confidence in them.`;
+  return `${head}\n- Very warm. Be at your warmest: greet them gladly, notice and name what's good in nearly every reply, affirm them specifically and often, and end each reply with heartfelt encouragement. Still sincere and short: no gushing or hype.`;
+}
+
 export const CORE_PATH = "/memories/core.md";
 export const INBOX_PATH = "/memories/inbox.md";
 

@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { config, type Effort } from "../config";
 import { defaultAi, resolvedAi, type ResolvedAi } from "../ai/settings";
 import type { ConversationMeta, Message } from "../data/conversations";
-import { BARNABAS_SYSTEM } from "./prompt";
+import { BARNABAS_SYSTEM, toneNote } from "./prompt";
 import { TOOL_DEFS } from "./tools";
 
 type Beta = typeof Anthropic.Beta.prototype;
@@ -24,10 +24,13 @@ export function supportsFallbacks(model: string) {
   return /^claude-(opus-5|fable-5|sonnet-5-5)/.test(model);
 }
 
-function system(meta: ConversationMeta): Anthropic.Beta.BetaTextBlockParam[] {
+function system(meta: ConversationMeta, ai?: ResolvedAi): Anthropic.Beta.BetaTextBlockParam[] {
+  const tone = toneNote(ai?.tone);
   return [
     // Shared by every leader: caches across all traffic.
     { type: "text", text: BARNABAS_SYSTEM, cache_control: { type: "ephemeral" } },
+    // The church's tone setting, when it isn't the usual (cached with the context after it).
+    ...(tone ? [{ type: "text" as const, text: tone }] : []),
     // This leader's context, frozen when the conversation started.
     { type: "text", text: meta.context, cache_control: { type: "ephemeral" } },
   ];
@@ -77,7 +80,7 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
     // Automatic caching for the growing conversation, after the two system breakpoints.
     cache_control: { type: "ephemeral" },
     tools: [...TOOL_DEFS, ...webTools(model, ai)],
-    system: system(meta),
+    system: system(meta, ai),
     messages,
     ...(fallbacks ? { fallbacks: "default" as const, betas: [config.fallbackBeta] } : {}),
   };
@@ -98,7 +101,7 @@ export async function warmCache(meta: ConversationMeta, churchId?: string) {
     thinking,
     output_config: { effort },
     tools: [...TOOL_DEFS, ...webTools(model, ai)],
-    system: system(meta),
+    system: system(meta, ai),
     messages: [{ role: "user", content: "warmup" }],
   });
 }
