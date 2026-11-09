@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarIcon, DraftsIcon, MemoryIcon, SettingsIcon, TalkIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, MemoryIcon, SettingsIcon, TalkIcon } from "./icons";
 
 export const NAV = [
   { href: "/", label: "Talk", Icon: TalkIcon },
+  { href: "/word", label: "The Word", Icon: BookIcon },
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon },
   { href: "/memory", label: "Memory", Icon: MemoryIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },

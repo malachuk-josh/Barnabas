@@ -6,6 +6,12 @@ export const TalkIcon = () => (
     <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
   </svg>
 );
+export const BookIcon = () => (
+  <svg {...common}>
+    <path d="M12 6.5C10.3 5.2 7.8 4.5 4 4.5v13c3.8 0 6.3.7 8 2 1.7-1.3 4.2-2 8-2v-13c-3.8 0-6.3.7-8 2Z" />
+    <path d="M12 6.5v13" />
+  </svg>
+);
 export const CalendarIcon = () => (
   <svg {...common}>
     <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
