@@ -8,6 +8,8 @@ import { myServing, serveFor } from "@/lib/serve/views";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "My serving · Barnabas" };
 
+const weekday = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+const dayNum = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const day = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
 
 export default async function MyServingPage() {
@@ -21,17 +23,24 @@ export default async function MyServingPage() {
           <section className="fin-card">
             <h2>Coming up</h2>
             {mine.upcoming.length ? (
-              <ul className="care-tasks">
+              <ul className="week-list serve-upcoming">
                 {mine.upcoming.map((a) => (
                   <li key={a.id}>
-                    <span>
-                      <strong>{day(a.date)}</strong>
+                    <span className="date-tile" aria-hidden="true">
+                      <small>{weekday(a.date)}</small>
+                      <strong>{dayNum(a.date)}</strong>
+                    </span>
+                    <span className="week-what">
+                      <strong>
+                        {a.positionName} · {a.teamName}
+                      </strong>
                       <span className="small muted">
-                        {a.positionName} · {a.teamName} · {a.label}
+                        <span className="sr-only">{day(a.date)}, </span>
+                        {a.label}
                       </span>
                     </span>
-                    <a className="btn" href={`/serve?date=${a.date}`}>
-                      Open roster
+                    <a className="btn btn-sm" href={`/serve?date=${a.date}`}>
+                      Roster
                     </a>
                   </li>
                 ))}

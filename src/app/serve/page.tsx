@@ -12,6 +12,9 @@ import { rosterFor, serveFor, upcomingDates } from "@/lib/serve/views";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Serve · Barnabas" };
 
+const tileDay = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+const tileNum = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { day: "numeric", timeZone: "UTC" });
+const tileMonth = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 const chipDate = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 
 export default async function ServePage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
@@ -32,6 +35,10 @@ export default async function ServePage({ searchParams }: { searchParams: Promis
   }));
   const open = roster.reduce((n, g) => n + g.teams.reduce((m, t) => m + t.open, 0), 0);
   const filled = roster.reduce((n, g) => n + g.teams.reduce((m, t) => m + t.filled, 0), 0);
+  // Each date's open slots, so the strip shows where help is needed before anyone taps in.
+  const tiles = dates.map((d) => ({ date: d, open: rosterFor(book, actor, d).reduce((n, g) => n + g.teams.reduce((m, t) => m + t.open, 0), 0) }));
+  const mySlots = roster.reduce((n, g) => n + g.teams.reduce((m, t) => m + t.positions.reduce((k, p) => k + p.slots.filter((s) => s.mine).length, 0), 0), 0);
+  const teamCount = roster.reduce((n, g) => n + g.teams.length, 0);
   const leads = book.teams.filter((t) => actor.scheduler || t.lead?.toLowerCase() === leader.name.toLowerCase() || t.leadLeaderIds?.includes(leader.leaderId)).map((t) => t.name);
 
   return (
@@ -44,26 +51,32 @@ export default async function ServePage({ searchParams }: { searchParams: Promis
       tabs={SERVE_TABS}
       demo={book.meta.demo ? { text: <>Only MGBC&apos;s real leaders are on these rosters, in their real roles: Aaron leads worship, Travis greets and Micah parks. <strong>Every other slot is open</strong>; no co-laborer is made up.</>, clear: actor.scheduler ? { path: "/api/serve/demo", label: "Clear the demo rosters" } : undefined } : undefined}
     >
-      <nav className="care-chips ops-dates" aria-label="Date">
-        {dates.map((d) => (
-          <Link key={d} className="care-chip" href={`/serve?date=${d}`} aria-current={d === date ? "page" : undefined}>
-            {chipDate(d)}
+      <nav className="date-tiles" aria-label="Date">
+        {tiles.map((t) => (
+          <Link key={t.date} className="date-tile-link" href={`/serve?date=${t.date}`} aria-current={t.date === date ? "page" : undefined}>
+            <small>{tileDay(t.date)}</small>
+            <strong>{tileNum(t.date)}</strong>
+            <span className="date-tile-month">{tileMonth(t.date)}</span>
+            <span className={`date-tile-open${t.open ? "" : " is-full"}`}>{t.open ? `${t.open} open` : "Full"}</span>
           </Link>
         ))}
       </nav>
-      <div className="fin-grid ops-stats">
-        <section className="fin-card">
-          <span className="label">Serving {chipDate(date)}</span>
-          <div className="fin-stat">{filled}</div>
-          <span className="muted small">{open} open slot{open === 1 ? "" : "s"} across {roster.reduce((n, g) => n + g.teams.length, 0)} team rosters</span>
-          <p className="fin-source">Rosters in Barnabas for each gathering that day.</p>
-        </section>
-        <section className="fin-card">
-          <span className="label">You</span>
-          <div className="fin-stat fin-stat-sm">{me ? `${roster.reduce((n, g) => n + g.teams.reduce((m, t) => m + t.positions.reduce((k, p) => k + p.slots.filter((s) => s.mine).length, 0), 0), 0)} slot(s) this day` : "Not on a team yet"}</div>
-          <span className="muted small">{me ? <Link href="/serve/mine">Your schedule, swaps and away dates</Link> : "Sign up for any open slot below to join that team."}</span>
-        </section>
-      </div>
+      <dl className="fact-strip serve-summary">
+        <div>
+          <dt>{chipDate(date)}</dt>
+          <dd>
+            {filled} serving{open ? <span className="care-overdue"> · {open} open</span> : ""}
+          </dd>
+        </div>
+        <div>
+          <dt>Teams</dt>
+          <dd>{teamCount}</dd>
+        </div>
+        <div>
+          <dt>You</dt>
+          <dd>{me ? <Link href="/serve/mine">{mySlots ? `${mySlots} slot${mySlots === 1 ? "" : "s"} this day` : "Not serving this day"}</Link> : "Not on a team yet"}</dd>
+        </div>
+      </dl>
       {book.teams.length === 0 ? (
         <EmptyState title="No teams yet" actions={[{ label: "Add your first team", href: "/serve/teams", primary: true }]}>
           Teams, their positions and the gatherings they serve make up the roster. Start with one, like Greeters or Worship.
@@ -72,7 +85,7 @@ export default async function ServePage({ searchParams }: { searchParams: Promis
         <RosterBoard date={date} gatherings={gatherings} myVolunteerId={me?.id ?? null} scheduler={actor.scheduler} />
       )}
       <p className="fin-source" style={{ marginTop: 14 }}>
-        Rosters, away dates and monthly limits in Barnabas. The weariness watch on Talk reads these rosters.
+        Rosters, away dates and monthly limits in Barnabas, for each gathering that day. The weariness watch on Talk reads these rosters.
       </p>
     </OpsFrame>
   );

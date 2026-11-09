@@ -53,6 +53,11 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
   const [previewing, setPreviewing] = useState(false);
   const [word, setWord] = useState("");
   const [sayAs, setSayAs] = useState("");
+  // What the Save bar saves (Profile and Barnabas and voice), to tell when there are unsaved changes.
+  const saved = (x: Profile) => JSON.stringify([x.name, x.preferredName, x.role, x.ministries, x.timezone, x.replyLanguage, x.bibleTranslation, x.voice, x.pronunciations, x.about]);
+  const [savedSnapshot, setSavedSnapshot] = useState(() => saved(initial));
+  const dirty = saved(p) !== savedSnapshot;
+  const [section, setSection] = useState("profile");
 
   const syncParam = params.get("sync");
   // Kids check-in volunteers only see their profile and data settings.
@@ -124,6 +129,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
     });
     setSaving(false);
     if (res.ok) {
+      setSavedSnapshot(saved(p));
       setMessage({ ok: true, text: "Saved. Barnabas will use this from your next conversation." });
       router.refresh();
     } else {
@@ -164,19 +170,63 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
     }
   }
 
+  const sections = [
+    { id: "profile", label: "Profile" },
+    ...(!checkinOnly ? [{ id: "barnabas", label: "Barnabas and voice" }] : []),
+    { id: "notifications", label: "Notifications" },
+    ...(!checkinOnly ? [{ id: "calendars", label: "Calendars" }] : []),
+    ...(access.admin ? [{ id: "team", label: "Team" }, { id: "ai", label: "Barnabas AI" }] : []),
+    { id: "privacy", label: "Privacy and data" },
+  ];
+
+  // Highlight the section being read in the menu.
+  useEffect(() => {
+    const els = sections.map((x) => document.getElementById(x.id)).filter((el): el is HTMLElement => Boolean(el));
+    if (!els.length || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const seen = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (seen) setSection(seen.target.id);
+      },
+      { rootMargin: "-120px 0px -60% 0px" },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+    // The sections only change with the leader's role.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkinOnly, access.admin]);
+
+  const initialsOf = (name: string) =>
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join("");
+
   return (
     <div className="settings">
       <nav className="settings-nav" aria-label="Settings sections">
-        <a href="#profile">Profile</a>
-        {!checkinOnly && <a href="#barnabas">Barnabas and voice</a>}
-        <a href="#notifications">Notifications</a>
-        {!checkinOnly && <a href="#calendars">Calendars</a>}
-        {access.admin && <a href="#team">Team</a>}
-        {access.admin && <a href="#ai">Barnabas AI</a>}
-        <a href="#privacy">Privacy and data</a>
+        {sections.map((x) => (
+          <a key={x.id} href={`#${x.id}`} aria-current={section === x.id ? "true" : undefined} onClick={() => setSection(x.id)}>
+            {x.label}
+          </a>
+        ))}
       </nav>
 
       <div className="stack" style={{ gap: 24 }}>
+        <div className="settings-me">
+          <span className="person-avatar" aria-hidden="true">
+            {initialsOf(p.name || p.preferredName || "?")}
+          </span>
+          <div>
+            <strong>{p.name}</strong>
+            <span className="small muted">
+              {ROLE_LABELS[access.role]}
+              {access.admin ? " · Administrator" : ""} · {p.email}
+            </span>
+          </div>
+        </div>
         {message && (
           <div className={`notice ${message.ok ? "success" : "notice-danger"}`} role="status">
             {message.text}
@@ -185,7 +235,10 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
 
         <form className="stack" style={{ gap: 24 }} onSubmit={saveProfile}>
           <section id="profile" className="card">
-            <h2>Profile</h2>
+            <div className="settings-head">
+              <h2>Profile</h2>
+              <p className="muted small">Who you are, and what Barnabas should always keep in mind.</p>
+            </div>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="name">Full name</label>
@@ -258,7 +311,10 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
 
           {!checkinOnly && (
           <section id="barnabas" className="card">
-            <h2>Barnabas and voice</h2>
+            <div className="settings-head">
+              <h2>Barnabas and voice</h2>
+              <p className="muted small">How Barnabas speaks with you, listens to you and quotes Scripture.</p>
+            </div>
             {know && (
               <p className="small">
                 <strong>
@@ -273,6 +329,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
                 <span className="muted"> What he&apos;s learned is in your Memory, under &ldquo;getting-to-know-you&rdquo;.</span>
               </p>
             )}
+            <h3 className="settings-group">Language and time</h3>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="timezone">Time zone</label>
@@ -306,6 +363,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
               </select>
               <span className="small muted">You can still ask for another translation in any conversation.</span>
             </div>
+            <h3 className="settings-group">Talking with Barnabas</h3>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="voiceLang">Language you speak to Barnabas</label>
@@ -337,32 +395,47 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
                 </span>
               </div>
             </div>
-            <label className="check">
-              <input id="speakReplies" type="checkbox" checked={p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, speakReplies: e.target.checked } })} />
-              Speak Barnabas&apos;s replies out loud
-            </label>
-            <label className="check">
-              <input id="readTyped" type="checkbox" checked={Boolean(p.voice.readTyped)} disabled={!p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, readTyped: e.target.checked } })} />
-              Also read replies aloud when I type
-            </label>
-            <label className="check">
-              <input id="fillers" type="checkbox" checked={p.voice.fillers !== false} disabled={!p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, fillers: e.target.checked } })} />
-              Short sounds while Barnabas thinks (&ldquo;Mm.&rdquo; &ldquo;Let me think.&rdquo;) so there&apos;s no silence before he answers
-            </label>
-            <label className="check">
-              <input
-                id="handsFree"
-                type="checkbox"
-                checked={p.voice.handsFree}
-                disabled={!voices?.stt}
-                onChange={(e) => setP({ ...p, voice: { ...p.voice, handsFree: e.target.checked } })}
-              />
-              Start in hands-free mode (just talk; speak over Barnabas to interrupt)
-            </label>
+            <div className="switch-list">
+              <label className="switch-row" htmlFor="speakReplies">
+                <span>
+                  <span className="switch-title">Speak replies out loud</span>
+                  <span className="small muted">Barnabas reads each answer to you as it arrives.</span>
+                </span>
+                <input id="speakReplies" className="switch" type="checkbox" checked={p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, speakReplies: e.target.checked } })} />
+              </label>
+              <label className="switch-row" htmlFor="readTyped">
+                <span>
+                  <span className="switch-title">Also read aloud when I type</span>
+                  <span className="small muted">Not just when you talk.</span>
+                </span>
+                <input id="readTyped" className="switch" type="checkbox" checked={Boolean(p.voice.readTyped)} disabled={!p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, readTyped: e.target.checked } })} />
+              </label>
+              <label className="switch-row" htmlFor="fillers">
+                <span>
+                  <span className="switch-title">Short sounds while thinking</span>
+                  <span className="small muted">&ldquo;Mm.&rdquo; &ldquo;Let me think.&rdquo; so there&apos;s no silence before he answers.</span>
+                </span>
+                <input id="fillers" className="switch" type="checkbox" checked={p.voice.fillers !== false} disabled={!p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, fillers: e.target.checked } })} />
+              </label>
+              <label className="switch-row" htmlFor="handsFree">
+                <span>
+                  <span className="switch-title">Start in hands-free mode</span>
+                  <span className="small muted">Just talk, and speak over Barnabas to interrupt.</span>
+                </span>
+                <input
+                  id="handsFree"
+                  className="switch"
+                  type="checkbox"
+                  checked={p.voice.handsFree}
+                  disabled={!voices?.stt}
+                  onChange={(e) => setP({ ...p, voice: { ...p.voice, handsFree: e.target.checked } })}
+                />
+              </label>
+            </div>
             {voices && !voices.stt && <span className="small muted">Hands-free needs the Deepgram listening service. Your administrator adds DEEPGRAM_API_KEY.</span>}
 
+            <h3 className="settings-group">Barnabas&apos;s voice</h3>
             <div className="field">
-              <span className="label" style={{ textTransform: "none", letterSpacing: 0, fontSize: "0.92rem", color: "var(--fg)" }}>Barnabas&apos;s voice</span>
               {voices?.voiceReady ? (
                 <div className="row">
                   <span>{voices.voiceName || "Church voice"}</span>
@@ -382,6 +455,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
               )}
             </div>
 
+            <h3 className="settings-group">Names he says wrong</h3>
             <div className="field">
               <label htmlFor="pron-word">Pronunciations</label>
               <span className="small muted">Teach Barnabas names it says wrong. Words listed here are also listened for more carefully.</span>
@@ -408,8 +482,11 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
           </section>
           )}
 
-          <div className="row">
-            <button className="btn btn-primary" type="submit" disabled={saving}>
+          <div className={`save-bar${dirty ? " is-dirty" : ""}`}>
+            <span className="small" role="status">
+              {saving ? "Saving…" : dirty ? "You have unsaved changes to your profile and voice." : "Profile and voice are saved."}
+            </span>
+            <button className="btn btn-primary" type="submit" disabled={saving || !dirty}>
               {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
