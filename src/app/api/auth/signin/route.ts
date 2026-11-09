@@ -3,7 +3,7 @@ import { z } from "zod";
 import { accessCode, config } from "@/lib/config";
 import { SESSION_COOKIE, leaderIdFor, sessionCookieOptions, signSession } from "@/lib/auth/session";
 import { ensureProfile } from "@/lib/profile";
-import { setJSON } from "@/lib/store";
+import { recordSignIn } from "@/lib/team";
 
 const Body = z.object({
   name: z.string().trim().min(1).max(80),
@@ -36,11 +36,12 @@ export async function POST(request: Request) {
   const { name, email, role } = parsed.data;
   const leaderId = await leaderIdFor(config.churchId, email);
   const leader = { churchId: config.churchId, leaderId, name, email: email.toLowerCase(), role };
-  await setJSON(`leader:${config.churchId}:${leaderId}`, { ...leader, signedInAt: Date.now() });
   const profile = await ensureProfile(leader, parsed.data.timezone);
   // A returning leader keeps the name and role they set in Settings.
   leader.name = profile.name;
   leader.role = profile.role;
+  // The team list, and the permission role an admin manages (new leaders start as "leader").
+  await recordSignIn(leader);
   const token = await signSession(leader);
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);

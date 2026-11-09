@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isResponse, requireLeader } from "@/lib/auth/require";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
 import { getProfile, isValidTimezone, saveProfile } from "@/lib/profile";
+import { updateLeaderDisplay } from "@/lib/team";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,7 @@ export async function PUT(request: Request) {
   const current = await getProfile(leader);
   const next = { ...current, ...parsed.data };
   await saveProfile(leader, next);
+  await updateLeaderDisplay(leader, next.name, next.role);
   // Keep the signed-in session's display name and role in step with the profile.
   const token = await signSession({ ...leader, name: next.name, role: next.role });
   const response = NextResponse.json({ profile: next });

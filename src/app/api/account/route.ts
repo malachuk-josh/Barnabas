@@ -9,6 +9,7 @@ import { leaderRecordKeys, listDrafts } from "@/lib/data/records";
 import { MemoryFS } from "@/lib/memory/fs";
 import { profileKey } from "@/lib/profile";
 import { kv } from "@/lib/store";
+import { forgetLeader } from "@/lib/team";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,7 @@ export async function DELETE(request: Request) {
   await stopFeed(leader);
   await clearCalendar(leader);
   await kv().del(...leaderRecordKeys(leader), profileKey(leader), `cal:${leader.churchId}:${leader.leaderId}`, `leader:${leader.churchId}:${leader.leaderId}`);
+  await forgetLeader(leader);
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
   return response;
