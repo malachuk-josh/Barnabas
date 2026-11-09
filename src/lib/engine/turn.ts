@@ -11,6 +11,7 @@ import {
 import { CRISIS_REMINDER, detectCrisis } from "../policy/crisis";
 import { withLock } from "../store";
 import { claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
+import { resolvedAi } from "../ai/settings";
 import { resolvePermission } from "./know";
 import { executeTool, holdingPhrase, type ToolContext } from "./tools";
 
@@ -112,6 +113,8 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   if (note) added.push(note);
   let messages = await appendMessages(leader, meta, ...added);
   let mode: TurnMode = input.voice ? "voice" : "text";
+  // The models an admin chose in Settings → Barnabas AI (or the defaults).
+  const ai = await resolvedAi(leader.churchId);
   const setupMs = Date.now() - turnStartedAt;
   let firstTextMs: number | null = null;
 
@@ -120,7 +123,7 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   let parseRetries = 0;
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    const stream = claude().beta.messages.stream(turnParams(meta, messages, mode));
+    const stream = claude().beta.messages.stream(turnParams(meta, messages, mode, ai));
     let announced = false;
     let message: Anthropic.Beta.BetaMessage;
     try {
@@ -191,7 +194,7 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   meta.updatedAt = Date.now();
   if (meta.turns === 1 || meta.title === "New conversation") meta.title = titleFrom(input.text);
   await saveConversation(leader, meta);
-  const timing = { model: modelFor(mode).model, setupMs, firstTextMs, totalMs: Date.now() - turnStartedAt };
+  const timing = { model: modelFor(mode, ai).model, setupMs, firstTextMs, totalMs: Date.now() - turnStartedAt };
   console.log(`[barnabas] turn ${mode} model=${timing.model} setup=${setupMs}ms firstText=${firstTextMs ?? "-"}ms total=${timing.totalMs}ms`);
   emit({ type: "timing", ...timing });
   emit({ type: "done", stopReason });

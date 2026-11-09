@@ -531,6 +531,10 @@ Each leader's own notebook, under **Worship → Journal** (`/journal`). Every ro
 
 Health details are never saved as notes. When a leader mentions their own chronic condition or ongoing struggle that bears on their ministry, Barnabas responds with care, then asks whether they'd like him to remember it "as a thorn in the flesh" (2 Corinthians 12:7, KJV) or keep it private. It is enforced in code (`src/lib/engine/thorn.ts`): the first `remember_thorn` call saves nothing; only the leader's very next message, with a clear yes about the same detail, saves it to `/memories/thorn-in-the-flesh.md`. Anything else, including "keep it private", stores nothing. Never off the record, never in a crisis moment, and only for the leader themselves (congregants' health follows the church's memory policy). `save_memory` and getting-to-know-you answers refuse the leader's own health details, and the after-conversation memory job may not touch that file. Barnabas reads it at the start of each conversation; the leader can edit or delete it on the Memory screen.
 
+## Barnabas AI settings (admins)
+
+Settings → **Barnabas AI** lets an administrator choose, for everyone in the church, the Claude model for typed messages (Opus 5.5, Sonnet 5.5 or Haiku 5.5), how hard it thinks on typed messages (Quick, Balanced, Thorough), and the model for spoken messages (spoken replies always think as little as the model allows, so they start quickly). Anything left on "Default" uses `BARNABAS_MODEL`, `BARNABAS_EFFORT` and `BARNABAS_VOICE_MODEL`, then the built-in defaults. Stored at `cfg:{church}:ai`; takes effect from the next message; admin-only (`team.manage`) and audited. The after-conversation memory job keeps using `BARNABAS_MODEL`.
+
 ## Getting to know each leader
 
 Barnabas works through twenty questions with every leader over many conversations, ranked so their ministry comes first (calling, biggest challenge, hope for the year, their role, the people they invest in) and their own rest, walk and support after. The list and its order are in `src/lib/engine/know.ts`.

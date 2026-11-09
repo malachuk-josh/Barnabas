@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { config } from "../config";
+import { config, type Effort } from "../config";
+import { defaultAi, resolvedAi, type ResolvedAi } from "../ai/settings";
 import type { ConversationMeta, Message } from "../data/conversations";
 import { BARNABAS_SYSTEM } from "./prompt";
 import { TOOL_DEFS } from "./tools";
@@ -40,16 +41,16 @@ export type TurnMode = "voice" | "text";
  * typed turns keep the main model with adaptive thinking. Switching models inside one conversation
  * is fine: thinking blocks are passed back unchanged and the API drops any the model can't read.
  */
-export function modelFor(mode: TurnMode): { model: string; thinking: Anthropic.Beta.BetaThinkingConfigParam } {
+export function modelFor(mode: TurnMode, ai: ResolvedAi = defaultAi()): { model: string; thinking: Anthropic.Beta.BetaThinkingConfigParam; effort: Effort } {
   if (mode === "voice") {
-    const model = config.voiceModel;
-    return { model, thinking: model.startsWith("claude-sonnet-5-5") ? { type: "between_tools" } : { type: "adaptive" } };
+    const model = ai.voiceModel;
+    return { model, thinking: model.startsWith("claude-sonnet-5-5") ? { type: "between_tools" } : { type: "adaptive" }, effort: "low" };
   }
-  return { model: config.model, thinking: { type: "adaptive" } };
+  return { model: ai.textModel, thinking: { type: "adaptive" }, effort: ai.textEffort as Effort };
 }
 
-export function turnParams(meta: ConversationMeta, messages: Message[], mode: TurnMode = "text"): Anthropic.Beta.MessageCreateParamsStreaming {
-  const { model, thinking } = modelFor(mode);
+export function turnParams(meta: ConversationMeta, messages: Message[], mode: TurnMode = "text", ai?: ResolvedAi): Anthropic.Beta.MessageCreateParamsStreaming {
+  const { model, thinking, effort } = modelFor(mode, ai);
   const fallbacks = supportsFallbacks(model);
   return {
     model,
@@ -57,7 +58,7 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
     stream: true,
     thinking,
     // `between_tools` is accepted only at effort high or below; voice runs at low.
-    output_config: { effort: mode === "voice" ? "low" : config.effort },
+    output_config: { effort },
     // Automatic caching for the growing conversation, after the two system breakpoints.
     cache_control: { type: "ephemeral" },
     tools: TOOL_DEFS,
@@ -71,15 +72,15 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
  * Pre-warm the cache for a new conversation: max_tokens 0, same tools, system, thinking and effort
  * as real turns, with the breakpoint on the last shared block (not on the placeholder message).
  */
-export async function warmCache(meta: ConversationMeta) {
+export async function warmCache(meta: ConversationMeta, churchId?: string) {
   // A conversation started by voice is warmed for the voice model (caches are per model).
   const mode: TurnMode = meta.mode === "voice" ? "voice" : "text";
-  const { model, thinking } = modelFor(mode);
+  const { model, thinking, effort } = modelFor(mode, churchId ? await resolvedAi(churchId) : undefined);
   await claude().beta.messages.create({
     model,
     max_tokens: 0,
     thinking,
-    output_config: { effort: mode === "voice" ? "low" : config.effort },
+    output_config: { effort },
     tools: TOOL_DEFS,
     system: system(meta),
     messages: [{ role: "user", content: "warmup" }],

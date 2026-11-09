@@ -8,6 +8,7 @@ import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@/lib/profile/transla
 import { ROLE_DESCRIPTIONS, ROLE_LABELS, isCheckinOnly, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
 import { TeamSettings } from "./TeamSettings";
+import { AiSettings } from "./AiSettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { typesFor } from "@/lib/notifications/types";
 
@@ -171,6 +172,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
         <a href="#notifications">Notifications</a>
         {!checkinOnly && <a href="#calendars">Calendars</a>}
         {access.admin && <a href="#team">Team</a>}
+        {access.admin && <a href="#ai">Barnabas AI</a>}
         <a href="#privacy">Privacy and data</a>
       </nav>
 
@@ -494,6 +496,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
         )}
 
         {access.admin && <TeamSettings myLeaderId={leaderId} />}
+        {access.admin && <AiSettings />}
 
         <section id="privacy" className="card danger-zone">
           <h2>Privacy and data</h2>
