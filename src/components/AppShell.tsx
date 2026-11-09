@@ -5,6 +5,7 @@ import { can, checkinMayUse, isCheckinOnly, isLimited, levelMayUse } from "@/lib
 import { requestPath } from "@/lib/auth/require";
 import { getProfile, type Profile } from "@/lib/profile";
 import { accessFor } from "@/lib/team";
+import { unreadCount } from "@/lib/inbox/service";
 import { Mark } from "./Mark";
 import { AppThemeSwitch } from "./AppThemeSwitch";
 import { PullToRefresh } from "./PullToRefresh";
@@ -62,6 +63,7 @@ export async function AppShell({
     limited,
     member: access?.level === "member" && !access.admin,
     levelAccess: limited && access ? access : undefined,
+    unread: leader ? await unreadCount(leader) : 0,
   };
   return (
     <div className="shell">

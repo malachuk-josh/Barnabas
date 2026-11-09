@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requirePageLeader } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
+import { MessageParent } from "@/components/inbox/MessageParent";
 import { AutoRefresh } from "@/components/ops/AutoRefresh";
 import { KidsNoAccess } from "@/components/ops/KidsViews";
 import { KIDS_TABS, OpsFrame } from "@/components/ops/OpsFrame";
 import { friendlyDate, today as todayIso } from "@/lib/dates";
 import { roomRows } from "@/lib/kids/service";
+import { parentLookup } from "@/lib/kids/parents";
 import { kidsFor } from "@/lib/kids/views";
 import { gatheringsOn, nextMeeting } from "@/lib/ops/gatherings";
 
@@ -26,6 +28,8 @@ export default async function KidsRoomsPage({ searchParams }: { searchParams: Pr
   const g = options.find((x) => x.key === q.g) ?? options[0];
   const rooms = roomRows(book, date, g.key);
   const total = rooms.reduce((n, r) => n + r.present, 0);
+  const parentsOf = await parentLookup(leader.churchId);
+  const parents = (householdId: string) => parentsOf(book.households.find((h) => h.id === householdId));
   const log = book.log.filter((l) => l.action !== "family").slice(-12).reverse();
   return (
     <OpsFrame profile={profile} eyebrow="Kids" title="Room rosters" intro={`${g.label}, ${friendlyDate(date)}. Live counts refresh every 15 seconds.`} tabs={KIDS_TABS}>
@@ -73,7 +77,10 @@ export default async function KidsRoomsPage({ searchParams }: { searchParams: Pr
                     <span>
                       {c.firstName} {c.lastInitial}.{c.allergies && <span className="kids-allergy-dot" title="Has an allergy: see the label">Allergy</span>}
                     </span>
-                    <span className="small muted">{time(c.checkedInAt)}</span>
+                    <span className="kids-roster-end">
+                      <span className="small muted">{time(c.checkedInAt)}</span>
+                      <MessageParent parents={parents(c.householdId)} child={c.firstName} />
+                    </span>
                   </li>
                 ))}
               </ul>

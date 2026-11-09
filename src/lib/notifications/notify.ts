@@ -154,6 +154,19 @@ export function swapAccepted(actor: { leader: Leader }, s: SwapRequest) {
   });
 }
 
+/* ---------- Messages ---------- */
+
+/** A message in Barnabas. Only the sender's first name: never the words, or who (or which child) it's about. */
+export function directMessagePayload(from: Pick<Leader, "name">, threadId: string) {
+  return { title: "Messages", body: `${firstName(from.name)} sent you a message.`, url: `/inbox?t=${encodeURIComponent(threadId)}`, tag: `msg-${threadId}` };
+}
+
+export function directMessage(churchId: string, from: Leader, to: string[], threadId: string) {
+  const ids = to.filter((id) => id !== from.leaderId);
+  if (!ids.length) return;
+  later(() => notifyLeaders(churchId, ids, "messages", directMessagePayload(from, threadId)));
+}
+
 /* ---------- Events, the website inbox and kids ---------- */
 
 /**

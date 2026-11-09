@@ -291,9 +291,9 @@ describe("notification privacy", () => {
 describe("the kids check-in role", () => {
   beforeEach(() => setupTeam());
 
-  it("gets only the master switch, can manage its own devices, and gets nothing else", async () => {
-    expect(typesFor({ role: "checkin", admin: false })).toEqual([]);
-    expect(typesFor({ role: "leader", admin: false })).toEqual(["briefing", "shepherding", "serving"]);
+  it("gets only Messages, can manage its own devices, and gets nothing else", async () => {
+    expect(typesFor({ role: "checkin", admin: false })).toEqual(["messages"]);
+    expect(typesFor({ role: "leader", admin: false })).toEqual(["briefing", "messages", "shepherding", "serving"]);
     expect(typesFor({ role: "pastor", admin: false })).toContain("kids");
     expect(checkinMayUse("/api/push/subscription")).toBe(true);
     await subscribe(checkin);

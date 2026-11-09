@@ -1,6 +1,7 @@
 import type { GatheringKey } from "../ops/gatherings";
 
-export type Guardian = { name: string; phone?: string; relationship?: string };
+/** `email` links a guardian to their Barnabas sign-in, for Messages and their own Child care page. */
+export type Guardian = { name: string; phone?: string; email?: string; relationship?: string };
 export type Pickup = { name: string; relationship?: string };
 
 export type Child = {
