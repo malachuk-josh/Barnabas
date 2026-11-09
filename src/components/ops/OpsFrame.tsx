@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { checkinMayUse, isCheckinOnly } from "@/lib/auth/roles";
 import { currentLeader } from "@/lib/auth/session";
+import { churchSource } from "@/lib/chms";
 import { accessFor } from "@/lib/team";
 import type { Profile } from "@/lib/profile";
 import { OpsDemoBanner, type DemoClear } from "./OpsDemoBanner";
@@ -21,7 +22,10 @@ export const KIDS_TABS: Tab[] = [
   { href: "/kids/families", label: "Families" },
 ];
 
-/** The page frame for Serve, Services, Events and Kids: heading, section tabs and the demo banner. */
+/**
+ * The page frame for Serve, Services, Events and Kids: heading, section tabs and the demo banner, which goes
+ * away once the church's real people are connected (Planning Center or an import).
+ */
 export async function OpsFrame({
   profile,
   eyebrow,
@@ -46,6 +50,7 @@ export async function OpsFrame({
   // A kids check-in volunteer sees only the tabs they can open.
   const leader = await currentLeader();
   if (tabs && leader && isCheckinOnly(await accessFor(leader))) tabs = tabs.filter((t) => checkinMayUse(t.href));
+  const connected = (await churchSource()) !== "demo";
   return (
     <AppShell profile={profile}>
       <div className="page-head">
@@ -57,7 +62,7 @@ export async function OpsFrame({
         {actions}
       </div>
       {tabs && <OpsTabs tabs={tabs} label={tabsLabel ?? eyebrow} />}
-      {demo && <OpsDemoBanner text={demo.text} clear={demo.clear} />}
+      {demo && !connected && <OpsDemoBanner text={demo.text} clear={demo.clear} />}
       {children}
     </AppShell>
   );

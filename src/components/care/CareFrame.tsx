@@ -1,7 +1,7 @@
 import { AppShell, requirePageLeader } from "@/components/AppShell";
 import type { Leader } from "@/lib/auth/session";
 import { can } from "@/lib/auth/roles";
-import { churchData } from "@/lib/chms";
+import { churchData, churchSource } from "@/lib/chms";
 import type { CareActor } from "@/lib/care/service";
 import type { CareBook } from "@/lib/care/types";
 import { careFor } from "@/lib/care/views";
@@ -23,7 +23,9 @@ export async function directory() {
   return (await churchData().listPeople()).filter((p) => !p.leadership).map((p) => ({ id: p.id, name: p.name, household: p.household ?? null }));
 }
 
-export function CareFrame({ ctx, eyebrow = "Care", title, intro, actions, children }: { ctx: CarePageContext; eyebrow?: string; title: string; intro?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+/** The demo banner goes away once the church's real people are connected (Planning Center or an import). */
+export async function CareFrame({ ctx, eyebrow = "Care", title, intro, actions, children }: { ctx: CarePageContext; eyebrow?: string; title: string; intro?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+  const connected = (await churchSource()) !== "demo";
   return (
     <AppShell profile={ctx.profile}>
       <div className="page-head">
@@ -35,7 +37,7 @@ export function CareFrame({ ctx, eyebrow = "Care", title, intro, actions, childr
         {actions}
       </div>
       <CareTabs />
-      {ctx.book.meta.demo && <CareDemoBanner canClear={ctx.isPastor} />}
+      {ctx.book.meta.demo && !connected && <CareDemoBanner canClear={ctx.isPastor} />}
       {children}
     </AppShell>
   );

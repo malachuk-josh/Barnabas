@@ -4,7 +4,7 @@ import { churchData } from "../chms";
 import { newId } from "../data/ids";
 import { audit } from "../data/records";
 import { copyBudget } from "./budget";
-import { findDuplicate } from "./csv";
+import { bankImportKeys, findDuplicate } from "./csv";
 import { dueOccurrences } from "./giving";
 import { validateTransaction } from "./ledger";
 import { dollars } from "./money";
@@ -212,6 +212,8 @@ export const ImportInput = z.object({
     reference: z.string().max(40).optional(),
     accountId: z.string().min(1).max(40),
     fundId: z.string().min(1).max(40),
+    /** From the preview, computed over the whole file (so unticking a row doesn't shift the others' keys). */
+    importKey: z.string().regex(/^bank:[0-9a-f]{32}$/).optional(),
   })).min(1).max(1000),
   skipDuplicates: z.boolean().default(true),
 });
@@ -220,8 +222,17 @@ export async function importTransactions(leader: Leader, input: z.infer<typeof I
   return updateBooks(leader.churchId, ["transactions"], async (books) => {
     const added: Transaction[] = [];
     let skipped = 0;
+    let alreadyImported = 0;
     const problems: string[] = [];
+    // Every row gets a stable key; a key already in the books is never imported again, whatever the checkbox says.
+    const computed = bankImportKeys(input.bankAccountId, input.rows);
+    const keys = input.rows.map((r, i) => r.importKey ?? computed[i]);
+    const existing = new Set(books.transactions.map((t) => t.importKey).filter(Boolean));
     input.rows.forEach((row, i) => {
+      if (existing.has(keys[i])) {
+        alreadyImported++;
+        return;
+      }
       if (input.skipDuplicates && findDuplicate(books.transactions, input.bankAccountId, row.date, row.amount)) {
         skipped++;
         return;
@@ -239,12 +250,13 @@ export async function importTransactions(leader: Leader, input: z.infer<typeof I
         problems.push(`Row ${i + 1}: ${p.join(" ")}`);
         return;
       }
-      added.push({ id: newId("txn"), ...t, cleared: true, source: "import", createdAt: Date.now(), createdBy: leader.leaderId });
+      existing.add(keys[i]);
+      added.push({ id: newId("txn"), ...t, cleared: true, source: "import", importKey: keys[i], createdAt: Date.now(), createdBy: leader.leaderId });
     });
     if (problems.length) throw new FinanceError(problems.slice(0, 5).join(" "));
     books.transactions.push(...added);
-    await log(leader, "import", `${added.length} imported, ${skipped} duplicates skipped`);
-    return { added: added.length, skipped };
+    await log(leader, "import", `${added.length} imported, ${skipped} duplicates skipped, ${alreadyImported} already imported`);
+    return { added: added.length, skipped, alreadyImported };
   });
 }
 
@@ -279,7 +291,7 @@ async function donorFor(personId: string | undefined, name: string | undefined) 
 }
 
 type Donor = { personId?: string; donorName: string };
-type GiftRow = Omit<z.infer<typeof GiftInput>, "personId" | "donorName"> & Donor & { recurringId?: string };
+type GiftRow = Omit<z.infer<typeof GiftInput>, "personId" | "donorName"> & Donor & { recurringId?: string; importKey?: string };
 
 /** Adds gifts to the books and posts them as one deposit, with a line per fund. */
 function postGifts(books: Books, leader: Leader, input: { depositDate: string; bankAccountId?: string; description?: string }, rows: GiftRow[], source: Transaction["source"]) {
@@ -300,6 +312,7 @@ function postGifts(books: Books, leader: Leader, input: { depositDate: string; b
     method: g.method,
     checkNumber: g.checkNumber || undefined,
     recurringId: g.recurringId,
+    importKey: g.importKey,
     batchId,
     txnId,
     createdAt: now,
@@ -474,4 +487,28 @@ export async function clearDemoData(leader: Leader): Promise<Books> {
   const fresh = await resetBooks(leader.churchId);
   await log(leader, "demo.clear", "Cleared demo finance data; started fresh books");
   return fresh;
+}
+
+/* ---------- Giving import (ChurchTrac contributions CSV) ---------- */
+
+export type ImportGift = { date: string; personId?: string; donorName: string; amount: number; fundId: string; method: z.infer<typeof GiftInput>["method"]; checkNumber?: string; importKey: string };
+
+/**
+ * Imports gifts from a giving CSV, one deposit per date, skipping any row whose stable key is already in the
+ * books (so re-importing an overlapping export never double-counts). With `dryRun`, only the counts.
+ */
+export async function importGifts(leader: Leader, rows: ImportGift[], opts: { dryRun: boolean; bankAccountId?: string }) {
+  return updateBooks(leader.churchId, opts.dryRun ? [] : ["gifts", "transactions"], async (books) => {
+    const existing = new Set(books.gifts.map((g) => g.importKey).filter(Boolean));
+    const fresh = rows.filter((r) => !existing.has(r.importKey));
+    const total = fresh.reduce((a, r) => a + r.amount, 0);
+    const byDate = new Map<string, ImportGift[]>();
+    for (const r of fresh) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
+    if (opts.dryRun) return { dryRun: true, add: fresh.length, alreadyImported: rows.length - fresh.length, deposits: byDate.size, total };
+    for (const [date, list] of [...byDate].sort(([a], [b]) => a.localeCompare(b))) {
+      postGifts(books, leader, { depositDate: date, bankAccountId: opts.bankAccountId, description: `Imported giving (${list.length} gift${list.length > 1 ? "s" : ""})` }, list, "import");
+    }
+    await log(leader, "gifts.import", `${fresh.length} gifts imported in ${byDate.size} deposits, ${dollars(total)}, ${rows.length - fresh.length} already imported`);
+    return { dryRun: false, add: fresh.length, alreadyImported: rows.length - fresh.length, deposits: byDate.size, total };
+  });
 }

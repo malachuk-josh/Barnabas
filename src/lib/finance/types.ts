@@ -69,6 +69,8 @@ export type Transaction = {
   reference?: string;
   /** Gift entries posted by this deposit. */
   giftBatchId?: string;
+  /** Imported rows: a stable key from the file row, so importing the same file twice never adds it twice. */
+  importKey?: string;
   createdAt: number;
   createdBy: string;
 };
@@ -95,6 +97,8 @@ export type Gift = {
   pledgeId?: string;
   /** An offering line with no donor (the plate, a special offering): counted in totals, never listed as a donor. */
   anonymous?: boolean;
+  /** Gifts imported from a giving CSV (ChurchTrac): a stable key from the row, so a re-import skips it. */
+  importKey?: string;
   createdAt: number;
   createdBy: string;
 };

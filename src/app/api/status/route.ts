@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { isResponse, requireLeader } from "@/lib/auth/require";
 import { config, hasAnthropicKey } from "@/lib/config";
-import { churchData } from "@/lib/chms";
+import { churchSource } from "@/lib/chms";
+import { messagingStatus } from "@/lib/messages/config";
 
 export const runtime = "nodejs";
 
@@ -14,8 +15,8 @@ export async function GET() {
     claude: hasAnthropicKey(),
     model: config.model,
     storage,
-    churchData: churchData().source,
+    churchData: await churchSource(),
     churchName: config.churchName,
-    messaging: "not connected",
+    messaging: { sms: messagingStatus().sms.configured, email: messagingStatus().email.configured },
   });
 }

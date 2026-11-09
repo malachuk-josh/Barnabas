@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { AppShell, requirePageLeader } from "@/components/AppShell";
 import { SettingsForm } from "@/components/SettingsForm";
+import { ChurchDataSettings } from "@/components/data/ChurchDataSettings";
+import { can } from "@/lib/auth/roles";
 import { accessFor } from "@/lib/team";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,11 @@ export default async function SettingsPage() {
       <Suspense>
         <SettingsForm initial={profile} access={access} leaderId={leader.leaderId} />
       </Suspense>
+      {can(access, "team.manage") && (
+        <div style={{ marginTop: 24 }}>
+          <ChurchDataSettings canImportGiving={can(access, "finance.edit") && can(access, "giving.donors")} />
+        </div>
+      )}
     </AppShell>
   );
 }

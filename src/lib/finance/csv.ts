@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { parseMoney } from "./money";
 import { txnTotal } from "./ledger";
 import type { Account, Chart, Transaction } from "./types";
@@ -146,5 +147,33 @@ export function findDuplicate(txns: Transaction[], bankAccountId: string, date: 
     txns.find(
       (t) => t.bankAccountId === bankAccountId && t.date === date && (t.direction === "in" ? 1 : -1) * txnTotal(t) === signedAmount,
     ) ?? null
+  );
+}
+
+const normText = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * Stable dedupe keys for bank rows. Same bank account, date, signed amount, description and reference make
+ * the same key; identical rows inside one file are told apart by their order (#1, #2), so two real $20
+ * deposits on one day both import once, and importing the file again adds neither. This replaces trusting the
+ * date-and-amount guess alone, which both skipped real transactions and let a re-import through when the
+ * leader unticked "skip duplicates".
+ */
+export function bankImportKeys(bankAccountId: string, rows: { date: string; amount: number; description: string; reference?: string }[]): string[] {
+  const seen = new Map<string, number>();
+  return rows.map((r) => {
+    const base = [bankAccountId, r.date, r.amount, normText(r.description), (r.reference ?? "").trim()].join("|");
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return `bank:${createHash("sha256").update(`${base}|#${n}`).digest("hex").slice(0, 32)}`;
+  });
+}
+
+/** A deposit in the bank file that is probably a Sunday offering already entered in Giving (same amount, within 3 days). */
+export function findGiftDeposit(txns: Transaction[], bankAccountId: string, date: string, signedAmount: number): Transaction | null {
+  if (signedAmount <= 0) return null;
+  const t0 = Date.parse(`${date}T00:00:00Z`);
+  return (
+    txns.find((t) => t.source === "giving" && t.bankAccountId === bankAccountId && t.direction === "in" && txnTotal(t) === signedAmount && Math.abs(Date.parse(`${t.date}T00:00:00Z`) - t0) <= 3 * 86_400_000) ?? null
   );
 }

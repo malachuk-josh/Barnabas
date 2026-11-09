@@ -692,7 +692,7 @@ function ReconcilePanel({ canEdit, reconcile, today }: Props) {
   );
 }
 
-type PreviewRow = { row: number; date: string | null; description: string; amount: number | null; reference?: string; problem?: string; accountId: string; fundId: string; duplicate: boolean; keep: boolean };
+type PreviewRow = { row: number; date: string | null; description: string; amount: number | null; reference?: string; problem?: string; accountId: string; fundId: string; duplicate: boolean; alreadyImported?: boolean; giftDeposit?: boolean; importKey?: string; keep: boolean };
 
 function ImportPanel({ accounts, funds, banks }: Props) {
   const router = useRouter();
@@ -710,7 +710,7 @@ function ImportPanel({ accounts, funds, banks }: Props) {
     setDone(null);
     try {
       const json = await post("/api/finance/import", { action: "preview", csv, bankAccountId });
-      setRows((json.rows as Omit<PreviewRow, "keep">[]).map((r) => ({ ...r, keep: !r.problem && !r.duplicate })));
+      setRows((json.rows as Omit<PreviewRow, "keep">[]).map((r) => ({ ...r, keep: !r.problem && !r.duplicate && !r.alreadyImported })));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't read that file.");
     } finally {
@@ -728,9 +728,9 @@ function ImportPanel({ accounts, funds, banks }: Props) {
         action: "commit",
         bankAccountId,
         skipDuplicates: false,
-        rows: kept.map((r) => ({ date: r.date, description: r.description, amount: r.amount, reference: r.reference, accountId: r.accountId, fundId: r.fundId })),
+        rows: kept.map((r) => ({ date: r.date, description: r.description, amount: r.amount, reference: r.reference, accountId: r.accountId, fundId: r.fundId, importKey: r.importKey })),
       });
-      setDone(`Imported ${json.added} transaction${json.added === 1 ? "" : "s"}. They're marked cleared, since the bank has them.`);
+      setDone(`Imported ${json.added} transaction${json.added === 1 ? "" : "s"}. They're marked cleared, since the bank has them.${json.alreadyImported ? ` ${json.alreadyImported} ${json.alreadyImported === 1 ? "was" : "were"} already imported from an earlier file and skipped.` : ""}`);
       setRows(null);
       setCsv("");
       router.refresh();
@@ -813,13 +813,19 @@ function ImportPanel({ accounts, funds, banks }: Props) {
                 {rows.map((r, i) => (
                   <tr key={r.row} className={r.keep ? "" : "muted-row"}>
                     <td>
-                      <input type="checkbox" aria-label={`Import row ${r.row}`} checked={r.keep} disabled={Boolean(r.problem)} onChange={(e) => setRow(i, { keep: e.target.checked })} />
+                      <input type="checkbox" aria-label={`Import row ${r.row}`} checked={r.keep} disabled={Boolean(r.problem) || Boolean(r.alreadyImported)} onChange={(e) => setRow(i, { keep: e.target.checked })} />
                     </td>
                     <td className="nowrap">{r.date ?? "?"}</td>
                     <td className="wide">
                       {r.description || <span className="muted">(none)</span>}
                       {r.problem && <div className="small error">Row {r.row}: {r.problem}</div>}
-                      {r.duplicate && <div className="small muted">Looks like it&apos;s already in the books</div>}
+                      {r.alreadyImported ? (
+                        <div className="small muted">Already imported from an earlier file; it won&apos;t be added again</div>
+                      ) : r.giftDeposit ? (
+                        <div className="small muted">Looks like an offering deposit already entered in Giving</div>
+                      ) : (
+                        r.duplicate && <div className="small muted">Looks like it&apos;s already in the books</div>
+                      )}
                     </td>
                     <td className="num">{r.amount === null ? "?" : dollars(r.amount)}</td>
                     <td>
