@@ -48,22 +48,26 @@ export function PeopleFrame({
   intro,
   actions,
   tabs = true,
+  lead,
   children,
 }: {
   profile: Profile;
   edit: boolean;
-  eyebrow?: string;
+  eyebrow?: React.ReactNode;
   title: string;
   intro?: React.ReactNode;
   actions?: React.ReactNode;
   /** Section tabs under the title (a person's own page leaves them off). */
   tabs?: boolean;
+  /** Shown beside the title (a person's avatar). */
+  lead?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <AppShell profile={profile}>
       <div className="page-head">
-        <div>
+        {lead}
+        <div className={lead ? "page-head-main" : undefined}>
           <span className="eyebrow">{eyebrow}</span>
           <h1>{title}</h1>
           {intro && <p className="muted">{intro}</p>}

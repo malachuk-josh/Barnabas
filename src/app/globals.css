@@ -1113,3 +1113,47 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .theme-switch svg { width: 18px; height: 18px; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .brand-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* A person's page */
+.page-head-main { display: grid; gap: 6px; flex: 1 1 280px; min-width: 0; }
+.page-head:has(> .person-avatar) { align-items: center; }
+.person-avatar {
+  width: 72px; height: 72px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--sea-glass); color: var(--night); font-family: var(--font-display); font-size: 1.6rem;
+}
+.page-head .eyebrow a { color: inherit; text-decoration: none; }
+.page-head .eyebrow a:hover { text-decoration: underline; }
+.person-meta { display: inline-flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.person { display: grid; gap: 18px; }
+.person-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.person-actions .btn:where(:not(.word-root *)) { min-height: 44px; }
+.person-actions .btn svg:where(:not(.word-root *)) { width: 18px; height: 18px; }
+.fact-strip { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); }
+.fact-strip > div { padding: 14px 18px; border-left: 1px solid var(--line-soft); min-width: 0; }
+.fact-strip > div:first-child { border-left: 0; }
+.fact-strip dt { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.fact-strip dd { margin: 2px 0 0; font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .fact-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fact-strip > div:nth-child(3) { border-left: 0; }
+  .fact-strip > div:nth-child(n + 3) { border-top: 1px solid var(--line-soft); }
+  .person-avatar { width: 52px; height: 52px; font-size: 1.15rem; }
+  /* Avatar beside the name; Edit and Archive drop to their own line */
+  .page-head:has(> .person-avatar) { column-gap: 14px; }
+  .page-head:has(> .person-avatar) .page-head-main { flex: 1 1 0; }
+  .page-head:has(> .person-avatar) > .page-actions { flex-basis: 100%; }
+}
+.person-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+/* One column: what matters most first (attendance, serving, household), the long cards last */
+@media (max-width: 960px) {
+  .person-grid { grid-template-columns: minmax(0, 1fr); }
+  .person-col { display: contents; }
+  .pc-att { order: 1; } .pc-serve { order: 2; } .pc-hh { order: 3; } .pc-groups { order: 4; } .pc-details { order: 5; } .pc-notes { order: 6; }
+}
+.week-dots { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; max-width: 420px; }
+.week-dots li { aspect-ratio: 1; max-width: 28px; border-radius: 50%; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+.week-dots li.here { background: var(--accent); box-shadow: none; }
+.mini-people, .mini-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.mini-people li { display: flex; align-items: center; gap: 12px; }
+.mini-list li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.serve-watch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
