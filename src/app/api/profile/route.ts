@@ -30,6 +30,7 @@ const Body = z.object({
     handsFree: z.boolean(),
     readTyped: z.boolean().optional(),
     pauseMs: z.number().int().min(200).max(2000).optional(),
+    fillers: z.boolean().optional(),
   }),
   pronunciations: z.array(z.object({ word: z.string().trim().min(1).max(40), sayAs: z.string().trim().min(1).max(60) })).max(50),
   about: z.string().max(1500),
@@ -81,6 +82,7 @@ export async function PUT(request: Request) {
       ...parsed.data.voice,
       readTyped: parsed.data.voice.readTyped ?? current.voice.readTyped,
       pauseMs: parsed.data.voice.pauseMs ?? current.voice.pauseMs,
+      fillers: parsed.data.voice.fillers ?? current.voice.fillers,
     },
   };
   await saveProfile(leader, next);

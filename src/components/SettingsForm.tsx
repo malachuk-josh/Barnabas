@@ -346,6 +346,10 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
               Also read replies aloud when I type
             </label>
             <label className="check">
+              <input id="fillers" type="checkbox" checked={p.voice.fillers !== false} disabled={!p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, fillers: e.target.checked } })} />
+              Short sounds while Barnabas thinks (&ldquo;Mm.&rdquo; &ldquo;Let me think.&rdquo;) so there&apos;s no silence before he answers
+            </label>
+            <label className="check">
               <input
                 id="handsFree"
                 type="checkbox"

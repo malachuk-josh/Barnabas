@@ -32,6 +32,8 @@ export type Profile = {
     readTyped: boolean;
     /** How long a pause (ms) ends the leader's turn when talking: "Wait before answering". */
     pauseMs: number;
+    /** A short "Mm." or "Let me think." while the spoken reply is being written. */
+    fillers: boolean;
   };
   /** How Barnabas should say names it gets wrong, e.g. Nguyen -> "Win". */
   pronunciations: { word: string; sayAs: string }[];
@@ -65,7 +67,7 @@ export function defaultProfile(leader: Leader): Profile {
     timezone: DEFAULT_TIMEZONE,
     replyLanguage: "en",
     bibleTranslation: DEFAULT_BIBLE_TRANSLATION,
-    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true, readTyped: false, pauseMs: 600 },
+    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true, readTyped: false, pauseMs: 600, fillers: true },
     pronunciations: [],
     about: "",
     notifications: defaultNotifications(),

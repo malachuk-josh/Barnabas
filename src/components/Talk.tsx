@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEarcon, unlockEarcons } from "@/lib/voice/earcons";
 import { SentenceChunker } from "@/lib/speech/chunker";
+import { FILLER_DELAY_MS, FILLERS } from "@/lib/voice/fillers";
 import { ASK_EVENT, TALK_EVENT, KNOW_EVENT, KNOW_INVITE_TEXT } from "./NavLinks";
 import {
   BrowserListener,
@@ -18,7 +19,7 @@ type Turn = { id: number; role: "leader" | "barnabas"; text: string; unheard: st
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type Lang = "en-US" | "es-US" | "ko-KR";
 
-type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean; readTyped?: boolean; pauseMs?: number };
+type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean; readTyped?: boolean; pauseMs?: number; fillers?: boolean };
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: "en-US", label: "English" },
@@ -85,6 +86,7 @@ export function Talk({
   const [offRecord, setOffRecord] = useState(false);
   const [speak, setSpeak] = useState(voice.speakReplies);
   const [readTyped, setReadTyped] = useState(Boolean(voice.readTyped));
+  const lastFiller = useRef(-1);
   const [lang, setLang] = useState<Lang>(voice.language);
   const [handsFree, setHandsFree] = useState(voice.handsFree && cloudListening);
   const [voiceSupported, setVoiceSupported] = useState(true);
@@ -132,6 +134,10 @@ export function Talk({
       onIdle: () => settle(),
     };
     speaker.current = cloudVoice ? new CloudSpeaker({ ...opts, onError: () => setError("Barnabas's voice didn't load for one sentence. The text is on screen.") }) : new BrowserSpeaker(opts);
+    // Have the filler sounds ready before the first reply, so the first one plays instantly.
+    if (cloudVoice && voice.fillers !== false && speaker.current instanceof CloudSpeaker) {
+      speaker.current.warmFillers((FILLERS[lang.slice(0, 2) as keyof typeof FILLERS] ?? FILLERS.en).length);
+    }
   }, [cloudVoice, lang, voice.rate, pronunciations, settle]);
 
   // Whether the "microphone on" chime has played and the "off" one hasn't yet.
@@ -246,6 +252,19 @@ export function Talk({
       if (voiced && !ignoreReply.current) speaker.current?.speak(s);
     };
     streamOpen.current = true;
+    // A short "Mm." or "Let me think." in Barnabas's voice if the first words aren't back almost at once.
+    let gotText = false;
+    const fillerTimer =
+      voiced && voice.fillers !== false && speaker.current?.filler
+        ? setTimeout(() => {
+            if (gotText || ignoreReply.current) return;
+            const list = FILLERS[lang.slice(0, 2) as keyof typeof FILLERS] ?? FILLERS.en;
+            let i = Math.floor(Math.random() * list.length);
+            if (i === lastFiller.current) i = (i + 1) % list.length;
+            lastFiller.current = i;
+            speaker.current?.filler?.(i, list[i]!);
+          }, FILLER_DELAY_MS)
+        : null;
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -283,6 +302,7 @@ export function Talk({
           if (event.type === "timing" && timing.current) {
             timing.current.server = `${event.model.replace(/^claude-/, "")}, server setup ${event.setupMs}ms, model ${event.firstTextMs ?? "-"}ms`;
           }
+          if (event.type === "text") gotText = true;
           if (event.type === "text") {
             if (ignoreReply.current) update((t) => ({ ...t, unheard: t.unheard + event.text }));
             else {
@@ -315,6 +335,7 @@ export function Talk({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Barnabas couldn't answer just now.");
     } finally {
+      if (fillerTimer) clearTimeout(fillerTimer);
       streamOpen.current = false;
       settle();
       touch();
