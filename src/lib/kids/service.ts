@@ -6,7 +6,7 @@ import { newId } from "../data/ids";
 import { friendlyDate } from "../dates";
 import { GATHERING_KEYS, gathering, ISO_RE, meetsOn, type GatheringKey } from "../ops/gatherings";
 import { accessFor } from "../team";
-import { checkoutRefused } from "../notifications/notify";
+import { checkoutRefused, childCheckedIn, childCheckedOut } from "../notifications/notify";
 import { loadKids, updateKids } from "./store";
 import type { CheckIn, Child, Household, KidsBook, KidsLogEntry } from "./types";
 
@@ -149,6 +149,9 @@ export const staffKey = (date: string, g: string, roomId: string) => `${date}|${
 export async function checkInChildren(actor: KidsActor, input: z.input<typeof CheckInInput>) {
   needStation(actor);
   const v = CheckInInput.parse(input);
+  // For the parents' notifications: each child's first name and room, and the family.
+  const notices: { firstName: string; room: string }[] = [];
+  let family: Household | undefined;
   if (!meetsOn(v.gathering, v.date)) fail(`The ${gathering(v.gathering)?.label} isn't on ${friendlyDate(v.date)}.`);
   const result = await updateKids(actor.leader.churchId, ["checkins", "log"], (book) => {
     const h = household(book, v.householdId);
@@ -166,11 +169,14 @@ export async function checkInChildren(actor: KidsActor, input: z.input<typeof Ch
       const c: CheckIn = { id: newId("ci"), date: v.date, gathering: v.gathering, roomId: room.id, childId: child.id, householdId: h.id, pickupCode: code, checkedInAt: Date.now(), checkedInBy: actor.leader.name };
       book.checkins.push(c);
       added.push(c);
+      notices.push({ firstName: child.firstName, room: room.name });
       entry(book, actor, "checkin", `${child.id} -> ${room.id} ${v.date} ${v.gathering}`);
     }
+    family = h;
     return { checkins: added, code, household: h };
   });
   await log(actor.leader, "checkin", `${v.householdId} ${result.checkins.length} ${v.date} ${v.gathering}`);
+  if (family) childCheckedIn(actor.leader.churchId, family, notices);
   return result;
 }
 
@@ -180,6 +186,8 @@ export const CheckOutInput = z.object({ checkinIds: z.array(Id).min(1).max(10), 
 export async function checkOutChildren(actor: KidsActor, input: z.input<typeof CheckOutInput>) {
   needStation(actor);
   const v = CheckOutInput.parse(input);
+  const notices: { firstName: string; room: string }[] = [];
+  let family: Household | undefined;
   const outcome = await updateKids(actor.leader.churchId, ["checkins", "log"], (book) => {
     const rows = v.checkinIds.map((id) => book.checkins.find((c) => c.id === id) ?? fail("That check-in isn't on file."));
     if (rows.some((c) => c.checkedOutAt)) fail("Already checked out.");
@@ -202,7 +210,10 @@ export async function checkOutChildren(actor: KidsActor, input: z.input<typeof C
       c.checkedOutBy = actor.leader.name;
       c.pickedUpBy = v.pickedUpBy || undefined;
       entry(book, actor, "checkout", `${c.childId} from ${c.roomId}${v.pickedUpBy ? ` by ${v.pickedUpBy}` : ""}`);
+      const child = h.children.find((x) => x.id === c.childId);
+      if (child) notices.push({ firstName: child.firstName, room: book.rooms.find((r) => r.id === c.roomId)?.name ?? "" });
     }
+    family = h;
     return { refused: false as const, checkins: rows };
   });
   if (outcome.refused) {
@@ -211,6 +222,7 @@ export async function checkOutChildren(actor: KidsActor, input: z.input<typeof C
     fail("unauthorized" in outcome ? "That person isn't on this family's pickup list. Find a parent or guardian, or a pastor." : "That code doesn't match the parent's tag. Ask to see the tag again, or find a staff member.");
   }
   await log(actor.leader, "checkout", v.checkinIds.join(","));
+  if (family) childCheckedOut(actor.leader.churchId, family, notices, v.pickedUpBy);
   return outcome.checkins!;
 }
 
