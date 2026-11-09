@@ -77,6 +77,8 @@ Without these keys, Barnabas uses the device's built-in voice and the browser's 
 
 Leaders can pick or preview a voice, turn on hands-free mode, and teach Barnabas pronunciations in **Settings → Barnabas and voice**. The API keys stay on the server: speech is proxied through `/api/voice/tts`, and the browser listens with a 60-second Deepgram token from `/api/voice/stt-token`.
 
+**Voice test (admins only, hidden).** `/voice-test` plays the same words three ways so you can compare by ear on a phone: A is today's sentence-by-sentence path; B and C use one ElevenLabs Text to Dialogue WebSocket connection (`eleven_v4_turbo`, the only live connection that accepts v4 Turbo), sent all at once or fed a few words at a time like Claude's stream. Each shows time to first audio and total time. That connection accepts only `stability` from the voice settings, so B and C don't carry today's style, similarity and speaker boost. Anyone not in `BARNABAS_ADMIN_EMAILS` gets a 404. To try it locally without ElevenLabs, run `node scripts/fake-elevenlabs-ws.mjs 8765` and set `ELEVENLABS_WS_URL=ws://127.0.0.1:8765`.
+
 ## Calendar sync setup
 
 Leaders connect calendars in **Settings → Calendars**. Three options:

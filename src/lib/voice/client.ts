@@ -23,7 +23,7 @@ export interface Speaker {
 }
 
 /** A tenth of a second of silence as a WAV data URI, played on the first tap to unlock audio on phones. */
-function silentWav(): string {
+export function silentWav(): string {
   const samples = 4410;
   const buf = new ArrayBuffer(44 + samples * 2);
   const v = new DataView(buf);

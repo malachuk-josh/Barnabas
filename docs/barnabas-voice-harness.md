@@ -269,3 +269,27 @@ The first build runs entirely on Vercel, so the voice layer differs from section
 - **Cache warming** happens when the conversation is created, the moment the leader taps the mic, using `after()` so it doesn't delay the response.
 - **Memory consolidation** runs in `after()` when the conversation ends, with Claude's memory tool against the leader's Redis namespace.
 - **Storage:** Upstash Redis over REST (Vercel Marketplace), node-redis for `REDIS_URL`, or in-memory for local development.
+
+## 13. Streaming text-to-speech: what ElevenLabs allows (November 2026)
+
+The goal is to feed Claude's reply into ElevenLabs as it streams, so audio starts with the first words instead of one MP3 per finished sentence. What the docs say:
+
+- **`eleven_v4_turbo` isn't accepted on the TTS WebSocket** (`/v1/text-to-speech/{voice_id}/stream-input`, or its multi-context variant). That route takes Flash, Multilingual v2 and similar models only. ([TTS vs TTD WebSockets](https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/tts-vs-ttd-websockets))
+- **v4 Turbo's live connection is the Text to Dialogue WebSocket**, `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input?model_id=eleven_v4_turbo&output_format=…`. ([changelog 2026-09-28](https://elevenlabs.io/docs/changelog/2026/9/28), [API reference](https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket))
+  - The first message registers one voice (`voices: [id]`), its `voice_settings` and the key (`xi_api_key`).
+  - Text is sent as `inputs: [{ text, voice_id }]`, with `flush`, `keep_alive` and `close_socket`.
+  - Replies carry base64 `audio` and optional `alignment` (`chars`, `char_start_times_ms`, `char_durations_ms`), then `is_final`. Errors come back as `{ error, message, code }`.
+- **Its voice settings are only `stability` and `clone_strength`.** Today's HTTP path also sends style 0.3, similarity 0.8 and speaker boost, and these can't be sent on this connection. Whether that changes how Barnabas sounds is the question the voice test answers.
+- **No `chunk_length_schedule` or `auto_mode`.** The server buffers about 40 characters and 8 words before generating, and `flush` forces it.
+- **The connection times out after 20 seconds** without a client message, unless `keep_alive` is sent. A long tool call would need it.
+- **Concurrency:** each open connection holds a dialogue session from its own pool, separate from the plan's 3-request TTS limit.
+- **Key permissions:** the API key permission list has no separate dialogue permission (`text_to_speech` is the closest). Confirm against the real key.
+
+**Voice test.** `/voice-test` is admin-only, returns 404 for anyone else, and isn't in the nav. It plays one sample three ways:
+- **A:** today's `CloudSpeaker` path.
+- **B:** the dialogue socket, whole text, then flush.
+- **C:** the dialogue socket, fed 2–4 words every 60 ms, with a flush only at the end.
+
+The socket client is `src/lib/voice/dialogue.ts`, behind `POST /api/voice/test`. It applies the same normalization and pronunciations as today and returns the MP3 with the server's connect, first-chunk and total times in headers. `ELEVENLABS_WS_URL` points it at `scripts/fake-elevenlabs-ws.mjs` for tests and local runs.
+
+If B and C sound as warm as A, the next step is the real streaming path: one socket per turn, PCM relayed as NDJSON `audio` events, and Web Audio playback.
