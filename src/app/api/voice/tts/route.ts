@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isResponse, requireLeader } from "@/lib/auth/require";
 import { getProfile } from "@/lib/profile";
-import { elevenLabs, supportsLanguageCode, VOICE_ID } from "@/lib/voice/server";
+import { deliverySettings, elevenLabs, supportsLanguageCode, VOICE_ID } from "@/lib/voice/server";
 
 export const runtime = "nodejs";
 
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       text: parsed.data.text,
       model_id: model,
+      voice_settings: deliverySettings(),
       ...(parsed.data.lang && supportsLanguageCode(model) ? { language_code: parsed.data.lang } : {}),
     }),
     signal: AbortSignal.timeout(20000),

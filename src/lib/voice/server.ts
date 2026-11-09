@@ -19,3 +19,21 @@ export function supportsLanguageCode(model: string) {
 }
 
 export const VOICE_ID = /^[A-Za-z0-9]{8,40}$/;
+
+/**
+ * Delivery settings for a warm, upbeat voice. Lower stability lets the voice vary its intonation
+ * (more expressive); style adds a little of the speaker's natural warmth. Override with
+ * ELEVENLABS_STABILITY / ELEVENLABS_STYLE (0 to 1) if a particular voice sounds off.
+ */
+export function deliverySettings() {
+  const num = (v: string | undefined, d: number) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 && n <= 1 ? n : d;
+  };
+  return {
+    stability: num(process.env.ELEVENLABS_STABILITY, 0.42),
+    similarity_boost: 0.8,
+    style: num(process.env.ELEVENLABS_STYLE, 0.3),
+    use_speaker_boost: true,
+  };
+}
