@@ -39,7 +39,9 @@ export function TeamSettings({ myLeaderId }: { myLeaderId: string }) {
       <ul className="list small" style={{ gap: 4 }}>
         {ROLES.map((r) => (
           <li key={r}>
-            <strong>{ROLE_LABELS[r]}</strong>: {ROLE_DESCRIPTIONS[r]}
+            <span>
+              <strong>{ROLE_LABELS[r]}</strong>: {ROLE_DESCRIPTIONS[r]}
+            </span>
           </li>
         ))}
       </ul>

@@ -15,7 +15,9 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Messages | Drafts with per-recipient translation (English, Spanish, Korean), review screen, confirmation gate checked in code | **Delivery isn't connected**: approved messages are queued in an outbox, not sent |
 | Church data | A demo congregation (18 people, 6 teams) so everything works before a ChMS is connected | Planning Center adapter is the next step |
 | Calendar | Month and agenda views, create, edit and delete; Barnabas adds and changes events when asked and must ask before deleting; Google and Outlook events and church events shown alongside | Google and Outlook two-way sync need a one-time app registration (below); Apple Calendar and any other app can subscribe to a private link |
-| Settings | Profile (name, what Barnabas calls you, role, ministries, about you), time zone, reply language, voice language and speed, calendar connections, delete all data | Barnabas reads the profile at the start of each conversation |
+| Finance | Overview, budget and plans, fund accounting (chart of accounts, funds, split transactions, bank reconciliation, CSV import), giving (batches, recurring givers, donor history, year-end statements), missions (partners, pledges, faith-promise campaigns) and printable reports; Barnabas answers budget, giving and missions questions and records gifts and expenses after a yes | See [Finance](#finance) below. The demo church starts with labeled demo books |
+| Roles | Pastor, treasurer, deacon, staff and leader, set by an admin in **Settings → Team**; checked in code on every finance request and tool call | Admins are bootstrapped with `BARNABAS_ADMIN_EMAILS` |
+| Settings | Profile (name, what Barnabas calls you, role, ministries, about you), time zone, reply language, voice language and speed, calendar connections, team roles (admins), delete all data | Barnabas reads the profile at the start of each conversation |
 
 Design and research: [`docs/barnabas-voice-harness.md`](docs/barnabas-voice-harness.md), [`reports/`](reports/).
 
@@ -54,6 +56,7 @@ npm run build
    - `ANTHROPIC_API_KEY`: your Anthropic API key
    - `SESSION_SECRET`: a random string of at least 32 characters (for example from `openssl rand -base64 48`)
    - `BARNABAS_ACCESS_CODE`: the code your leaders will enter to sign in
+   - `BARNABAS_ADMIN_EMAILS`: comma-separated emails of the people who manage roles (for example the senior pastor). They start as pastor
    - Optional: `BARNABAS_CHURCH_NAME`, `BARNABAS_MODEL`, `BARNABAS_EFFORT`, `BARNABAS_ALLOW_SENSITIVE_MEMORY` (see `.env.example`)
 4. Redeploy. The app refuses to start sign-in without `SESSION_SECRET` and `BARNABAS_ACCESS_CODE`, and refuses to run without Redis in production, so a missing setting fails closed instead of exposing data.
 
@@ -89,12 +92,45 @@ Leaders connect calendars in **Settings → Calendars**. Three options:
 
 With two-way sync, the leader's Google or Outlook events appear (read-only) on the Barnabas calendar and in Barnabas's planning, and Barnabas's events are copied into Google or Outlook. Sign-in tokens are encrypted at rest with a key derived from `SESSION_SECRET`. Private notes never leave Barnabas.
 
+## Roles and permissions
+
+Every leader has a role, kept on their leader record (`leader:{church}:{leaderId}`) and read fresh on every request, so a change applies right away. New sign-ins start as **leader**. People listed in `BARNABAS_ADMIN_EMAILS` are admins: they start as **pastor** and can set anyone's role in **Settings → Team**, which lists everyone who has signed in.
+
+| Permission | Pastor | Treasurer | Deacon | Staff | Leader |
+|---|---|---|---|---|---|
+| See finance summaries, budgets, funds, missions and reports (`finance.view`) | Yes | Yes | Yes | No | No |
+| Change budgets, transactions, gifts and missions records; import and reconcile (`finance.edit`) | Yes | Yes | No | No | No |
+| See individual giving: donor names, gifts, pledges, statements (`giving.donors`) | Yes | Yes | No | No | No |
+| Set roles (`team.manage`) | Admins only (`BARNABAS_ADMIN_EMAILS`), whatever their role |
+
+The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's finance tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`.
+
+## Finance
+
+**Finance** (after Calendar) has six views:
+
+- **Overview**: year-to-date income vs expenses, the General fund balance and each restricted fund, giving this month vs the same days last year, budget health by ministry (on track, watch, over), and missions giving vs pledged. Each number says where it comes from.
+- **Budget**: an annual budget per fiscal year (the calendar year) by account, entered monthly or annually, with actual, budget to date, variance, percent spent and health. Lines marked seasonal (insurance, a summer trip) are judged against the whole year. Plan notes, and copy last year's budget into a new year.
+- **Funds and ledger**: the chart of accounts (assets, liabilities, income, expenses), funds (General unrestricted; Missions, Building and Benevolence restricted), transactions split into lines (account, fund, amount, memo), bank reconciliation against a statement balance, and CSV import from the bank with suggested accounts and duplicate checks. Payroll appears as expense accounts only: paychecks run through a payroll provider such as Gusto, and Barnabas doesn't calculate pay.
+- **Giving**: gift records (a directory person or a new name; cash, check, online or ACH), Sunday batch entry posted as one deposit with a line per fund, recurring givers, donor history, printable year-end contribution statements, and a monthly trend chart. Online giving through Stripe is a later step (shown as "coming soon").
+- **Missions**: partners (missionaries and organizations, field, type, support level, monthly commitment, pledge dates, prayer updates), pledges toward a faith-promise campaign, and given vs pledged. It ties to the restricted Missions fund.
+- **Reports**: a printable monthly finance report for the deacons or board (income and expense by category vs budget, fund balances, missions) and a giving report.
+
+**Confidentiality.** Individual giving is visible to the pastor and treasurer only. Deacons see totals and trends, never names, in the app, the API and Barnabas. Barnabas shares one donor's totals only when the pastor or treasurer asks, and never their full ledger. Every finance write is in the audit log. Barnabas doesn't give tax or legal advice; it points to the church's accountant.
+
+**Barnabas tools**: `finance_overview`, `budget_status`, `missions_status`, `giving_summary` (read-only), and `record_gift` and `record_expense`, which propose first and run only after the leader says yes on a later turn.
+
+**Demo data.** The demo church gets a labeled demo dataset the first time Finance is opened, only while it has no finance data: a budget for a church of about 175, twelve months of transactions and gifts from the demo congregation plus fictional households, and fictional missions partners. A pastor or treasurer can clear it from the banner and start with empty books.
+
+**Storage**: `fin:{church}:*` keys in Redis (chart, transactions and gifts by year, budgets by year, reconciliations, recurring givers, missions). Amounts are whole cents. Code: `src/lib/finance/`.
+
 ## Before real congregants' data goes in
 
 - **Sign-in** is a shared church access code plus email, enough for a pilot. Move to per-person accounts (for example Clerk or Auth.js with email links) before a wider rollout.
 - **Data retention**: review Anthropic's API data retention settings for your organization; memory itself lives only in your Redis.
 - **Church policy**: set `BARNABAS_ALLOW_SENSITIVE_MEMORY` to match your written policy (default `false`).
 - **Messaging** is not connected; Barnabas says so when it queues something.
+- **Finance**: clear the demo books, set roles in Settings → Team, and have your accountant review the chart of accounts and opening balances. Fund transfers between funds, multiple fiscal-year start months and Stripe are not built yet.
 
 ## Next steps
 

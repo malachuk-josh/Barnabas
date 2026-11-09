@@ -36,7 +36,7 @@ function StatementSheet({ s, funds, issued, demo }: { s: Statement; funds: Fund[
           Thank you for your faithful generosity to {config.churchName} during {s.year}. Your gifts carry the gospel to our neighbors and the nations, care for people in need, and keep this church family serving together.
         </p>
         <p>
-          This statement lists the contributions we received from you between January 1 and December 31, {s.year}, totaling <strong>{dollars(s.total)}</strong>.
+          This statement lists the contributions we received from you between January 1 and {issued < `${s.year}-12-31` ? `${longDate(issued)} (the year isn't over yet)` : `December 31, ${s.year}`}, totaling <strong>{dollars(s.total)}</strong>.
         </p>
         <p>
           <strong>No goods or services were provided in exchange for these contributions, other than intangible religious benefits.</strong> Please keep this statement for your tax records. If anything here doesn&apos;t match your records,
