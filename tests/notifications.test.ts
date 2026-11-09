@@ -34,7 +34,8 @@ import { leaderMemberId } from "@/lib/care/team";
 import { listAudit } from "@/lib/data/records";
 import { addDays, lastSunday, today } from "@/lib/dates";
 import { briefingPayload, leadersAtHour, localTime, runMorningBriefing } from "@/lib/notifications/briefing";
-import { firstName, needAssignedPayload } from "@/lib/notifications/notify";
+import { checkedInPayload, checkedOutPayload, firstName, needAssignedPayload } from "@/lib/notifications/notify";
+import { checkInChildren, checkOutChildren, kidsActor, saveHousehold } from "@/lib/kids/service";
 import { notifyLeaders } from "@/lib/notifications/send";
 import { listSubscriptions, MAX_DEVICES } from "@/lib/notifications/subscriptions";
 import { defaultNotifications, typesFor } from "@/lib/notifications/types";
@@ -292,8 +293,9 @@ describe("the kids check-in role", () => {
   beforeEach(() => setupTeam());
 
   it("gets only Messages, can manage its own devices, and gets nothing else", async () => {
-    expect(typesFor({ role: "checkin", admin: false })).toEqual(["messages"]);
-    expect(typesFor({ role: "leader", admin: false })).toEqual(["briefing", "messages", "shepherding", "serving"]);
+    expect(typesFor({ role: "checkin", admin: false })).toEqual(["messages", "childcare"]);
+    expect(typesFor({ role: "leader", admin: false })).toEqual(["briefing", "messages", "childcare", "shepherding", "serving"]);
+    expect(typesFor({ role: "leader", admin: false, level: "member" })).toEqual(["messages", "childcare"]);
     expect(typesFor({ role: "pastor", admin: false })).toContain("kids");
     expect(checkinMayUse("/api/push/subscription")).toBe(true);
     await subscribe(checkin);
@@ -380,3 +382,35 @@ describe("VAPID key pasting slips", () => {
     expect(vapidProblem(k.publicKey, k.privateKey, "office@example.org")).toMatch(/VAPID_SUBJECT/);
   });
 });
+
+/* ---------- Child care: parents hear when their children are checked in and out ---------- */
+
+describe("child care notifications to parents", () => {
+  beforeEach(() => setupTeam());
+
+  it("word the notification with first names and the room, never the pickup code", () => {
+    expect(checkedInPayload([{ firstName: "Emma", room: "Preschool" }]).body).toBe("Emma is checked in to Preschool.");
+    expect(checkedInPayload([{ firstName: "Emma", room: "Preschool" }, { firstName: "Leo", room: "Nursery" }]).body).toBe("Emma and Leo are checked in.");
+    expect(checkedOutPayload([{ firstName: "Emma" }], "Ruth Lopez").body).toBe("Emma was checked out to Ruth.");
+  });
+
+  it("go to the family's parents on Barnabas when a child is checked in and checked out", async () => {
+    const parent = await subscribe(member);
+    const other = await subscribe(member2);
+    const actor = await kidsActor(staff);
+    const h = await saveHousehold(actor, { name: "Lopez", guardians: [{ name: "Parent", email: member.email.toUpperCase() }], children: [{ firstName: "Emma", lastName: "Lopez" }] });
+    const date = lastSunday(today());
+    const { checkins, code } = await checkInChildren(actor, { date, gathering: "sun-0945", householdId: h.id, children: [{ childId: h.children[0].id, roomId: "preschool" }] });
+    await settle();
+    const got = sentTo(parent.endpoint.split("/").pop()!);
+    expect(got).toHaveLength(1);
+    expect(got[0]!.payload.body).toMatch(/^Emma is checked in to /);
+    expect(JSON.stringify(got[0]!.payload)).not.toContain(code);
+    expect(sentTo(other.endpoint.split("/").pop()!)).toHaveLength(0);
+
+    await checkOutChildren(actor, { checkinIds: checkins.map((c) => c.id), code });
+    await settle();
+    expect(sentTo(parent.endpoint.split("/").pop()!).map((s) => s.payload.body)).toContain("Emma was checked out.");
+  });
+});
+

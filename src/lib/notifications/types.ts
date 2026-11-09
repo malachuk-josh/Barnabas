@@ -7,12 +7,13 @@ import { can, isCheckinOnly, type Access } from "../auth/roles";
  * Privacy: notification text never carries health or confidential shepherding details, pickup codes or
  * giving amounts. Counts and first names at most; a confidential need has no name at all.
  */
-export const NOTIFICATION_TYPES = ["briefing", "messages", "shepherding", "serving", "events", "inbox", "kids"] as const;
+export const NOTIFICATION_TYPES = ["briefing", "messages", "childcare", "shepherding", "serving", "events", "inbox", "kids"] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const NOTIFICATION_LABELS: Record<NotificationType, { label: string; hint: string }> = {
   briefing: { label: "Morning briefing", hint: "About 7:00 AM your time, how many needs and follow-ups are waiting on you. Only on days something is." },
   messages: { label: "Messages", hint: "Someone sends you a message in Barnabas. Only their first name shows, never the words." },
+  childcare: { label: "Child care", hint: "Your children are checked in or picked up at church. Needs your email on your family's kids record." },
   shepherding: { label: "Shepherding", hint: "A need assigned to you, a new guest card for you, and new prayer requests from the website you can see." },
   serving: { label: "Serving", hint: "Someone asks you to cover a slot, or accepts your swap request." },
   events: { label: "Event registrations", hint: "New registrations for events you created, collapsed into one running count per event." },
@@ -27,7 +28,7 @@ export type NotificationSettings = {
 };
 
 export function defaultNotifications(): NotificationSettings {
-  return { enabled: true, types: { briefing: true, messages: true, shepherding: true, serving: true, events: true, inbox: true, kids: true } };
+  return { enabled: true, types: { briefing: true, messages: true, childcare: true, shepherding: true, serving: true, events: true, inbox: true, kids: true } };
 }
 
 /** Saved settings over the defaults, so a type added later starts on. */
@@ -46,7 +47,9 @@ export function mergeNotifications(saved: Partial<NotificationSettings> | undefi
 export function typesFor(access: Access | null | undefined): NotificationType[] {
   if (!access) return [];
   // Messages reach everyone, the check-in desk included.
-  if (isCheckinOnly(access)) return ["messages"];
+  if (isCheckinOnly(access)) return ["messages", "childcare"];
+  // Members: their messages and their own children.
+  if (access.level === "member" && !access.admin) return ["messages", "childcare"];
   return NOTIFICATION_TYPES.filter((t) => {
     if (t === "events") return can(access, "events.manage");
     if (t === "inbox") return can(access, "site.edit");

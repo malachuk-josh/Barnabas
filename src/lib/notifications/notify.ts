@@ -11,6 +11,8 @@ import { loadServe } from "../serve/store";
 import type { ServeBook, SwapRequest } from "../serve/types";
 import { accessFor, listLeaders, type LeaderRecord } from "../team";
 import { notifyLeaders } from "./send";
+import { parentLookup } from "../kids/parents";
+import type { Household } from "../kids/types";
 
 /**
  * The moments Barnabas notifies about, one function per moment, each called once from the service that
@@ -212,3 +214,33 @@ export function checkoutRefused(actor: { leader: Leader }) {
   );
 }
 
+
+/* ---------- Child care (to parents) ---------- */
+
+const names = (list: string[]) => (list.length <= 1 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+
+/** What a parent sees when their children are checked in. First names and rooms only; never the pickup code. */
+export function checkedInPayload(children: { firstName: string; room: string }[]) {
+  const rooms = [...new Set(children.map((c) => c.room).filter(Boolean))];
+  const who = names(children.map((c) => c.firstName));
+  const where = rooms.length === 1 ? ` to ${rooms[0]}` : "";
+  const verb = children.length === 1 ? "is" : "are";
+  return { title: "Checked in", body: `${who} ${verb} checked in${where}.`, url: "/kids", tag: `childcare-in-${children.map((c) => c.firstName).join("-")}` };
+}
+
+export function checkedOutPayload(children: { firstName: string }[], pickedUpBy?: string) {
+  const who = names(children.map((c) => c.firstName));
+  const verb = children.length === 1 ? "was" : "were";
+  return { title: "Picked up", body: `${who} ${verb} checked out${pickedUpBy ? ` to ${firstName(pickedUpBy)}` : ""}.`, url: "/kids", tag: `childcare-out-${children.map((c) => c.firstName).join("-")}` };
+}
+
+/** To the family's parents who are on Barnabas (matched by the guardian emails on the family record). */
+export function childCheckedIn(churchId: string, family: Pick<Household, "guardians">, children: { firstName: string; room: string }[]) {
+  if (!children.length) return;
+  later(async () => notifyLeaders(churchId, (await parentLookup(churchId))(family), "childcare", checkedInPayload(children)));
+}
+
+export function childCheckedOut(churchId: string, family: Pick<Household, "guardians">, children: { firstName: string }[], pickedUpBy?: string) {
+  if (!children.length) return;
+  later(async () => notifyLeaders(churchId, (await parentLookup(churchId))(family), "childcare", checkedOutPayload(children, pickedUpBy)));
+}
