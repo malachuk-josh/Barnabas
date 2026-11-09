@@ -1528,3 +1528,37 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .conv-main .status-tag { justify-self: start; }
 .conv-done { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
 .conv-error { background: var(--danger-bg); color: var(--danger); }
+
+/* ---------- Shepherding: Prayer, Guests, My care load ---------- */
+/* Prayer: each request a quiet card; the request itself reads first */
+.care-prayers { gap: 12px; }
+.care-prayer.prayer-card { gap: 10px; padding: 14px 16px; border: 0; border-radius: 14px; background: var(--surface-2); }
+.care-prayer.prayer-card:first-child { padding-top: 14px; }
+.prayer-head { display: flex; align-items: center; gap: 10px; }
+.prayer-head .ppl-avatar { background: var(--surface); }
+.prayer-who { display: grid; gap: 0; flex: 1; min-width: 0; }
+.prayer-text { font-family: var(--font-display); font-size: 1.12rem; line-height: 1.45; overflow-wrap: anywhere; }
+.prayer-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.prayer-card.is-answered { background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
+/* Guests: who and when at the top, the follow-up as a checklist */
+.care-guest.waiting:where(:not(.word-root *)) { border-left: 0; }
+.care-guest { border: 0; box-shadow: var(--shadow-card); }
+.guest-head { display: flex; align-items: flex-start; gap: 12px; }
+.guest-who { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.guest-who h3 { font-size: 1.1rem; }
+.care-tasks > li.guest-task { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; background: transparent; padding: 10px 0; border-radius: 0; border-top: 1px solid var(--line-soft); }
+.guest-tick { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--line); display: grid; place-items: center; color: var(--accent-fg); }
+.guest-tick svg { width: 14px; height: 14px; }
+.guest-task.done .guest-tick { background: var(--ok); box-shadow: none; }
+.guest-task.overdue .guest-tick { box-shadow: inset 0 0 0 2px var(--watch); }
+.guest-task.done .guest-task-text strong { text-decoration: line-through; color: var(--muted); }
+.guest-task-text { display: grid; gap: 1px; min-width: 0; }
+@media (max-width: 520px) { .care-tasks > li.guest-task { grid-template-columns: 24px minmax(0, 1fr); } .care-tasks > li.guest-task > .row { grid-column: 2; } }
+.guest-visit { padding-top: 10px; border-top: 1px solid var(--line-soft); }
+/* My care load: a calm banner by signal, the rules behind a link */
+.care-signal:where(:not(.word-root *)) { border-left: 0; background: color-mix(in srgb, var(--ok) 9%, var(--surface)); box-shadow: none; }
+.care-signal-full:where(:not(.word-root *)) { background: var(--watch-bg); }
+.care-signal-stretched:where(:not(.word-root *)) { background: var(--danger-bg); }
+.care-how > summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); width: fit-content; }
+.care-how[open] > summary { margin-bottom: 6px; }
+.care-tasks > li.guest-task.overdue, .care-tasks > li.guest-task.done { box-shadow: none; opacity: 1; }
