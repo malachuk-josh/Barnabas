@@ -2,9 +2,9 @@ import { z } from "zod";
 import { today } from "../dates";
 import { GATHERING_KEYS, GATHERINGS } from "../ops/gatherings";
 import { getProfile, DEFAULT_BIBLE_TRANSLATION } from "../profile";
-import { canSendToService, createEntry, getEntry, journalActor, JournalError, listEntries, sendToService, setShared, updateEntry, type JournalActor } from "../journal/service";
+import { canSendToService, createEntry, deleteEntry, getEntry, journalActor, JournalError, listEntries, sendToService, setShared, updateEntry, type JournalActor } from "../journal/service";
 import { readEntry } from "../journal/store";
-import { KIND_LABELS, SERMON_STATUSES, type DevotionalDay, type JournalEntry, type OutlinePoint, type Song } from "../journal/types";
+import { KIND_LABELS, LIMITS, SERMON_STATUSES, Tag, type DevotionalDay, type JournalEntry, type JournalSummary, type OutlinePoint, type Song } from "../journal/types";
 import { quoteLine, quoteVerse } from "../journal/verses";
 import { friendlyDate } from "../dates";
 import { gateConfirmed } from "./gate";
@@ -12,8 +12,8 @@ import type { ToolContext, ToolResult, ToolSpec } from "./tools";
 
 /**
  * Barnabas's journal tools. The journal is the leader's own writing: saving their own note or a draft they
- * asked for needs no confirmation. Barnabas reads the journal only when the leader asks, never deletes an
- * entry, and shares one or sends a setlist to the order of service only after a yes (the confirmation gate).
+ * asked for needs no confirmation. Barnabas reads the journal only when the leader asks, and deletes an entry,
+ * shares one or sends a setlist to the order of service only after a yes (the confirmation gate).
  * Any scripture Barnabas writes is quoted word for word in the leader's translation with its reference;
  * for the KJV the words come from the text The Word ships.
  */
@@ -133,6 +133,9 @@ const songFrom = (s: z.infer<typeof SongIn>): Omit<Song, "id"> => ({
 });
 
 const link = (e: Pick<JournalEntry, "id">) => `/journal/${e.id}`;
+/** The button under Barnabas's reply that opens the entry. */
+const entryLink = (e: Pick<JournalEntry, "id" | "title">) => ({ label: `Open "${e.title.length > 40 ? `${e.title.slice(0, 39)}…` : e.title}" in Journal`, href: link(e) });
+const linked = (r: ToolResult, ...entries: Pick<JournalEntry, "id" | "title">[]): ToolResult => ({ ...r, links: entries.map(entryLink) });
 
 /* ---------- journal_note ---------- */
 
@@ -175,11 +178,11 @@ const journalNote = tool({
         const body = `${target.body.replace(/\s+$/, "")}${target.body.trim() ? "\n\n" : ""}**${friendlyDate(today())}**\n\n${text}`;
         const tags = [...new Set([...target.tags, ...(input.tags ?? [])])].slice(0, 12);
         await updateEntry(actor, target.id, { body, tags });
-        return ok({ saved: "added to", title: target.title, id: target.id, link: link(target), notes: sc.notes, say: "Tell them in a few words it's in their Journal." });
+        return linked(ok({ saved: "added to", title: target.title, id: target.id, link: link(target), notes: sc.notes, say: "Tell them in a few words it's in their Journal." }), target);
       }
       const title = input.title?.trim() || input.text.trim().split("\n")[0].replace(/^#+\s*/, "").slice(0, 60) || "Note";
       const e = await createEntry(actor, { kind: "note", title, body: text, tags: input.tags ?? [] });
-      return ok({ saved: "new note", title: e.title, id: e.id, link: link(e), notes: sc.notes, say: "Tell them in a few words it's in their Journal." });
+      return linked(ok({ saved: "new note", title: e.title, id: e.id, link: link(e), notes: sc.notes, say: "Tell them in a few words it's in their Journal." }), e);
     });
   },
 });
@@ -229,7 +232,7 @@ const startEntry = tool({
         devotional: input.kind === "devotional" ? { passages: d?.passages ?? [], days: (await Promise.all((d?.days ?? []).map((x) => dayFrom(x, sc)))) as DevotionalDay[] } : undefined,
         setlist: input.kind === "setlist" ? { serviceDate: l?.service_date, gathering: l?.gathering, theme: l?.theme ?? "", songs: (l?.songs ?? []).map(songFrom) as Song[] } : undefined,
       });
-      return ok({ started: KIND_LABELS[e.kind], title: e.title, id: e.id, link: link(e), notes: sc.notes, say: "Tell them briefly it's in their Journal to shape further; offer the next step." });
+      return linked(ok({ started: KIND_LABELS[e.kind], title: e.title, id: e.id, link: link(e), notes: sc.notes, say: "Tell them briefly it's in their Journal to shape further; offer the link and the next step." }), e);
     });
   },
 });
@@ -273,7 +276,7 @@ const readJournalEntry = tool({
     if (isResult(actor)) return actor;
     return guard(async () => {
       const { entry: e, mine } = await getEntry(actor, id);
-      return ok({
+      return linked(ok({
         id: e.id,
         kind: KIND_LABELS[e.kind],
         title: e.title,
@@ -285,7 +288,7 @@ const readJournalEntry = tool({
         devotional: e.devotional,
         setlist: e.setlist && { ...e.setlist, sentTo: e.setlist.sentTo ? `${e.setlist.sentTo.date} ${e.setlist.sentTo.gathering}` : undefined },
         link: link(e),
-      });
+      }), e);
     });
   },
 });
@@ -412,7 +415,7 @@ const updateJournalEntry = tool({
       }
       if (!changed.length) return fail("Nothing to change. Say what to add or edit.");
       await updateEntry(actor, e.id, patch);
-      return ok({ updated: changed, title: e.title, link: link(e), notes: sc.notes });
+      return linked(ok({ updated: changed, title: patch.title ?? e.title, link: link(e), notes: sc.notes }), { id: e.id, title: patch.title ?? e.title });
     });
   },
 });
@@ -475,6 +478,134 @@ const sendSetlist = tool({
     });
   },
 });
+
+/* ---------- search, append, tag, delete ---------- */
+
+const KINDS = ["note", "sermon", "devotional", "setlist"] as const;
+
+const searchJournal = tool({
+  phrase: "Let me look in your Journal.",
+  def: {
+    name: "search_journal",
+    description:
+      "Search the leader's Journal by words (in titles, tags and text) and/or a tag: their own entries and, unless include_shared is false, entries other leaders shared with them (read-only). The same entries the Journal page shows them. Only when they ask. Returns ids, snippets and links.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: { query: str("Words to look for"), tag: str("One tag, e.g. 'advent'"), kind: { type: "string", enum: [...KINDS] }, include_shared: { type: "boolean", description: "Also entries shared with them (default true)" } },
+    },
+  },
+  schema: z.object({ query: S(100).optional(), tag: S(30).optional(), kind: z.enum(KINDS).optional(), include_shared: z.boolean().optional() }),
+  async run(input, ctx) {
+    if (!input.query?.trim() && !input.tag?.trim()) return fail("Give words to search for or a tag. list_journal lists everything.");
+    const actor = await actorFor(ctx);
+    if (isResult(actor)) return actor;
+    return guard(async () => {
+      const q = { q: input.query?.trim() || undefined, tag: input.tag?.trim() || undefined, kind: input.kind };
+      const mine = await listEntries(actor, q);
+      const shared = input.include_shared === false ? [] : await listEntries(actor, { ...q, filter: "shared" });
+      const rows: JournalSummary[] = [...mine, ...shared];
+      if (!rows.length) return ok({ entries: [], note: "Nothing in their Journal matches. Offer to start an entry, or try other words." });
+      const top = rows.slice(0, 20);
+      const result = ok({
+        entries: top.map((r) => ({ id: r.id, kind: KIND_LABELS[r.kind], title: r.title, tags: r.tags.length ? r.tags : undefined, updated: new Date(r.updatedAt).toISOString().slice(0, 10), snippet: r.snippet || undefined, by: r.ownerId === ctx.leader.leaderId ? undefined : `${r.ownerName} (shared, read-only)`, link: link(r) })),
+        more: rows.length > top.length ? rows.length - top.length : undefined,
+      });
+      return linked(result, ...top.slice(0, 3));
+    });
+  },
+});
+
+const appendToEntry = tool({
+  phrase: "Adding that to your Journal.",
+  def: {
+    name: "append_to_journal_entry",
+    description:
+      "Add text to the end of one of the leader's own journal entries' notes, keeping everything already there (nothing is replaced). Their own entry: no confirmation needed. Quote any scripture word for word in their translation with its reference (verses). Not for entries others shared with them.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        id: str("From search_journal or list_journal"),
+        text: str("What to add (markdown)"),
+        dated: { type: "boolean", description: "Put today's date above it, like a journal note" },
+        verses: { type: "array", items: VERSE_JSON, description: "Scripture to quote after the text" },
+      },
+      required: ["id", "text"],
+    },
+  },
+  schema: z.object({ id: S(40).min(1), text: S(8000).min(1), dated: z.boolean().optional(), verses: z.array(VerseIn).max(8).optional() }),
+  async run(input, ctx) {
+    if (ctx.meta.offRecord) return fail("This conversation is off the record, so nothing is saved, not even to the Journal.");
+    const actor = await actorFor(ctx);
+    if (isResult(actor)) return actor;
+    return guard(async () => {
+      const { entry: e, mine } = await getEntry(actor, input.id);
+      if (!mine) return fail(`${e.ownerName} shared this entry to read. Only they can change it. Offer to start the leader's own entry instead.`);
+      const sc = await Scripture.for(ctx);
+      const added = [input.dated ? `**${friendlyDate(today())}**` : "", input.text.trim(), await sc.lines(input.verses)].filter(Boolean).join("\n\n");
+      const body = `${e.body.replace(/\s+$/, "")}${e.body.trim() ? "\n\n" : ""}${added}`;
+      if (body.length > LIMITS.body) return fail(`That would make the entry longer than ${LIMITS.body} characters. Offer to start a new entry for it.`);
+      await updateEntry(actor, e.id, { body });
+      return linked(ok({ appended_to: e.title, id: e.id, link: link(e), notes: sc.notes, say: "Tell them in a few words it's added at the end." }), e);
+    });
+  },
+});
+
+const tagEntry = tool({
+  phrase: "Tagging it.",
+  def: {
+    name: "tag_journal_entry",
+    description:
+      "Set the tags on one of the leader's own journal entries: `tags` replaces them all; or `add` and `remove` change some. Tags are short single words, lowercase (at most 12). Their own entry: no confirmation needed.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { id: str(), tags: strs("The full new set of tags"), add: strs(), remove: strs() }, required: ["id"] },
+  },
+  schema: z.object({ id: S(40).min(1), tags: z.array(S(30)).max(12).optional(), add: z.array(S(30)).max(12).optional(), remove: z.array(S(30)).max(12).optional() }),
+  async run(input, ctx) {
+    if (ctx.meta.offRecord) return fail("This conversation is off the record, so nothing is saved, not even to the Journal.");
+    if (!input.tags && !input.add?.length && !input.remove?.length) return fail("Say which tags to set, add or remove.");
+    const actor = await actorFor(ctx);
+    if (isResult(actor)) return actor;
+    return guard(async () => {
+      const { entry: e, mine } = await getEntry(actor, input.id);
+      if (!mine) return fail(`${e.ownerName} shared this entry to read. Only they can tag it.`);
+      const clean = (list: string[] | undefined) => (list ?? []).map((t) => Tag.safeParse(t)).flatMap((r) => (r.success ? [r.data] : []));
+      const drop = new Set(clean(input.remove));
+      const next = [...new Set([...(input.tags ? clean(input.tags) : e.tags), ...clean(input.add)])].filter((t) => !drop.has(t));
+      if (next.length > LIMITS.tags) return fail(`An entry can have at most ${LIMITS.tags} tags.`);
+      await updateEntry(actor, e.id, { tags: next });
+      return linked(ok({ title: e.title, tags: next, link: link(e) }), e);
+    });
+  },
+});
+
+const deleteJournalEntry = tool({
+  def: {
+    name: "delete_journal_entry",
+    description:
+      "Delete one of the leader's own journal entries for good (it can't be undone), only when they ask. Confirmed in code: the first call only proposes; ask the leader, naming the entry, and call again with the same id after they say yes. Entries others shared can't be deleted.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { id: str() }, required: ["id"] },
+  },
+  schema: z.object({ id: S(40).min(1) }),
+  async run({ id }, ctx) {
+    const actor = await actorFor(ctx);
+    if (isResult(actor)) return actor;
+    return guard(async () => {
+      const { entry: e, mine } = await getEntry(actor, id);
+      if (!mine) return fail(`${e.ownerName} wrote this entry; only they can delete it.`);
+      if (!gateConfirmed(ctx, "delete_journal_entry", JSON.stringify([id]))) {
+        return fail(`Not confirmed yet. Ask: delete the ${KIND_LABELS[e.kind].toLowerCase()} "${e.title}" from their Journal for good? It can't be undone. Call delete_journal_entry again with the same id after they say yes.`);
+      }
+      await deleteEntry(actor, id);
+      return { ...ok({ deleted: e.title, say: "Tell them in a few words it's gone." }), links: [{ label: "Open Journal", href: "/journal" }] };
+    });
+  },
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const JOURNAL_MORE_TOOLS: ToolSpec<any>[] = [searchJournal, appendToEntry, tagEntry, deleteJournalEntry];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const JOURNAL_TOOLS: ToolSpec<any>[] = [journalNote, startEntry, listJournal, readJournalEntry, updateJournalEntry, shareJournalEntry, sendSetlist];

@@ -227,15 +227,11 @@ describe("send a setlist to the order of service", () => {
 describe("Barnabas's journal tools", () => {
   beforeEach(setup);
 
-  it("has no tool that deletes a journal entry", () => {
+  it("deletes a journal entry only through the confirmed delete_journal_entry tool", () => {
     const names = TOOL_DEFS.map((t) => t.name);
     for (const t of ["journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "share_journal_entry", "send_setlist_to_service"]) expect(names).toContain(t);
-    expect(names.filter((x) => /journal|setlist/.test(x) && /delete|remove|archive/.test(x))).toEqual([]);
-    // Appended as one block after the older tools (later modules may follow it).
-    const at = names.indexOf("journal_note");
-    expect(names.slice(at, at + 7)).toEqual(["journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "share_journal_entry", "send_setlist_to_service"]);
-    expect(at).toBeGreaterThan(names.indexOf("find_person"));
-    expect(BARNABAS_SYSTEM).toMatch(/You never delete a journal entry/);
+    expect(names.filter((x) => /journal|setlist/.test(x) && /delete|remove|archive/.test(x))).toEqual(["delete_journal_entry"]);
+    expect(BARNABAS_SYSTEM).toMatch(/delete_journal_entry\) only when they ask, and only their own; it's confirmed in code/);
   });
 
   it("journals a note with no confirmation, and appends to it by title", async () => {
