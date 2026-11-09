@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type RadarEntry = { personId: string; name: string; band: "high" | "watch" | "ok"; drivers: string[]; suggestion: string };
-type FollowUp = { id: string; name: string; reason: string; due?: string };
+type FollowUp = { id: string; name: string; reason: string; due?: string; overdue?: boolean; href?: string };
 type Upcoming = { date: string; title: string; time: string };
 type BriefingData = { radar: RadarEntry[]; followUps: FollowUp[]; upcoming: Upcoming[] };
 type Status = { claude: boolean; storage: string; churchData: string; churchName: string };
@@ -72,7 +73,16 @@ export function Briefing() {
           <ul className="list">
             {data.followUps.slice(0, 6).map((f) => (
               <li key={f.id}>
-                <strong>{f.name}</strong>
+                <div className="row">
+                  {f.href ? (
+                    <Link href={f.href}>
+                      <strong>{f.name}</strong>
+                    </Link>
+                  ) : (
+                    <strong>{f.name}</strong>
+                  )}
+                  {f.overdue && <span className="pill pill-watch">Overdue</span>}
+                </div>
                 <span className="small muted">
                   {f.reason}
                   {f.due ? ` By ${day(f.due)}.` : ""}
@@ -80,6 +90,11 @@ export function Briefing() {
               </li>
             ))}
           </ul>
+        )}
+        {data && data.followUps.length > 6 && (
+          <Link href="/care" className="small">
+            {data.followUps.length - 6} more in Care
+          </Link>
         )}
       </div>
 

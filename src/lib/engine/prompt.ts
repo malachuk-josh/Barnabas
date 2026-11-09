@@ -78,6 +78,15 @@ Memory
 - If the leader asks what you remember, tell them honestly. If they say "forget that", tell them you won't use it, and that they can delete it in the Memory screen.
 - If the conversation is off the record, you can't save anything. Say so if the leader asks you to remember something.
 
+Pastoral care
+- Care tools: list_care_cases, care_case_detail, my_care_load, discipleship_next_steps and recent_guests look things up. open_care_case, log_care_contact, add_prayer_request and record_guest you may do when the leader asks; then say in one short sentence what you did ("I opened a hospital case for Grace and logged today's visit."). log_care_event is the older way to log a contact; prefer log_care_contact.
+- Assigning a case to someone else (assign_care_case) and closing a case (close_care_case) are confirmed in code: propose it, wait for a yes in the leader's next turn, then call it again with the same details. Taking a case yourself needs no confirmation.
+- Never store diagnoses or other health, counseling, family-conflict, addiction, legal or money details in a case, a contact note, a next step or a prayer request, unless the context says the church's policy allows it. The case type can say "illness" or "counseling referral"; the note stays minimal ("Call Thursday to check in"). If a tool refuses a note, save a shorter one without the detail, and don't repeat the detail back.
+- Who sees which case is checked in code: pastors see every case, deacons see their own and non-confidential ones, everyone else sees only the cases assigned to them, and confidential cases are for pastors only. Never guess at a case you can't see.
+- Be gentle with people's hard seasons. Use first names, say what's next plainly, and don't make anyone sound like a task.
+- The leader's own care load is in the context below and is private to them. If it's full or stretched, mention it kindly once, at a natural moment, with the reasons ("You've had three crisis cases this week and no day off in twelve days. Want me to block Thursday?"). Add a rest day only after they say yes (add_calendar_event with kind rest). Never tell anyone about another leader's load; the team view is totals only.
+- Guest follow-up: record_guest makes a thank-you draft for review (nothing is sent), a welcome call and, after a second visit, a Discover Faith invitation.
+
 Care and safety
 - If the leader describes someone who may harm themselves or someone else, or who is being abused: do not counsel or diagnose. Say clearly that if anyone is in immediate danger they should call 911 now. Give the 988 Suicide and Crisis Lifeline (call or text 988 in the US). Encourage the leader to reach the person now and involve their senior pastor or the church's safety lead. Don't save details of it to memory.
 - For conversations that sound like counseling, suggest going off the record, and remind the leader that you're not a substitute for a counselor.
@@ -93,9 +102,16 @@ export type ContextOptions = {
   briefing: Briefing;
   profile: Profile;
   calendar: { events: CalendarEvent[]; outside: OutsideEvent[] };
-  leadership?: { name: string; title: string; ministry?: string }[];
+  leadership?: { name: string; title: string; ministry?: string; bio?: string }[];
   /** The leader's permission role, e.g. "treasurer". */
-  access?: { role: string; financeAccess: string };
+  access?: { role: string; financeAccess: string; careAccess?: string };
+  /** The leader's own care cases and care load, private to them. */
+  care?: {
+    openCases: number;
+    overdue: { name: string; type: string; step: string; due: string }[];
+    guestsWaiting: string[];
+    load: { signal: string; reasons: string[] };
+  };
 };
 
 const REPLY_LANGUAGE: Record<Profile["replyLanguage"], string> = { en: "English", es: "Spanish", ko: "Korean" };
@@ -127,7 +143,8 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push(`Name: ${config.churchName}`);
   if (opts.leadership?.length) {
     lines.push("Leadership team:");
-    for (const l of opts.leadership) lines.push(`- ${l.name}, ${l.title}${l.ministry ? ` (${l.ministry})` : ""}`);
+    for (const l of opts.leadership) lines.push(`- ${l.name}, ${l.title}${l.ministry ? ` (${l.ministry})` : ""}${l.bio ? `. ${l.bio}` : ""}`);
+    lines.push("These are real people. Speak of them only in their ministry roles and what's written here; never guess at their health, family or personal lives. When you suggest who should take a follow-up, keep in mind anyone in a busy season and spread the work gently.");
   }
   lines.push(
     `Memory policy: ${config.allowSensitiveMemory ? "the church's written policy allows remembering sensitive pastoral details when the leader asks; still keep them minimal" : "do not remember sensitive pastoral details (health, counseling, family conflict, addiction, legal or immigration status, finances)"}`,
@@ -138,7 +155,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push(`Name: ${p.name}`);
   lines.push(`Call them: ${p.preferredName}`);
   if (p.role) lines.push(`Role: ${p.role}`);
-  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}`);
+  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}${opts.access.careAccess ? `. Care cases: ${opts.access.careAccess}` : ""}`);
   if (p.ministries.length) lines.push(`Ministries: ${p.ministries.join(", ")}`);
   lines.push(`Time zone: ${p.timezone}`);
   lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);
@@ -164,12 +181,24 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   ].sort((a, b) => (a.e.date + (a.e.start ?? "")).localeCompare(b.e.date + (b.e.start ?? "")));
   if (cal.length) for (const { e, label } of cal.slice(0, 20)) lines.push(eventLine(e, label));
   else lines.push("Nothing scheduled.");
+  if (opts.care) {
+    const c = opts.care;
+    lines.push("");
+    lines.push("# Your care (private to this leader, as of the start of this conversation)");
+    lines.push(`Open cases assigned to them: ${c.openCases}`);
+    if (c.overdue.length) {
+      lines.push("Overdue next steps:");
+      for (const o of c.overdue.slice(0, 6)) lines.push(`- ${o.name} (${o.type}): ${o.step}${o.due ? `, due ${friendlyDate(o.due)}` : ""}`);
+    } else lines.push("Overdue next steps: none");
+    if (c.guestsWaiting.length) lines.push(`Guests they follow up who haven't been contacted yet: ${c.guestsWaiting.slice(0, 6).join(", ")}`);
+    lines.push(`Their care load: ${c.load.signal}. ${c.load.reasons.join("; ")}.`);
+  }
   lines.push("");
   lines.push("# Today's briefing (from church data, as of the start of this conversation)");
   if (b.radar.length) {
     lines.push("Volunteers showing burnout signals:");
     for (const r of b.radar.slice(0, 6)) {
-      lines.push(`- ${r.name} (${r.personId}), ${r.band === "high" ? "high" : "watch"}: ${r.drivers.join("; ")}. Suggested: ${r.suggestion}`);
+      lines.push(`- ${r.name} (${r.personId}), ${r.band === "high" ? "high" : "watch"}: ${r.drivers.join("; ")}. Suggested: ${r.suggestion}${r.note ? ` Church note: ${r.note}` : ""}`);
     }
   } else {
     lines.push("No volunteers are showing burnout signals.");

@@ -12,4 +12,6 @@ export interface KV {
   srem(key: string, ...members: string[]): Promise<void>;
   smembers(key: string): Promise<string[]>;
   expire(key: string, ttlSeconds: number): Promise<void>;
+  /** Add one to a counter and return the new value. The first increment starts the expiry window. */
+  incr(key: string, ttlSeconds: number): Promise<number>;
 }

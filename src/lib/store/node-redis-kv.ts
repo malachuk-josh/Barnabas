@@ -55,4 +55,11 @@ export class NodeRedisKV implements KV {
   async expire(key: string, ttlSeconds: number) {
     await (await this.c()).expire(key, ttlSeconds);
   }
+
+  async incr(key: string, ttlSeconds: number) {
+    const client = await this.c();
+    const n = await client.incr(key);
+    if (n === 1) await client.expire(key, ttlSeconds);
+    return n;
+  }
 }

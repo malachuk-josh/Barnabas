@@ -1,10 +1,10 @@
 import { churchData } from "../chms";
 import type { Leader } from "../auth/session";
 import { addDays, lastSunday, today as todayIso } from "../dates";
-import { listCare } from "../data/records";
+import { careFollowUps, careFor } from "../care/views";
 import { scoreVolunteers, type RadarEntry } from "../radar/burnout";
 
-export type FollowUp = { id: string; personId: string; name: string; reason: string; due?: string; source: "care" | "attendance" };
+export type FollowUp = { id: string; personId: string; name: string; reason: string; due?: string; overdue?: boolean; href?: string; source: "care" | "guest" | "attendance" };
 
 export type Briefing = {
   date: string;
@@ -29,10 +29,9 @@ export async function radarNow(date = todayIso()) {
 export async function followUps(leader: Leader, date = todayIso()): Promise<FollowUp[]> {
   const { people, attendance, serving, sunday } = await radarNow(date);
   const out: FollowUp[] = [];
-  for (const c of await listCare(leader)) {
-    if (c.done || !c.followUp) continue;
-    out.push({ id: c.id, personId: c.personId, name: c.personName, reason: c.followUp, due: c.due, source: "care" });
-  }
+  // Next steps on the leader's own care cases (older log_care_event records are folded in first) and their guest follow-ups.
+  const { actor, book } = await careFor(leader);
+  out.push(...careFollowUps(book, actor, date));
   // People who have dropped out of worship and aren't serving: a gentle check-in.
   const recent = addDays(sunday, -21);
   for (const p of people) {

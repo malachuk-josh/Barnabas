@@ -19,6 +19,8 @@ export type RadarEntry = {
   servedLast8: number;
   drivers: string[];
   suggestion: string;
+  /** A factual note the church supplied about this person, if any. */
+  note?: string;
 };
 
 const WINDOW_WEEKS = 8;
@@ -62,7 +64,8 @@ export function scoreVolunteers(input: {
       drivers.push("serves on 2 teams");
     }
 
-    const servedSundays = new Set(served.map((s) => s.date));
+    // The streak looks back past the 8-week window, so a long run reads as long as it really is.
+    const servedSundays = new Set(serving.filter((s) => s.personId === person.id && s.status === "served").map((s) => s.date));
     const streak = consecutiveWeeks(servedSundays, mostRecentSunday);
     if (streak >= 4) {
       const add = Math.min(3, (streak - 3) * 0.6);
@@ -124,6 +127,7 @@ export function scoreVolunteers(input: {
       servedLast8: served.length,
       drivers,
       suggestion: suggestionFor(person, band, drivers),
+      note: person.note,
     });
   }
 

@@ -44,4 +44,10 @@ export class UpstashKV implements KV {
   async expire(key: string, ttlSeconds: number) {
     await this.redis.expire(key, ttlSeconds);
   }
+
+  async incr(key: string, ttlSeconds: number) {
+    const n = await this.redis.incr(key);
+    if (n === 1) await this.redis.expire(key, ttlSeconds);
+    return n;
+  }
 }

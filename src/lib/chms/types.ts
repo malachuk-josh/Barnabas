@@ -20,9 +20,21 @@ export type Person = {
   smallGroup?: string;
   /** Last time a leader recorded a thank-you or appreciation (ISO date). */
   lastThanked?: string;
+  /**
+   * On the church's published leadership team: a real person who also serves on a volunteer team.
+   * Demo data never makes them the subject of care, giving, pathway or prayer records.
+   */
+  leadership?: boolean;
+  /** A short factual note the church supplied, e.g. why their serving pattern looks the way it does. */
+  note?: string;
 };
 
-export type Team = { id: string; name: string };
+export type Team = {
+  id: string;
+  name: string;
+  /** The person who leads the team, by name (a church leader). */
+  lead?: string;
+};
 
 export type ServingStatus = "served" | "declined" | "scheduled";
 
@@ -62,7 +74,15 @@ export type Roster = {
   people: { personId: string; name: string; status: ServingStatus }[];
 };
 
-export type Leader = { name: string; title: string; ministry?: string };
+export type Leader = {
+  name: string;
+  title: string;
+  ministry?: string;
+  /** A short summary in our own words, so Barnabas knows who's who. */
+  bio?: string;
+  /** In a busy season of life: give them a lighter share of follow-up assignments. */
+  lighterLoad?: boolean;
+};
 
 export interface ChurchData {
   /** Pastors, deacons and staff as published by the church. */

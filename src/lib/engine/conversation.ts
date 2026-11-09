@@ -9,6 +9,7 @@ import { churchData } from "../chms";
 import { getProfile } from "../profile";
 import { can, ROLE_LABELS } from "../auth/roles";
 import { accessFor } from "../team";
+import { careSnapshot } from "../care/views";
 import { briefing } from "./briefing";
 import { buildLeaderContext } from "./prompt";
 
@@ -18,7 +19,7 @@ export async function startConversation(
 ): Promise<ConversationMeta> {
   const localDate = opts.localDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.localDate) ? opts.localDate : today();
   const until = addDaysIso(localDate, 2);
-  const [leadership, profile, brief, events, outside, access] = await Promise.all([
+  const [leadership, profile, brief, events, outside, access, care] = await Promise.all([
     churchData().leadership(),
     getProfile(leader),
     briefing(leader, localDate),
@@ -26,6 +27,10 @@ export async function startConversation(
     // Don't hold up the conversation for a slow calendar connection.
     outsideEvents(leader, localDate, until, { timeoutMs: 2500 }),
     accessFor(leader),
+    careSnapshot(leader, localDate).catch((err) => {
+      console.warn("[barnabas] care snapshot failed", err);
+      return undefined;
+    }),
   ]);
   const context = await buildLeaderContext({
     leader,
@@ -43,7 +48,13 @@ export async function startConversation(
         : can(access, "finance.view")
           ? "summaries and reports only, no donor names, can't record anything"
           : "none",
+      careAccess: can(access, "care.view_all")
+        ? "every case, including confidential ones"
+        : access.role === "deacon"
+          ? "their own and every non-confidential case"
+          : "only the cases assigned to them",
     },
+    care,
   });
   const now = Date.now();
   const meta: ConversationMeta = {

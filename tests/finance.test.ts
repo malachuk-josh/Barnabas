@@ -57,6 +57,8 @@ describe("roles and permissions", () => {
     "finance.edit": ["pastor", "treasurer"],
     "giving.donors": ["pastor", "treasurer"],
     "team.manage": [],
+    "care.view_all": ["pastor"],
+    "care.assign": ["pastor", "deacon", "staff"],
   };
 
   it("follows the role matrix", () => {
@@ -317,6 +319,8 @@ describe("demo finance data", () => {
     // Gift records and their deposits agree.
     const deposits = books.transactions.filter((t) => t.giftBatchId).reduce((a, t) => a + t.lines.reduce((x, l) => x + l.amount, 0), 0);
     expect(deposits).toBe(books.gifts.reduce((a, g) => a + g.amount, 0));
+    // The real leaders in the directory never appear as donors.
+    for (const name of ["Aaron Malachuk", "Travis Willette", "Micah Hayre"]) expect(books.gifts.some((g) => g.donorName === name), name).toBe(false);
     // Another church gets empty books.
     expect((await loadBooks("other")).transactions).toHaveLength(0);
   });

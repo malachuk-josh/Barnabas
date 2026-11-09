@@ -27,12 +27,12 @@ type DemoPerson = Person & {
 };
 
 const TEAMS: Team[] = [
-  { id: "worship", name: "Worship team" },
+  { id: "worship", name: "Worship team", lead: "Aaron Malachuk" },
   { id: "kids", name: "MGBC Kids" },
-  { id: "hospitality", name: "Hospitality & Connections" },
+  { id: "hospitality", name: "Hospitality & Connections", lead: "Aaron Malachuk" },
   { id: "tech", name: "Tech & livestream" },
-  { id: "greeters", name: "Greeters" },
-  { id: "parking", name: "Parking" },
+  { id: "greeters", name: "Greeters", lead: "Travis Willette" },
+  { id: "parking", name: "Parking", lead: "Micah Hayre" },
 ];
 
 /**
@@ -41,12 +41,17 @@ const TEAMS: Team[] = [
  * The congregation below stays fictional: no real person's attendance or serving data is invented.
  */
 const LEADERSHIP: ChurchLeader[] = [
-  { name: "Ethan Malachuk", title: "Lead Pastor", ministry: "Bible teaching" },
-  { name: "Eric Malachuk", title: "Care Pastor", ministry: "Discipleship and pastoral care" },
-  { name: "Aaron Malachuk", title: "Connections & Worship Pastor", ministry: "Worship and connections" },
-  { name: "Travis Willette", title: "Deacon" },
-  { name: "Cal Najimy", title: "Deacon" },
-  { name: "Micah Hayre", title: "Deacon" },
+  { name: "Ethan Malachuk", title: "Lead Pastor", ministry: "Bible teaching",
+    bio: "Raised at MGBC and on the pastoral team since 2006: assistant pastor, then co-pastor from 2016, and Lead Pastor since 2024. His focus is clear, faithful Bible teaching that connects with everyday life. Lives in Clarksburg." },
+  { name: "Eric Malachuk", title: "Care Pastor", ministry: "Discipleship and pastoral care",
+    bio: "Came to faith in the church's first year and has served since 1982, as Senior Pastor from 1990 to 2023. He guided the pastoral transition from 2016 to 2024 and now gives his time to discipleship and pastoral care." },
+  { name: "Aaron Malachuk", title: "Connections & Worship Pastor", ministry: "Worship and connections",
+    bio: "At MGBC since 2011, including thirteen years as Youth Pastor. Now leads worship and helps newcomers get connected; a gifted musician. Lives in Stamford, Vermont. Travels often for work; has led worship at both services every week for a long stretch." },
+  { name: "Travis Willette", title: "Deacon", lighterLoad: true,
+    bio: "Serves with the pastors in caring for the church family. Married, with two kids in high school, and a very busy life; serves with Greeters about twice a month." },
+  { name: "Cal Najimy", title: "Deacon", bio: "Serves with the pastors in caring for the church family." },
+  { name: "Micah Hayre", title: "Deacon", lighterLoad: true,
+    bio: "Serves with the pastors in caring for the church family. Married, with two kids in high school, and a very busy life; serves with Parking about twice a month." },
 ];
 
 const CHURCH = "Mount Greylock Baptist Church, 35 Notch Road, North Adams, MA";
@@ -133,9 +138,19 @@ const PEOPLE: DemoPerson[] = [
     serving: { kids: ".S...S...S.." }, worship: "111111111111", thankedDaysAgo: 35 },
   { id: "p18", name: "Nate Brooks", firstName: "Nate", language: "en",
     serving: { tech: "SSSSSSSSSS.." }, worship: "111111111111", next: ["tech"], thankedDaysAgo: 100 },
+  // Real leaders who also serve on volunteer teams, with patterns the church described. Only their serving
+  // and worship attendance appear here; nothing else about them is made up.
+  { id: "p19", name: "Aaron Malachuk", firstName: "Aaron", language: "en", leadership: true,
+    note: "Travels often for work; has led worship at both services every week for a long stretch.",
+    serving: { worship: "SSSSSSSSSSSS" }, worship: "111111111111", next: ["worship"] },
+  { id: "p20", name: "Travis Willette", firstName: "Travis", language: "en", leadership: true,
+    serving: { greeters: "S.S.S.S.S.S." }, worship: "111111111111", next: ["greeters"], thankedDaysAgo: 20 },
+  { id: "p21", name: "Micah Hayre", firstName: "Micah", language: "en", leadership: true,
+    serving: { parking: ".S.S.S.S.S.S" }, worship: "111111111111", thankedDaysAgo: 20 },
 ];
 
 for (const p of PEOPLE) {
+  if (p.leadership) continue; // no made-up contact details for real people
   p.phone = `(555) 01${p.id.slice(1)}-${String(1000 + Number(p.id.slice(1)) * 37).slice(-4)}`;
   p.email = `${p.firstName.toLowerCase().replace(/[^a-z]/g, "")}.${p.id}@example.org`;
 }

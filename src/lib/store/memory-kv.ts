@@ -60,4 +60,11 @@ export class MemoryKV implements KV {
     const entry = this.live(key);
     if (entry) entry.expiresAt = Date.now() + ttlSeconds * 1000;
   }
+
+  async incr(key: string, ttlSeconds: number) {
+    const entry = this.live(key);
+    const next = (typeof entry?.value === "string" ? Number(entry.value) || 0 : 0) + 1;
+    this.data.set(key, { value: String(next), expiresAt: entry?.expiresAt ?? Date.now() + ttlSeconds * 1000 });
+    return next;
+  }
 }

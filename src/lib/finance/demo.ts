@@ -115,7 +115,8 @@ function season(date: string) {
 export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
   const r = rng(175);
   const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
-  const by = "demo";
+  // Demo entries are recorded and the reconciliation signed off by a deacon (Cal Najimy), as the treasurer would.
+  const by = "demo:cal-najimy";
   const created = Date.now();
   let seq = 0;
   const id = (p: string) => `${p}_demo${(seq++).toString(36).padStart(5, "0")}`;
@@ -137,7 +138,8 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
   const people = await churchData().listPeople();
   const weeklies = [25, 35, 45, 55, 65, 80, 100, 110, 130, 160, 190, 220, 275, 325, 425];
   const donors: Donor[] = [
-    ...people.map((p) => ({ personId: p.id, name: p.name })),
+    // The church's real leaders are in the directory too; their giving is never made up.
+    ...people.filter((p) => !p.leadership).map((p) => ({ personId: p.id, name: p.name })),
     ...EXTRA_HOUSEHOLDS.map((name) => ({ personId: undefined, name })),
   ].map((d) => {
     const method: GiftMethod = pick(["check", "check", "check", "online", "online", "ach", "cash"]);
@@ -314,7 +316,7 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
     if (mo === 6) txn(dayOf(first, 28), "Short-term mission team, Peru (airfare)", "out", [{ accountId: acct("5120"), fundId: "general", amount: $(4_350) }]);
 
     const benev = 1 + Math.floor(r() * 2);
-    for (let i = 0; i < benev; i++) txn(dayOf(first, 7 + i * 11), pick(["Benevolence: utility help", "Benevolence: groceries", "Benevolence: rent help", "Benevolence: car repair"]), "out", [{ accountId: acct("5500"), fundId: "benevolence", amount: vary(330, 0.5), memo: "Approved by deacons" }]);
+    for (let i = 0; i < benev; i++) txn(dayOf(first, 7 + i * 11), pick(["Benevolence: utility help", "Benevolence: groceries", "Benevolence: rent help", "Benevolence: car repair"]), "out", [{ accountId: acct("5500"), fundId: "benevolence", amount: vary(330, 0.5), memo: "Approved by Deacon Travis Willette" }]);
 
     txn(dayOf(first, 11), "Staples and USPS", "out", [{ accountId: acct("5600"), fundId: "general", amount: vary(190, 0.4) }]);
     txn(dayOf(first, 3), "Planning Center and Google Workspace", "out", [{ accountId: acct("5610"), fundId: "general", amount: $(296) }], { reference: "CARD" });

@@ -10,7 +10,7 @@ import { newId } from "../data/ids";
 import { calendarRange, createEvent, deleteEvent, updateEvent } from "../calendar/service";
 import { EventInputSchema, getEvent } from "../calendar/store";
 import { addDaysIso, time12, todayIn } from "../calendar/time";
-import { addCare, audit, getDraft, queueDraft, saveDraft, type Draft } from "../data/records";
+import { audit, getDraft, queueDraft, saveDraft, type Draft } from "../data/records";
 import { getProfile } from "../profile";
 import { MemoryFS } from "../memory/fs";
 import { slug } from "../memory/paths";
@@ -28,6 +28,11 @@ import { addTransaction, recordGifts } from "../finance/service";
 import { loadBooks } from "../finance/store";
 import { GIFT_METHODS, METHOD_LABELS, type Books, type GiftMethod } from "../finance/types";
 import { budgetView, financeOverview, givingSummary, missionsView, sameDayLastYear } from "../finance/views";
+import { SIGNAL_LABELS } from "../care/load";
+import { addPrayer, assignCase, careActor, CareError, closeCase, logCareEvent as logCareEventCompat, logContact, openCase, recordGuest } from "../care/service";
+import { CASE_STATUS_LABELS, CASE_TYPES, CASE_TYPE_LABELS, CONTACT_KINDS, CONTACT_LABELS, GUEST_INTERESTS, PATHWAY_LABELS, PATHWAY_STEPS, type TeamMember } from "../care/types";
+import { caseDetail, caseRows, careFor, discipleship, myCareLoad, recentGuests, teamView } from "../care/views";
+import { isMine } from "../care/visibility";
 
 export type ToolContext = {
   leader: Leader;
@@ -76,6 +81,8 @@ function personCard(p: Person) {
     written_language: LANGUAGE_NAMES[p.language],
     household: p.household ?? null,
     small_group: p.smallGroup ?? null,
+    on_leadership_team: p.leadership || undefined,
+    church_note: p.note,
   };
 }
 
@@ -171,9 +178,11 @@ const getVolunteerLoad = tool({
       entries = radar.filter((r) => r.teams.includes(t.name));
     }
     const flagged = entries.filter((r) => r.band !== "ok");
+    const notes = new Map((await churchData().listPeople()).filter((p) => p.note).map((p) => [p.id, p.note!]));
     return ok({
-      flagged: flagged.slice(0, 8).map((r) => ({ person_id: r.personId, name: r.name, level: r.band, teams: r.teams, reasons: r.drivers, suggestion: r.suggestion })),
+      flagged: flagged.slice(0, 8).map((r) => ({ person_id: r.personId, name: r.name, level: r.band, teams: r.teams, reasons: r.drivers, suggestion: r.suggestion, church_note: notes.get(r.personId) })),
       healthy_count: entries.length - flagged.length,
+      team_leads: Object.fromEntries(teams.filter((t) => t.lead).map((t) => [t.name, t.lead])),
     });
   },
 });
@@ -387,7 +396,8 @@ const sendDraft = tool({
 const logCareEvent = tool({
   def: {
     name: "log_care_event",
-    description: "Record a pastoral contact (visit, call, hospital visit, prayer, text) with an optional minimal follow-up and due date. Keep it minimal: who, what kind of contact, and the next step, without sensitive details.",
+    description:
+      "Older way to record a pastoral contact (visit, call, hospital visit, prayer, text) with an optional minimal follow-up and due date. It lands on the person's open care case held by this leader, or opens one. Prefer log_care_contact. Keep it minimal, without sensitive details.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -409,20 +419,416 @@ const logCareEvent = tool({
   async run(input, ctx) {
     const person = await churchData().getPerson(input.person_id);
     if (!person) return fail(`No person with id ${input.person_id}.`);
-    if (input.follow_up) {
-      const problem = checkMemoryText(input.follow_up, { allowSensitive: config.allowSensitiveMemory });
-      if (problem) return fail(problem);
-    }
-    const record = await addCare(ctx.leader, {
-      personId: person.id,
-      personName: person.name,
-      kind: input.kind,
-      followUp: input.follow_up,
-      due: input.due,
-      conversationId: ctx.meta.offRecord ? undefined : ctx.meta.id,
+    return careWrite(async () => {
+      const actor = await careActor(ctx.leader);
+      const c = await logCareEventCompat(actor, { personId: person.id, kind: input.kind, followUp: input.follow_up, due: input.due }, convId(ctx));
+      await audit(ctx.leader, { conversationId: ctx.meta.id, action: "care.log", detail: `${input.kind} ${person.id} -> ${c.id}` });
+      return `Logged ${input.kind} with ${person.name} on care case ${c.id}${input.follow_up ? `, next step: ${input.follow_up}` : ""}.`;
     });
-    await audit(ctx.leader, { conversationId: ctx.meta.id, action: "care.log", detail: `${record.kind} ${person.id}` });
-    return ok(`Logged ${input.kind} with ${person.name}${input.follow_up ? `, follow-up: ${input.follow_up}` : ""}.`);
+  },
+});
+
+/* ---------- Pastoral care (visibility checked in code on every call) ---------- */
+
+const ISO_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const convId = (ctx: ToolContext) => (ctx.meta.offRecord ? undefined : ctx.meta.id);
+
+/** Runs a care write; policy and permission refusals come back as plain errors for Barnabas to relay. */
+async function careWrite(fn: () => Promise<unknown>): Promise<ToolResult> {
+  try {
+    const out = await fn();
+    const isResult = typeof out === "object" && out !== null && "isError" in out && "content" in out;
+    return isResult ? (out as ToolResult) : ok(out);
+  } catch (err) {
+    if (err instanceof CareError) return fail(err.message);
+    if (err instanceof z.ZodError) return fail(err.issues.map((i) => i.message).join("; "));
+    throw err;
+  }
+}
+
+function findMember(members: TeamMember[], q: string): TeamMember | TeamMember[] | null {
+  const query = q.trim().toLowerCase();
+  const exact = members.find((m) => m.id === q || m.name.toLowerCase() === query);
+  if (exact) return exact;
+  const partial = members.filter((m) => m.name.toLowerCase().includes(query));
+  return partial.length === 1 ? partial[0] : partial.length ? partial : null;
+}
+
+const listCareCases = tool({
+  phrase: "Let me check the care list.",
+  def: {
+    name: "list_care_cases",
+    description:
+      "Open pastoral care cases this leader can see: scope 'mine' (assigned to them, the default) or 'all'; optionally one type or only overdue next steps. Each case has its type, status, who holds it, the next step and when it's due, and the last contact.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        scope: { type: "string", enum: ["mine", "all"] },
+        type: { type: "string", enum: [...CASE_TYPES] },
+        overdue: { type: "boolean", description: "Only cases whose next step is past due" },
+      },
+    },
+  },
+  schema: z.object({ scope: z.enum(["mine", "all"]).optional(), type: z.enum(CASE_TYPES).optional(), overdue: z.boolean().optional() }),
+  async run({ scope = "mine", type, overdue }, ctx) {
+    const { actor, book } = await careFor(ctx.leader);
+    const rows = caseRows(book, actor, { scope, type, overdue });
+    return ok({
+      as_of: today(),
+      showing: `${scope === "mine" ? "cases assigned to you" : "every case you can see"}${type ? `, ${CASE_TYPE_LABELS[type].toLowerCase()} only` : ""}${overdue ? ", overdue only" : ""}`,
+      cases: rows.slice(0, 15).map((r) => ({
+        case_id: r.id,
+        name: r.name,
+        type: r.typeLabel,
+        status: CASE_STATUS_LABELS[r.status],
+        held_by: r.mine ? "you" : r.assigneeName,
+        confidential: r.confidential || undefined,
+        next_step: r.nextStep?.text ?? null,
+        due: r.nextStep?.due ?? null,
+        overdue: r.overdue || undefined,
+        last_contact: r.lastContact ? `${CONTACT_LABELS[r.lastContact.kind as keyof typeof CONTACT_LABELS]} on ${r.lastContact.date} by ${r.lastContact.by}` : "none yet",
+      })),
+      total: rows.length,
+      team: scope === "all" ? { open_cases: teamView(book).totalOpen } : undefined,
+    });
+  },
+});
+
+const careCaseDetail = tool({
+  phrase: "Let me pull up that case.",
+  def: {
+    name: "care_case_detail",
+    description: "One care case: who it's for, type, status, who holds it, the summary, the next step, and the timeline of contacts with their minimal notes.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { case_id: { type: "string" } }, required: ["case_id"] },
+  },
+  schema: z.object({ case_id: z.string().min(1).max(60) }),
+  async run({ case_id }, ctx) {
+    const { actor, book } = await careFor(ctx.leader);
+    const c = caseDetail(book, actor, case_id);
+    if (!c) return fail("No care case with that id that this leader can see. Use list_care_cases.");
+    return ok({
+      case_id: c.id,
+      for: c.subject.name,
+      person_id: c.subject.personId ?? null,
+      type: CASE_TYPE_LABELS[c.type],
+      status: CASE_STATUS_LABELS[c.status],
+      confidential: c.confidential,
+      held_by: isMine(actor.viewer, c.assigneeId) ? "you" : c.assigneeName,
+      summary: c.summary ?? null,
+      next_step: c.nextStep ?? null,
+      contacts: c.contacts.map((x) => ({ kind: CONTACT_LABELS[x.kind], date: x.date, by: x.byName, note: x.note ?? null })),
+    });
+  },
+});
+
+const myCareLoadTool = tool({
+  phrase: "Let me look at your week.",
+  def: {
+    name: "my_care_load",
+    description:
+      "This leader's own care load, private to them: open cases by type and weight (crisis and grief count more), contacts in the last 7 days, days since their last day off, rest days in the last 30 days, and a gentle signal (steady, full or stretched) with the reasons.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: {} },
+  },
+  schema: z.object({}).passthrough(),
+  async run(_input, ctx) {
+    const { actor, book } = await careFor(ctx.leader);
+    const load = await myCareLoad(ctx.leader, book, actor);
+    return ok({
+      private: "Only for this leader.",
+      signal: SIGNAL_LABELS[load.signal],
+      reasons: load.reasons,
+      open_cases: load.openCases,
+      by_type: load.byType.map((t) => `${t.count} ${t.label.toLowerCase()}`),
+      weighted_load: load.weighted,
+      contacts_last_7_days: load.contactsThisWeek,
+      days_without_a_day_off: load.daysWithoutDayOff,
+      last_day_off: load.lastDayOff,
+      rest_days_last_30: load.restDaysLast30.length,
+      overdue_next_steps: load.overdue,
+      how_it_works: "Stretched if one thing is heavy or two are full; full if one is.",
+    });
+  },
+});
+
+const discipleshipNextSteps = tool({
+  phrase: "Let me see who's ready.",
+  def: {
+    name: "discipleship_next_steps",
+    description:
+      "People ready for their next step on the discipleship pathway (first visit, Discover Faith class, salvation decision, baptism, membership class, membership, a Growth Group or Life Group, serving, giving), each with the reason. Filter to one step, e.g. 'membership_class' for 'Who's ready for the membership class?'. Also lists upcoming class sessions.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { step: { type: "string", enum: [...PATHWAY_STEPS] } } },
+  },
+  schema: z.object({ step: z.enum(PATHWAY_STEPS).optional() }),
+  async run({ step }, ctx) {
+    const { book } = await careFor(ctx.leader);
+    const asOf = today();
+    const d = discipleship(book, asOf, step);
+    const upcoming = d.classes.flatMap((c) => c.sessions.filter((s) => s.date >= asOf).map((s) => ({ class: c.name, date: s.date, time: s.time ?? null, topic: s.topic, enrolled: c.enrollees.length })));
+    return ok({
+      ready: d.nextSteps.slice(0, 20).map((n) => ({ name: n.name, person_id: n.personId ?? null, guest: n.guestId ? true : undefined, next_step: PATHWAY_LABELS[n.step], why: n.reason })),
+      total: d.nextSteps.length,
+      upcoming_class_sessions: upcoming.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 6),
+    });
+  },
+});
+
+const recentGuestsTool = tool({
+  phrase: "Let me check on our guests.",
+  def: {
+    name: "recent_guests",
+    description: "Guests from the last three weeks: when they visited, who's following up, open follow-up tasks, and whether anyone has reached them yet. By default only guests no one has contacted.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { include_contacted: { type: "boolean" } } },
+  },
+  schema: z.object({ include_contacted: z.boolean().optional() }),
+  async run({ include_contacted }, ctx) {
+    const { actor, book } = await careFor(ctx.leader);
+    const rows = recentGuests(book, actor, { uncontactedOnly: !include_contacted });
+    return ok({
+      guests: rows.map((g) => ({
+        guest_id: g.id,
+        name: g.name,
+        visits: g.visits,
+        following_up: g.mine ? "you" : g.assigneeName,
+        contacted: g.contacted,
+        interested_in: g.interests,
+        open_tasks: g.tasks.filter((t) => !t.doneAt).map((t) => ({ task: t.label, due: new Date(t.dueAt).toISOString().slice(0, 16).replace("T", " "), overdue: t.overdue || undefined, holder: t.mine ? "you" : t.assigneeName })),
+      })),
+    });
+  },
+});
+
+const openCareCase = tool({
+  def: {
+    name: "open_care_case",
+    description:
+      "Open a pastoral care case for a person or household when the leader asks. It's assigned to the leader unless they name someone else (pastors, deacons and staff can) or 'unassigned' for the pastors' queue. Optionally log the first contact and a next step. Notes stay minimal: no diagnoses or sensitive details.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        person_id: { type: "string", description: "From find_person" },
+        name: { type: "string", description: "Only for someone not in the directory" },
+        household: { type: "boolean", description: "The case is for the whole household" },
+        type: { type: "string", enum: [...CASE_TYPES] },
+        confidential: { type: "boolean", description: "Pastors only. Use when the leader asks for it" },
+        assignee: { type: "string", description: "'me' (default), 'unassigned', or a team member's name" },
+        summary: { type: "string", description: "One minimal line, e.g. 'At Berkshire Medical Center this week'" },
+        next_step: { type: "string" },
+        due: { type: "string", description: "yyyy-mm-dd" },
+        contact_kind: { type: "string", enum: [...CONTACT_KINDS], description: "If the leader already reached them" },
+        contact_note: { type: "string" },
+      },
+      required: ["type"],
+    },
+  },
+  schema: z.object({
+    person_id: z.string().max(40).optional(),
+    name: z.string().max(100).optional(),
+    household: z.boolean().optional(),
+    type: z.enum(CASE_TYPES),
+    confidential: z.boolean().optional(),
+    assignee: z.string().max(80).optional(),
+    summary: z.string().max(400).optional(),
+    next_step: z.string().max(400).optional(),
+    due: ISO_DATE.optional(),
+    contact_kind: z.enum(CONTACT_KINDS).optional(),
+    contact_note: z.string().max(400).optional(),
+  }),
+  async run(input, ctx) {
+    return careWrite(async () => {
+      const actor = await careActor(ctx.leader);
+      let assignee = input.assignee?.trim() || "me";
+      if (!["me", "unassigned"].includes(assignee)) {
+        const m = findMember(actor.members, assignee);
+        if (!m) return fail(`No one on the care team is called "${assignee}".`);
+        if (Array.isArray(m)) return fail(`"${assignee}" could be ${m.map((x) => x.name).join(" or ")}. Ask which.`);
+        assignee = m.id;
+      }
+      const c = await openCase(
+        actor,
+        {
+          personId: input.person_id,
+          name: input.name,
+          household: input.household,
+          type: input.type,
+          confidential: input.confidential ?? false,
+          assignee,
+          summary: input.summary,
+          nextStep: input.next_step,
+          due: input.due,
+          contact: input.contact_kind ? { kind: input.contact_kind, date: today(), note: input.contact_note } : undefined,
+        },
+        "barnabas",
+        convId(ctx),
+      );
+      return {
+        done: `Opened a ${CASE_TYPE_LABELS[c.type].toLowerCase()} case for ${c.subject.name}${c.assigneeId ? `, held by ${c.assigneeId === actor.self.id ? "you" : actor.members.find((m) => m.id === c.assigneeId)?.name}` : ", unassigned for the pastors"}${c.contacts.length ? ", with today's contact logged" : ""}${c.nextStep ? `. Next step: ${c.nextStep.text}` : ""}.`,
+        case_id: c.id,
+        confidential: c.confidential,
+        tell_the_leader: "Say in one short sentence what you did.",
+      };
+    });
+  },
+});
+
+const logCareContact = tool({
+  def: {
+    name: "log_care_contact",
+    description: "Log a contact on a care case (visit, call, text, card, meal) when the leader tells you about one, with an optional minimal note and the next step. Date defaults to today.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        case_id: { type: "string" },
+        kind: { type: "string", enum: [...CONTACT_KINDS] },
+        date: { type: "string", description: "yyyy-mm-dd; default today" },
+        note: { type: "string", description: "Minimal, e.g. 'In good spirits'" },
+        next_step: { type: "string" },
+        due: { type: "string", description: "yyyy-mm-dd" },
+      },
+      required: ["case_id", "kind"],
+    },
+  },
+  schema: z.object({ case_id: z.string().min(1).max(60), kind: z.enum(CONTACT_KINDS), date: ISO_DATE.optional(), note: z.string().max(400).optional(), next_step: z.string().max(400).optional(), due: ISO_DATE.optional() }),
+  async run(input, ctx) {
+    return careWrite(async () => {
+      const actor = await careActor(ctx.leader);
+      const c = await logContact(actor, input.case_id, { kind: input.kind, date: input.date ?? today(), note: input.note, nextStep: input.next_step, due: input.due }, convId(ctx));
+      return `Logged a ${CONTACT_LABELS[input.kind].toLowerCase()} with ${c.subject.name}${c.nextStep && input.next_step ? `. Next step: ${c.nextStep.text}${c.nextStep.due ? `, by ${friendlyDate(c.nextStep.due)}` : ""}` : ""}. Tell the leader in one short sentence.`;
+    });
+  },
+});
+
+const addPrayerRequest = tool({
+  def: {
+    name: "add_prayer_request",
+    description: "Add a prayer request to the church's prayer list when the leader asks. Private requests are seen by pastors and this leader; shareable ones by the whole team. Keep it short and without sensitive details.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        person_id: { type: "string" },
+        name: { type: "string", description: "Only for someone not in the directory" },
+        request: { type: "string", description: "e.g. 'Rest and healing as she recovers at home'" },
+        shareable: { type: "boolean", description: "Only if the person is happy for it to be shared with the prayer team" },
+      },
+      required: ["request"],
+    },
+  },
+  schema: z.object({ person_id: z.string().max(40).optional(), name: z.string().max(100).optional(), request: z.string().min(3).max(500), shareable: z.boolean().optional() }),
+  async run(input, ctx) {
+    return careWrite(async () => {
+      const actor = await careActor(ctx.leader);
+      const p = await addPrayer(actor, { personId: input.person_id, name: input.name, request: input.request, shareable: input.shareable ?? false }, convId(ctx));
+      return `Added a ${p.shareable ? "shareable" : "private"} prayer request for ${p.name}. Tell the leader in one short sentence.`;
+    });
+  },
+});
+
+const recordGuestTool = tool({
+  def: {
+    name: "record_guest",
+    description:
+      "Record a first-time guest's card when the leader tells you about one: name, contact, how they heard, kids' ages, a prayer request, interests. It makes the follow-up: a thank-you draft in the review queue (nothing is sent), a welcome call within 48 hours, assigned in rotation among the deacons and connections staff.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        email: { type: "string" },
+        phone: { type: "string" },
+        how_heard: { type: "string" },
+        kids_ages: { type: "string" },
+        prayer_request: { type: "string" },
+        interests: { type: "array", items: { type: "string", enum: [...GUEST_INTERESTS] } },
+        visit_date: { type: "string", description: "yyyy-mm-dd; default today" },
+      },
+      required: ["name"],
+    },
+  },
+  schema: z.object({
+    name: z.string().min(1).max(100),
+    email: z.string().max(200).optional(),
+    phone: z.string().max(40).optional(),
+    how_heard: z.string().max(200).optional(),
+    kids_ages: z.string().max(100).optional(),
+    prayer_request: z.string().max(500).optional(),
+    interests: z.array(z.enum(GUEST_INTERESTS)).max(10).optional(),
+    visit_date: ISO_DATE.optional(),
+  }),
+  async run(input, ctx) {
+    return careWrite(async () => {
+      const actor = await careActor(ctx.leader);
+      const g = await recordGuest(
+        ctx.leader.churchId,
+        actor,
+        { name: input.name, email: input.email, phone: input.phone, howHeard: input.how_heard, kidsAges: input.kids_ages, prayerRequest: input.prayer_request, interests: input.interests ?? [], visitDate: input.visit_date },
+        actor.members,
+        convId(ctx),
+      );
+      const holder = actor.members.find((m) => m.id === g.assigneeId)?.name ?? "the team";
+      const draft = g.tasks.find((t) => t.kind === "thank_you")?.draftId;
+      return `Recorded ${g.name}'s guest card. ${holder === actor.self.name ? "You're" : `${holder} is`} following up: a welcome call within 48 hours${draft ? ", and a thank-you draft is waiting in Drafts for review (not sent)" : ""}. Tell the leader in one or two short sentences.`;
+    });
+  },
+});
+
+const assignCareCase = tool({
+  def: {
+    name: "assign_care_case",
+    description:
+      "Give a care case to a team member, or 'me' to take it yourself, or 'unassigned' to hand it to the pastors' queue. Giving it to someone else is confirmed in code: the first call proposes it; tell the leader and ask; call again with the same details after they say yes.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { case_id: { type: "string" }, assignee: { type: "string", description: "'me', 'unassigned', or a team member's name" } }, required: ["case_id", "assignee"] },
+  },
+  schema: z.object({ case_id: z.string().min(1).max(60), assignee: z.string().min(1).max(80) }),
+  async run(input, ctx) {
+    return careWrite(async () => {
+      const { actor, book } = await careFor(ctx.leader);
+      const c = caseDetail(book, actor, input.case_id);
+      if (!c) return fail("No care case with that id that this leader can see.");
+      let target: TeamMember | null = null;
+      if (input.assignee.trim().toLowerCase() === "me") target = actor.self;
+      else if (input.assignee.trim().toLowerCase() !== "unassigned") {
+        const m = findMember(actor.members, input.assignee);
+        if (!m) return fail(`No one on the care team is called "${input.assignee}".`);
+        if (Array.isArray(m)) return fail(`"${input.assignee}" could be ${m.map((x) => x.name).join(" or ")}. Ask which.`);
+        target = m;
+      }
+      const toSelf = target ? isMine(actor.viewer, target.id) : false;
+      if (!toSelf) {
+        const summary = target ? `give ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} case to ${target.name}` : `hand ${c.subject.name}'s case back to the pastors' queue, unassigned`;
+        if (!gateConfirmed(ctx, "assign_care_case", JSON.stringify([c.id, target?.id ?? null]))) return fail(`Not confirmed yet. Ask the leader: ${summary}? Call assign_care_case again with the same details after they say yes.`);
+      }
+      const updated = await assignCase(actor, c.id, target?.id ?? null, convId(ctx));
+      return `${toSelf ? "You now hold" : target ? `${target.name} now holds` : "The pastors' queue now has"} ${updated.subject.name}'s case. Tell the leader in one short sentence.`;
+    });
+  },
+});
+
+const closeCareCase = tool({
+  def: {
+    name: "close_care_case",
+    description: "Close a care case when care is complete. Confirmed in code: the first call proposes it; ask the leader; call again with the same case_id after they say yes.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { case_id: { type: "string" }, note: { type: "string", description: "Optional minimal closing note" } }, required: ["case_id"] },
+  },
+  schema: z.object({ case_id: z.string().min(1).max(60), note: z.string().max(400).optional() }),
+  async run(input, ctx) {
+    return careWrite(async () => {
+      const { actor, book } = await careFor(ctx.leader);
+      const c = caseDetail(book, actor, input.case_id);
+      if (!c) return fail("No care case with that id that this leader can see.");
+      if (!c.canClose) return fail("Only whoever holds the case, or a pastor, deacon or staff member, can close it. Tell the leader kindly.");
+      if (!gateConfirmed(ctx, "close_care_case", c.id)) return fail(`Not confirmed yet. Ask the leader: close ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} case? Call close_care_case again after they say yes.`);
+      await closeCase(actor, c.id, input.note, convId(ctx));
+      return `Closed ${c.subject.name}'s case. Tell the leader in one short sentence.`;
+    });
   },
 });
 
@@ -866,6 +1272,17 @@ const ALL: ToolSpec<any>[] = [
   givingSummaryTool,
   recordGift,
   recordExpense,
+  listCareCases,
+  careCaseDetail,
+  myCareLoadTool,
+  discipleshipNextSteps,
+  recentGuestsTool,
+  openCareCase,
+  logCareContact,
+  addPrayerRequest,
+  recordGuestTool,
+  assignCareCase,
+  closeCareCase,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
