@@ -36,6 +36,12 @@ export const VERSES = {
     short: "God loveth a cheerful giver.",
     reference: "2 Corinthians 9:7",
   },
+  /** The Journal: its empty state. */
+  journal: {
+    text: "And the LORD answered me, and said, Write the vision, and make it plain upon tables, that he may run that readeth it.",
+    short: "Write the vision, and make it plain upon tables",
+    reference: "Habakkuk 2:2",
+  },
 } as const satisfies Record<string, Verse>;
 
 export type VerseKey = keyof typeof VERSES;

@@ -123,5 +123,7 @@ const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account", 
 export function checkinMayUse(pathname: string): boolean {
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   if (under("/kids/families")) return false;
+  // A leader's journal is their own writing; check-in has none (and no leader's shared entries either).
+  if (under("/journal") || under("/api/journal")) return false;
   return [...CHECKIN_PAGES, ...CHECKIN_APIS].some(under);
 }

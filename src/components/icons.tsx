@@ -124,3 +124,9 @@ export const WebsiteIcon = () => (
     <path d="M3.5 12h17M12 3.5c2.3 2.4 3.4 5.2 3.4 8.5s-1.1 6.1-3.4 8.5c-2.3-2.4-3.4-5.2-3.4-8.5s1.1-6.1 3.4-8.5Z" />
   </svg>
 );
+export const NotebookIcon = () => (
+  <svg {...common}>
+    <path d="M6.5 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-10Z" />
+    <path d="M6.5 3.5v17M4.5 7.5h4M4.5 12h4M4.5 16.5h4M11 8h4.5M11 11.5h4.5" />
+  </svg>
+);

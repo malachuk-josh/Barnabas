@@ -1,0 +1,141 @@
+/* Journal: the list, the editor and the print view. Theme tokens come from globals.css (light by default,
+   dark under :root[data-theme="dark"]). Global stylesheet: run scripts/guard-barnabas-css.mjs after editing. */
+
+/* ---------- List ---------- */
+.jr-new { position: relative; display: grid; gap: 8px; justify-items: end; }
+.jr-new-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(320px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(15, 36, 35, 0.16); padding: 6px; display: grid;
+}
+.jr-new-menu button { display: grid; gap: 2px; justify-items: start; text-align: left; padding: 10px 12px; border: 0; background: none; border-radius: 10px; cursor: pointer; color: var(--fg); }
+.jr-new-menu button:hover, .jr-new-menu button:focus-visible { background: var(--surface-2); }
+
+.jr-list-wrap { display: grid; gap: 14px; min-width: 0; }
+.jr-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.jr-search { flex: 1 1 240px; min-width: 0; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.jr-selects { display: flex; gap: 8px; flex: 1 1 260px; min-width: 0; }
+.jr-selects select { flex: 1 1 0; min-width: 0; }
+.jr-filters .care-chip { cursor: pointer; }
+
+.jr-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.jr-card {
+  display: grid; gap: 6px; align-content: start; height: 100%; text-decoration: none; color: var(--fg); min-width: 0;
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 14px 16px;
+}
+.jr-card:hover { box-shadow: 0 0 0 1px var(--muted); }
+.jr-card-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.jr-card-title { font-size: 1.05rem; overflow-wrap: anywhere; }
+.jr-snippet { color: var(--muted); font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.jr-card-foot { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.jr-date { margin-left: auto; font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.jr-tag { font-size: 0.8rem; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
+.jr-flag { font-size: 0.75rem; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; }
+.jr-kind { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; border-radius: 999px; padding: 2px 9px; background: var(--surface-2); color: var(--accent); }
+.jr-kind-sermon { background: var(--watch-bg); color: var(--watch); }
+.jr-kind-devotional { background: color-mix(in srgb, var(--ok) 15%, var(--surface)); color: var(--ok); }
+.jr-kind-setlist { background: color-mix(in srgb, var(--chart-1) 16%, var(--surface)); color: var(--fg); }
+.jr-empty { padding: 22px; }
+.jr-empty .term-verse { margin: 4px 0 6px; }
+
+/* ---------- Editor ---------- */
+.jr-page { display: grid; gap: 16px; max-width: 860px; min-width: 0; }
+.jr-editor { display: grid; gap: 16px; min-width: 0; }
+.jr-head { display: grid; gap: 10px; }
+.jr-head-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.jr-back { color: var(--muted); text-decoration: none; font-weight: 600; }
+.jr-save { margin-left: auto; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+.jr-save-saved { color: var(--ok); }
+.jr-save-error { color: var(--danger); }
+.jr-title {
+  width: 100%; font-family: var(--font-display); font-size: clamp(1.6rem, 5vw, 2.2rem); line-height: 1.2; padding: 4px 0; border: 0;
+  border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--fg);
+}
+.jr-title:focus { outline: none; border-bottom-color: var(--brass); }
+.jr-tags-input { font-size: 0.9rem; }
+.jr-actions { gap: 8px; }
+.jr-actions .btn[aria-pressed="true"]:where(:not(.word-root *)) { background: var(--surface-2); }
+.jr-send { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius); background: var(--surface-2); }
+.jr-send .btn:where(:not(.word-root *)) { justify-self: start; }
+
+.jr-section { display: grid; gap: 12px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 16px; min-width: 0; }
+.jr-section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.jr-section-head h2 { font-size: 1.2rem; }
+.jr-field { min-width: 0; }
+.jr-field input[type="number"] { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.jr-textarea { font-family: var(--font-body); font-size: 1rem; min-height: 0; line-height: 1.5; }
+.jr-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; min-height: 160px; }
+.jr-grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.jr-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.jr-refs { display: flex; gap: 10px; flex-wrap: wrap; }
+.jr-ref { color: var(--accent); font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.jr-quote { margin: 0; padding: 8px 12px; border-left: 3px solid var(--brass); background: var(--surface-2); border-radius: 0 10px 10px 0; font-style: italic; font-size: 0.95rem; }
+
+.jr-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.jr-item { display: grid; gap: 10px; border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px; background: var(--bg); min-width: 0; }
+.jr-item-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.jr-num { font-weight: 700; color: var(--highlight); }
+.jr-item-controls { display: flex; gap: 6px; }
+.jr-item-controls .icon-btn { width: 36px; height: 36px; font-size: 1rem; }
+.jr-item-controls .icon-btn:disabled { opacity: 0.35; cursor: default; }
+
+.jr-tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+.jr-tabs button { border: 0; background: none; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+.jr-tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-fg); }
+.jr-preview { border: 1px dashed var(--line); border-radius: 10px; padding: 12px 14px; min-height: 120px; }
+
+/* Markdown and prose */
+.jr-md, .jr-prose { display: grid; gap: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+.jr-md h2 { font-size: 1.3rem; }
+.jr-md h3 { font-size: 1.12rem; }
+.jr-md h4 { font-size: 1rem; font-family: var(--font-body); font-weight: 700; margin: 0; }
+.jr-md ul, .jr-md ol { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.jr-md blockquote { margin: 0; padding: 6px 12px; border-left: 3px solid var(--brass); color: var(--muted); font-style: italic; }
+.jr-md code { font-family: ui-monospace, Menlo, monospace; font-size: 0.88em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+
+/* Confirm dialog */
+.jr-modal-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(15, 36, 35, 0.45); display: grid; place-items: center; padding: 16px; }
+.jr-modal { width: min(460px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); color: var(--fg); border-radius: var(--radius); padding: 20px; display: grid; gap: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25); }
+.jr-modal h2 { font-size: 1.3rem; }
+.jr-modal-actions { justify-content: flex-end; }
+
+/* ---------- Read-only view (shared entries) and print ---------- */
+.jr-view { display: grid; gap: 16px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: clamp(16px, 4vw, 28px); min-width: 0; overflow-wrap: anywhere; }
+.jr-view-head { display: grid; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.jr-view-head h1 { font-size: clamp(1.6rem, 5vw, 2.1rem); }
+.jr-view section { display: grid; gap: 8px; }
+.jr-view h2 { font-size: 1.15rem; }
+.jr-view-outline, .jr-view-questions { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; }
+.jr-view-outline ul { margin: 4px 0 0; padding-left: 1.2em; }
+.jr-view-prayer { font-size: 0.95rem; }
+.jr-view-songs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.jr-view-song { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: start; }
+.jr-view-song-n { font-weight: 700; color: var(--highlight); font-size: 1.1rem; }
+.jr-view-song-meta { font-size: 0.88rem; color: var(--muted); }
+.jr-view-song-arr { font-size: 0.88rem; font-family: ui-monospace, Menlo, monospace; }
+.jr-view-transition { margin: 4px 0 0 36px; font-size: 0.88rem; font-style: italic; color: var(--muted); }
+.jr-print { display: none; }
+
+@media (max-width: 640px) {
+  .jr-grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .jr-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .jr-section { padding: 14px 12px; }
+  .jr-item { padding: 10px; }
+  .jr-new { justify-items: start; }
+  .jr-new-menu { left: 0; right: auto; }
+  .jr-selects { flex-basis: 100%; }
+}
+
+@media print {
+  .jr-editor, .jr-head, .no-print, .jr-modal-backdrop { display: none !important; }
+  .jr-print { display: block; }
+  .jr-page { max-width: none; }
+  .jr-view { box-shadow: none; border-radius: 0; padding: 0; gap: 10px; font-size: 10.5pt; line-height: 1.4; background: #fff; color: #000; }
+  .jr-view-head { border-bottom: 2px solid #000; padding-bottom: 6px; }
+  .jr-view-head h1 { font-size: 18pt; }
+  .jr-view h2 { font-size: 12pt; }
+  .jr-view-songs { gap: 6px; }
+  .jr-view-song, .jr-view-day, .jr-view-outline > li { break-inside: avoid; }
+  .jr-view-song-meta, .jr-view-transition { color: #333; }
+  .jr-quote { background: none; border-left-color: #888; }
+  .jr-ref { color: #000; text-decoration: none; }
+}
