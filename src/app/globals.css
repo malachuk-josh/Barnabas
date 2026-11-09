@@ -1503,3 +1503,28 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .draft-status-sent { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
 .draft-status-partly_sent, .draft-status-queued { background: var(--watch-bg); color: var(--watch); }
 .draft-status-failed { background: var(--danger-bg); color: var(--danger); }
+
+/* ---------- Memory ---------- */
+.memory-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 960px) { .memory-layout { grid-template-columns: minmax(0, 1fr); } }
+.memory-card { display: grid; gap: 12px; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); min-width: 0; }
+.memory-card-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.memory-card-title { display: grid; gap: 2px; min-width: 0; flex: 1 1 220px; }
+.memory-card-title h3 { font-size: 1.2rem; }
+.memory-card-actions { display: flex; gap: 6px; }
+/* A memory file reads as notes, not code */
+.memory-text { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); overflow-wrap: anywhere; line-height: 1.55; }
+.memory-text h4 { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 6px 0 0; }
+.memory-text h4:first-child { margin-top: 0; }
+.memory-text ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.memory-text li::marker { color: var(--brass); }
+.memory-confirm, .conv-confirm { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: var(--danger-bg); color: var(--danger); }
+.conv-confirm { padding: 4px; background: transparent; flex: none; }
+.btn-danger-solid:where(:not(.word-root *)) { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.conv-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--line-soft); }
+.conv-row:first-child { border-top: 0; }
+.conv-main { display: grid; gap: 3px; flex: 1 1 220px; min-width: 0; }
+.conv-main strong { overflow-wrap: anywhere; }
+.conv-main .status-tag { justify-self: start; }
+.conv-done { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
+.conv-error { background: var(--danger-bg); color: var(--danger); }
