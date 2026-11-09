@@ -1344,3 +1344,18 @@ input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 }
 /* Nothing to save: the bar rests at the end of the form instead of floating over it */
 .save-bar:not(.is-dirty) { position: static; background: transparent; box-shadow: none; padding-left: 4px; }
+
+/* ---------- Admin: people and access ---------- */
+.admin-add-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .admin-add-grid { grid-template-columns: 1fr; } }
+.admin-people { list-style: none; margin: 0; padding: 0; display: grid; }
+.admin-people > li { padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.admin-people > li:first-child { border-top: 0; }
+.admin-person { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.admin-person-who { display: grid; gap: 1px; flex: 1 1 220px; min-width: 0; }
+.admin-person-who .small { overflow-wrap: anywhere; }
+.admin-level { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg); white-space: nowrap; }
+.admin-level-admin { background: var(--accent); color: var(--accent-fg); }
+.admin-level-leader { background: color-mix(in srgb, var(--brass) 28%, var(--surface)); }
+.admin-level-unset { background: var(--watch-bg); color: var(--watch); white-space: normal; }
+.admin-edit { margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--surface-2); }

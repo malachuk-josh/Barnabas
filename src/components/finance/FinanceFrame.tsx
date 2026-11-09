@@ -1,5 +1,5 @@
 import { AppShell, requirePageLeader } from "@/components/AppShell";
-import { can, ROLE_LABELS, type Access } from "@/lib/auth/roles";
+import { can, accessSummary, type Access } from "@/lib/auth/roles";
 import type { Leader } from "@/lib/auth/session";
 import { loadBooks } from "@/lib/finance/store";
 import type { Books } from "@/lib/finance/types";
@@ -28,8 +28,7 @@ export function NoFinance({ profile, access }: { profile: Profile; access: Acces
           <span className="eyebrow">Finance</span>
           <h1>Finance isn&apos;t part of your role</h1>
           <p className="muted">
-            You&apos;re signed in as {ROLE_LABELS[access.role].toLowerCase()}. Church finances are open to the pastor, treasurer and deacons. If you need access, ask your church administrator to change your role in
-            Settings → Team.
+            You&apos;re signed in as {accessSummary(access).label.toLowerCase()}. If you need church finances, ask your church administrator to turn on finance for you on the Admin page.
           </p>
         </div>
       </div>

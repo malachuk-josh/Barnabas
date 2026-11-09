@@ -111,7 +111,7 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   const note = operatorNote(input, crisis);
   if (note) added.push(note);
   let messages = await appendMessages(leader, meta, ...added);
-  // The models an admin chose in Settings → Barnabas AI (or the defaults); Team and Member levels
+  // The models an admin chose in Admin → Barnabas AI (or the defaults); Team and Member levels
   // get Claude Haiku, typing only, and only the tools for their own information.
   const ai = await aiForLeader(leader);
   let mode: TurnMode = input.voice && !ai.tools ? "voice" : "text";

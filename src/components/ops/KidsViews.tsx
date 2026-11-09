@@ -13,7 +13,7 @@ export function KidsNoAccess({ profile }: { profile: Profile }) {
       </div>
       <div className="card stack" style={{ maxWidth: 560 }}>
         <p>Children&apos;s records are kept to the pastors and staff who run check-in.</p>
-        <p className="muted small">If you serve at the check-in desk, ask your church administrator to give you access in Settings → Team.</p>
+        <p className="muted small">If you serve at the check-in desk, ask your church administrator to give you access on the Admin page.</p>
       </div>
     </AppShell>
   );

@@ -56,7 +56,7 @@ export function modelFor(mode: TurnMode, ai: ResolvedAi = defaultAi()): { model:
 }
 
 /**
- * Claude's own web search and web fetch, when an admin has turned them on (Settings -> Barnabas AI).
+ * Claude's own web search and web fetch, when an admin has turned them on (Admin -> Barnabas AI).
  * Newer models get the versions with dynamic filtering; Haiku gets the basic ones.
  */
 export function webTools(model: string, ai?: ResolvedAi): Anthropic.Beta.BetaToolUnion[] {

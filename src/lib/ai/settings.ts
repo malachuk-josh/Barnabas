@@ -4,7 +4,7 @@ import { getJSON, setJSON } from "../store";
 import { DEFAULT_TONE, type AiSettingsView, type ModelId, type TextEffort } from "./choices";
 
 /**
- * The church's choice of Claude models for Barnabas, set by an admin in Settings → Barnabas AI.
+ * The church's choice of Claude models for Barnabas, set by an admin in Church office → Admin → Barnabas AI.
  * Anything not chosen falls back to the deployment's defaults (BARNABAS_MODEL, BARNABAS_VOICE_MODEL,
  * BARNABAS_EFFORT, then the built-in defaults).
  */

@@ -1,6 +1,6 @@
 /**
  * Roles and permissions. A leader's role lives on their leader record (`leader:{church}:{leaderId}`),
- * which an admin manages in Settings → Team. Admins are bootstrapped with BARNABAS_ADMIN_EMAILS.
+ * which an admin manages on the Admin page (Church office → Admin). Admins are bootstrapped with BARNABAS_ADMIN_EMAILS.
  * Everything here is checked on the server; the app only hides what a leader can't use.
  */
 
@@ -270,4 +270,17 @@ export function levelMayUse(access: Access, pathname: string): boolean {
   const extra = access.level === "team" && access.teamRole === "care" ? ["/shepherding", "/api/care"] : [];
   const allowed = access.level === "team" ? [...TEAM_PATHS, ...extra] : MEMBER_PATHS;
   return allowed.some(under);
+}
+
+/** How someone's access reads in Settings: their level (or older role, before a level is chosen). */
+export function accessSummary(access: Access): { label: string; description: string } {
+  if (access.level === "admin") return { label: LEVEL_LABELS.admin, description: LEVEL_DESCRIPTIONS.admin };
+  if (access.level === "leader")
+    return { label: access.finance ? "Leader, with finance" : LEVEL_LABELS.leader, description: access.finance ? "Every feature, including finance, and Barnabas by voice or typing" : LEVEL_DESCRIPTIONS.leader };
+  if (access.level === "team") {
+    const r = access.teamRole ?? "serving";
+    return { label: `Team: ${TEAM_ROLE_LABELS[r]}`, description: `${TEAM_ROLE_DESCRIPTIONS[r]}, and Barnabas by typing` };
+  }
+  if (access.level === "member") return { label: LEVEL_LABELS.member, description: LEVEL_DESCRIPTIONS.member };
+  return { label: ROLE_LABELS[access.role], description: ROLE_DESCRIPTIONS[access.role] };
 }
