@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { levelMayUse, type Access } from "@/lib/auth/roles";
-import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MessagesIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, ShieldIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, ShieldIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
 
 /** Sections of the menu, in order. Items with no group sit at the top; "account" sits at the foot. */
 export const NAV_GROUPS = [
@@ -31,7 +31,7 @@ type NavItem = {
 export const NAV: NavItem[] = [
   { href: "/", label: "Today", Icon: TodayIcon, tab: true },
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon, tab: true },
-  { href: "/inbox", label: "Messages", Icon: MessagesIcon },
+  // Messages (/inbox) joins the menu with the in-app messages feature.
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
   { href: "/people", label: "People", Icon: PeopleIcon, group: "people", tab: true },
   { href: "/shepherding", label: "Shepherding", Icon: HeartIcon, group: "people" },

@@ -137,7 +137,7 @@ describe("journal privacy and CRUD", () => {
     for (const p of ["/journal", "/journal/jr_1", "/api/journal", "/api/journal/jr_1"]) expect(checkinMayUse(p), p).toBe(false);
     expect(checkinMayUse("/api/push")).toBe(true);
     expect(navItems({}).map((x) => x.href)).toContain("/journal");
-    expect(navItems({ checkinOnly: true }).map((x) => x.href)).toEqual(["/inbox", "/kids", "/settings"]);
+    expect(navItems({ checkinOnly: true }).map((x) => x.href)).toEqual(["/kids", "/settings"]);
   });
 
   it("duplicates, pins, archives, and deletes only with a confirm (audited)", async () => {

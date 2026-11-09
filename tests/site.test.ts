@@ -464,7 +464,7 @@ describe("website permissions", () => {
     const hrefs = (a: Parameters<typeof navItems>[0]) => navItems(a).map((x) => x.href);
     expect(hrefs({ showSite: true })).toContain("/site");
     expect(hrefs({ showSite: false })).not.toContain("/site");
-    expect(hrefs({ showSite: true, checkinOnly: true })).toEqual(["/inbox", "/kids", "/settings"]);
+    expect(hrefs({ showSite: true, checkinOnly: true })).toEqual(["/kids", "/settings"]);
   });
 
   it("gates Barnabas's announcement tool behind a yes and site.edit, and reads only the published site", async () => {
