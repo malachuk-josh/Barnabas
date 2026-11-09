@@ -10,6 +10,8 @@ import { loadBooks } from "../finance/store";
 import { METHOD_LABELS } from "../finance/types";
 import { gathering } from "../ops/gatherings";
 import { loadServe } from "../serve/store";
+import { isActive } from "../people/native";
+import { loadPeople } from "../people/store";
 
 /**
  * CSV exports: the directory, serving rosters, event registrations and giving summaries. Each is checked
@@ -20,7 +22,7 @@ export const EXPORT_KINDS = ["people", "rosters", "registrations", "giving", "gi
 export type ExportKind = (typeof EXPORT_KINDS)[number];
 
 export const EXPORT_INFO: Record<ExportKind, { label: string; description: string; permission?: Permission; also?: Permission }> = {
-  people: { label: "People and households", description: "Everyone in the church directory with email, phone, household and language.", permission: "people.export" },
+  people: { label: "People and households", description: "Everyone in the directory with every field: household, status, contact, address, birthdays, groups and custom fields.", permission: "people.export" },
   rosters: { label: "Serving rosters", description: "Who serves where for the last 12 weeks and the next 12: date, gathering, team, position, volunteer." },
   registrations: { label: "Event registrations", description: "Every registration for every event, with party size, status, check-in and payment.", permission: "events.manage" },
   giving: { label: "Giving summary", description: "Giving by month and fund, with the number of gifts. No names.", permission: "finance.view" },
@@ -39,9 +41,18 @@ export async function buildExport(leader: Leader, access: Access, kind: ExportKi
   let header: string[] = [];
   let rows: unknown[][] = [];
   if (kind === "people") {
-    const people = await churchData().listPeople();
-    header = ["Name", "First name", "Household", "Email", "Phone", "Preferred language", "Small group"];
-    rows = people.map((p) => [p.name, p.firstName, p.household, p.email, p.phone, p.language, p.smallGroup]);
+    const book = await loadPeople(leader.churchId);
+    const active = book.people.filter(isActive);
+    if (active.length) {
+      // The whole People record, so the church can always take its data with it.
+      const hh = new Map(book.households.map((h) => [h.id, h.name]));
+      header = ["First name", "Last name", "Goes by", "Household", "Place in household", "Status", "Member since", "Email", "Mobile", "Home phone", "Street", "City", "State", "ZIP", "Birthdate", "Anniversary", "Language", "Groups", ...book.fields.map((f) => f.label)];
+      rows = active.map((p) => [p.firstName, p.lastName, p.nickname, p.householdId ? hh.get(p.householdId) : "", p.householdRole, p.status, p.membershipDate, p.email, p.phone, p.homePhone, p.address?.street, p.address?.city, p.address?.state, p.address?.zip, p.birthdate, p.anniversary, p.language, book.groups.filter((g) => !g.archivedAt && g.memberIds.includes(p.id)).map((g) => g.name).join("; "), ...book.fields.map((f) => p.custom[f.id])]);
+    } else {
+      const people = await churchData().listPeople();
+      header = ["Name", "First name", "Household", "Email", "Phone", "Preferred language", "Small group"];
+      rows = people.map((p) => [p.name, p.firstName, p.household, p.email, p.phone, p.language, p.smallGroup]);
+    }
   } else if (kind === "rosters") {
     const book = await loadServe(leader.churchId);
     const from = addDays(asOf, -84);

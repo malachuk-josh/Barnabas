@@ -104,3 +104,11 @@ export const NetworkIcon = () => (
     <path d="M8.3 7.6h7.4M7.2 9.2l3.6 6.2M16.8 9.2l-3.6 6.2" />
   </svg>
 );
+export const PeopleIcon = () => (
+  <svg {...common}>
+    <circle cx="9" cy="8.5" r="3.2" />
+    <path d="M3.5 19.5a5.5 5.5 0 0 1 11 0" />
+    <circle cx="17" cy="9.5" r="2.4" />
+    <path d="M15.5 14.6a4.4 4.4 0 0 1 5 4.9" />
+  </svg>
+);

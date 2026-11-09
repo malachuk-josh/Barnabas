@@ -1,4 +1,4 @@
-/** The church-data surface Barnabas reads. Each ChMS (Planning Center, Rock, Breeze...) gets an adapter. */
+/** The church-data surface Barnabas reads. The native adapter (`src/lib/people/native.ts`) serves the church's own People database; the demo adapter serves the demo church. */
 
 export type Language = "en" | "es" | "ko";
 

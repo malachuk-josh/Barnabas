@@ -1,20 +1,21 @@
 import { config } from "../config";
+import { NativeChurch } from "../people/native";
+import { loadPeople } from "../people/store";
 import { DemoChurch } from "./demo";
-import { SnapshotChurch } from "./planning-center";
-import { hasRealData, loadSnapshot } from "./snapshot";
 import type { ChurchData } from "./types";
 
 /**
- * The church database Barnabas reads: the church's real people once they're connected (a Planning Center
- * sync or a CSV import), otherwise the demo church. The snapshot is re-read at most every few seconds.
+ * The church database Barnabas reads: its own People database (`src/lib/people`) once it has anyone in
+ * it, otherwise the demo church (the published leaders and schedule, no made-up congregation). Re-read at
+ * most every few seconds; edits and imports call `invalidateChurchData()`.
  */
 export class ConnectedChurch implements ChurchData {
   private cached: { at: number; data: ChurchData } | null = null;
   private last = "demo";
 
-  constructor(private readonly churchId = config.churchId, private readonly demo: ChurchData = new DemoChurch(), private readonly ttlMs = 5000) {}
+  constructor(private readonly churchId = config.churchId, private readonly demo: ChurchData = new DemoChurch(), private readonly ttlMs = 3000) {}
 
-  /** The source seen on the latest read ("demo", "planning_center" or "import"). Use `churchSource()` for a fresh answer. */
+  /** The source seen on the latest read ("demo" or "native"). Use `churchSource()` for a fresh answer. */
   get source() {
     return this.last;
   }
@@ -25,8 +26,8 @@ export class ConnectedChurch implements ChurchData {
 
   async current(): Promise<ChurchData> {
     if (this.cached && Date.now() - this.cached.at < this.ttlMs) return this.cached.data;
-    const snap = await loadSnapshot(this.churchId).catch(() => null);
-    const data = hasRealData(snap) ? new SnapshotChurch(snap, this.demo) : this.demo;
+    const book = await loadPeople(this.churchId).catch(() => null);
+    const data = book && book.people.length > 0 ? new NativeChurch(book, this.demo) : this.demo;
     this.cached = { at: Date.now(), data };
     this.last = data.source;
     return data;

@@ -97,7 +97,7 @@ export function CheckInStation({ date, gathering, gatherings, rooms, allRooms, f
           )}
           {families === 0 ? (
             <EmptyState title="No families on file yet" actions={admin ? [{ label: "Add your first family", href: "/kids/families#new-family", primary: true }] : []}>
-              Add each family once, with their children, any allergies and who may pick them up. Then check-in is a search away. Importing from ChurchTrac or Planning Center comes with the church database connection.
+              Add each family once, with their children, any allergies and who may pick them up. Then check-in is a search away.
             </EmptyState>
           ) : results === null ? (
             <p className="small muted">Type at least two letters, or four digits.</p>

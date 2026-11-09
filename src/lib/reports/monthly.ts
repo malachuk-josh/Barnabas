@@ -31,8 +31,9 @@ export async function draftMonthlyReport(leader: Leader, opts: { narrative?: str
   const month = monthLabel(asOf.slice(0, 7), "long");
   const church = config.churchName.replace(/\s*\(demo\)\s*$/i, "");
   if (opts.narrative) {
+    // The same policy as memory, except that a church report talks about income and giving by design.
     const problem = checkMemoryText(opts.narrative, { allowSensitive: false });
-    if (problem) throw new ReportError(problem.replace(/^Not saved/, "Not drafted"));
+    if (problem && !problem.includes("personal finances")) throw new ReportError(problem.replace(/^Not saved/, "Not drafted"));
   }
   const narrative = opts.narrative?.trim() || monthlyNarrative(sections, month, church);
   const numbers = numbersBlock(sections);

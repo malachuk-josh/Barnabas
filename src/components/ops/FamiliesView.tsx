@@ -37,7 +37,7 @@ export function FamiliesView({ families, rooms, admin }: { families: Household[]
         </div>
         {families.length === 0 ? (
           <EmptyState title="No families yet" actions={admin ? [{ label: "Add your first family", href: "#new-family", primary: true }] : []}>
-            Add a family once and check-in is a quick search after that. Importing from ChurchTrac or Planning Center comes when the church database is connected; for now, add families by hand or at the desk on Sunday.
+            Add a family once and check-in is a quick search after that. Add families by hand, or at the desk on Sunday.
           </EmptyState>
         ) : (
           <>

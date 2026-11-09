@@ -57,6 +57,8 @@ export type Permission =
   | "messages.send"
   /** Download the church directory (names, emails, phones, households) as CSV. */
   | "people.export"
+  /** Add, edit, merge and archive people, households, groups and custom fields; run the migration tool. */
+  | "people.edit"
   /** Share resources with connected churches in the Mesa network (connections themselves need an admin). */
   | "network.share";
 
@@ -73,6 +75,7 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "kids.admin": ["pastor", "staff"],
   "messages.send": ["pastor", "staff"],
   "people.export": ["pastor", "staff"],
+  "people.edit": ["pastor", "staff"],
   "network.share": ["pastor", "staff"],
 };
 

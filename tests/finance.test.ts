@@ -68,6 +68,7 @@ describe("roles and permissions", () => {
     "kids.admin": ["pastor", "staff"],
     "messages.send": ["pastor", "staff"],
     "people.export": ["pastor", "staff"],
+    "people.edit": ["pastor", "staff"],
     "network.share": ["pastor", "staff"],
   };
 

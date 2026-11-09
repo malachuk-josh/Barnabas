@@ -12,7 +12,7 @@ import type { Books, GiftMethod } from "./types";
  * funds by name; each row gets a stable key so a re-import of an overlapping date range skips what's in.
  */
 
-export const GIVING_FIELDS = ["date", "donor", "firstName", "lastName", "amount", "fund", "method", "check"] as const;
+export const GIVING_FIELDS = ["date", "donor", "firstName", "lastName", "email", "amount", "fund", "method", "check"] as const;
 export type GivingField = (typeof GIVING_FIELDS)[number];
 
 export const GIVING_COLUMNS: ColumnSpec<GivingField> = {
@@ -20,13 +20,14 @@ export const GIVING_COLUMNS: ColumnSpec<GivingField> = {
   donor: { exact: ["name", "donor", "contributor", "giver", "full name", "donor name", "contributor name", "family", "family name"], partial: ["donor", "contributor", "giver"] },
   firstName: { exact: ["first name", "firstname", "first"] },
   lastName: { exact: ["last name", "lastname", "last"] },
+  email: { exact: ["email", "e-mail", "email address", "donor email"], partial: ["email"] },
   amount: { exact: ["amount", "contribution amount", "gift amount", "total", "amount given"], partial: ["amount"] },
   fund: { exact: ["fund", "category", "designation", "fund name", "account", "contribution category"], partial: ["fund", "category", "designation"] },
   method: { exact: ["method", "payment type", "payment method", "type", "contribution type", "tender"], partial: ["method", "payment"] },
   check: { exact: ["check #", "check number", "check no", "check", "reference", "ref", "check num"], partial: ["check"] },
 };
 
-export const GIVING_LABELS: Record<GivingField, string> = { date: "Date", donor: "Giver (full name)", firstName: "First name", lastName: "Last name", amount: "Amount", fund: "Fund", method: "Method", check: "Check number" };
+export const GIVING_LABELS: Record<GivingField, string> = { date: "Date", donor: "Giver (full name)", firstName: "First name", lastName: "Last name", email: "Email", amount: "Amount", fund: "Fund", method: "Method", check: "Check number" };
 
 export function methodFrom(raw: string, check?: string): GiftMethod {
   const m = raw.toLowerCase();
@@ -59,7 +60,7 @@ export function fundFor(books: Books, raw: string): { fundId: string; matched: b
   return { fundId: general.id, matched: false };
 }
 
-export type GivingPreviewRow = { row: number; date: string | null; donorName: string; personId?: string; amount: number | null; fundId: string; fundName: string; method: GiftMethod; checkNumber?: string; importKey?: string; alreadyImported: boolean; duplicateInFile: boolean; problem?: string; note?: string };
+export type GivingPreviewRow = { row: number; date: string | null; donorName: string; personId?: string; amount: number | null; fundId: string; fundName: string; rawFund: string; fundMatched: boolean; method: GiftMethod; checkNumber?: string; importKey?: string; alreadyImported: boolean; duplicateInFile: boolean; problem?: string; note?: string };
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -75,6 +76,7 @@ export function readGiving(csv: string, books: Books, people: Person[], mapping?
   }
   const cell = (r: string[], f: GivingField) => (cols[f] !== undefined ? (r[cols[f]!] ?? "").replace(/\s+/g, " ").trim() : "");
   const byName = new Map(people.map((p) => [norm(p.name), p]));
+  const byEmail = new Map(people.filter((p) => p.email).map((p) => [p.email!.toLowerCase(), p]));
   const existing = new Set(books.gifts.map((g) => g.importKey).filter(Boolean));
   const occurrences = new Map<string, number>();
   const fundNames = new Map(books.chart.funds.map((f) => [f.id, f.name]));
@@ -87,9 +89,9 @@ export function readGiving(csv: string, books: Books, people: Person[], mapping?
     const fund = fundFor(books, rawFund);
     const checkNumber = cell(r, "check") || undefined;
     const method = methodFrom(cell(r, "method"), checkNumber);
-    const person = byName.get(norm(donorName));
+    const person = byEmail.get(cell(r, "email").toLowerCase()) ?? byName.get(norm(donorName));
     const problem = !date ? "The date couldn't be read." : amount === null ? "The amount couldn't be read." : amount <= 0 ? "Only gifts above zero are imported (record refunds by hand)." : !donorName ? "No giver name (an anonymous plate total goes in Giving as an offering line)." : undefined;
-    const base = { row: i + 2, date, donorName, personId: person?.id, amount, fundId: fund.fundId, fundName: fundNames.get(fund.fundId) ?? "General", method, checkNumber, note: fund.matched ? undefined : `No fund called "${rawFund}" in the books; it goes to ${fundNames.get(fund.fundId)}.` };
+    const base = { row: i + 2, date, donorName, personId: person?.id, amount, fundId: fund.fundId, fundName: fundNames.get(fund.fundId) ?? "General", rawFund, fundMatched: fund.matched, method, checkNumber, note: fund.matched ? undefined : `No fund called "${rawFund}" in the books; it goes to ${fundNames.get(fund.fundId)}.` };
     if (problem) return { ...base, alreadyImported: false, duplicateInFile: false, problem };
     const id = [date, norm(donorName), amount, fund.fundId, method, checkNumber ?? ""].join("|");
     const n = (occurrences.get(id) ?? 0) + 1;

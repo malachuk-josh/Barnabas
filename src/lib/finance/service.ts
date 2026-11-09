@@ -497,18 +497,44 @@ export type ImportGift = { date: string; personId?: string; donorName: string; a
  * Imports gifts from a giving CSV, one deposit per date, skipping any row whose stable key is already in the
  * books (so re-importing an overlapping export never double-counts). With `dryRun`, only the counts.
  */
-export async function importGifts(leader: Leader, rows: ImportGift[], opts: { dryRun: boolean; bankAccountId?: string }) {
-  return updateBooks(leader.churchId, opts.dryRun ? [] : ["gifts", "transactions"], async (books) => {
+export async function importGifts(leader: Leader, rows: ImportGift[], opts: { dryRun: boolean; bankAccountId?: string; newFunds?: { id: string; name: string }[] }) {
+  return updateBooks(leader.churchId, opts.dryRun ? [] : ["chart", "gifts", "transactions"], async (books) => {
     const existing = new Set(books.gifts.map((g) => g.importKey).filter(Boolean));
     const fresh = rows.filter((r) => !existing.has(r.importKey));
     const total = fresh.reduce((a, r) => a + r.amount, 0);
     const byDate = new Map<string, ImportGift[]>();
     for (const r of fresh) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
-    if (opts.dryRun) return { dryRun: true, add: fresh.length, alreadyImported: rows.length - fresh.length, deposits: byDate.size, total };
+    const created = { gifts: [] as string[], txns: [] as string[], funds: [] as string[] };
+    if (opts.dryRun) return { dryRun: true, add: fresh.length, alreadyImported: rows.length - fresh.length, deposits: byDate.size, total, created };
+    // Funds named in the file that the books don't have yet (restricted, posting to general giving income).
+    for (const f of opts.newFunds ?? []) {
+      if (books.chart.funds.some((x) => x.id === f.id)) continue;
+      const income = books.chart.funds.find((x) => !x.restricted)?.incomeAccountId ?? books.chart.accounts.find((a) => a.type === "income")!.id;
+      books.chart.funds.push({ id: f.id, name: f.name, restricted: true, incomeAccountId: income, openingBalance: 0, description: "Created by the migration tool from the giving file." });
+      created.funds.push(f.id);
+    }
     for (const [date, list] of [...byDate].sort(([a], [b]) => a.localeCompare(b))) {
-      postGifts(books, leader, { depositDate: date, bankAccountId: opts.bankAccountId, description: `Imported giving (${list.length} gift${list.length > 1 ? "s" : ""})` }, list, "import");
+      const r = postGifts(books, leader, { depositDate: date, bankAccountId: opts.bankAccountId, description: `Imported giving (${list.length} gift${list.length > 1 ? "s" : ""})` }, list, "import");
+      created.gifts.push(...r.gifts.map((g) => g.id));
+      created.txns.push(r.txn.id);
     }
     await log(leader, "gifts.import", `${fresh.length} gifts imported in ${byDate.size} deposits, ${dollars(total)}, ${rows.length - fresh.length} already imported`);
-    return { dryRun: false, add: fresh.length, alreadyImported: rows.length - fresh.length, deposits: byDate.size, total };
+    return { dryRun: false, add: fresh.length, alreadyImported: rows.length - fresh.length, deposits: byDate.size, total, created };
+  });
+}
+
+/** Undo for a migration batch: removes its gifts and their deposits, and the funds it created if nothing else uses them. */
+export async function removeImportedGifts(leader: Leader, created: { gifts: string[]; txns: string[]; funds: string[] }) {
+  return updateBooks(leader.churchId, ["chart", "gifts", "transactions"], async (books) => {
+    const txns = new Set(created.txns);
+    if (books.transactions.some((t) => txns.has(t.id) && t.reconciliationId)) throw new FinanceError("Some of these deposits are in a finished reconciliation, so this import can't be undone. Record corrections instead.");
+    const gifts = new Set(created.gifts);
+    const before = books.gifts.length;
+    books.gifts = books.gifts.filter((g) => !gifts.has(g.id));
+    books.transactions = books.transactions.filter((t) => !txns.has(t.id));
+    const used = new Set([...books.gifts.map((g) => g.fundId), ...books.transactions.flatMap((t) => t.lines.map((l) => l.fundId))]);
+    books.chart.funds = books.chart.funds.filter((f) => !created.funds.includes(f.id) || used.has(f.id));
+    await log(leader, "gifts.import.undo", `${before - books.gifts.length} gifts removed`);
+    return { gifts: before - books.gifts.length };
   });
 }

@@ -3,7 +3,8 @@
  * email addresses, phone numbers, street addresses, @handles, links' query strings, and every name the
  * church knows (its directory, leaders, volunteers, guests, care subjects, children and their guardians,
  * event registrants). First names alone are removed too, except words that are also scripture, virtues or
- * common words ("James", "Grace", "Hope"), so "a series on James" survives.
+ * common words ("James", "Grace", "Hope"), so "a series on James" survives; those are still removed in the
+ * possessive ("Sarah's group"), where they almost always mean a person. The share screen shows the result.
  */
 
 export type Removed = { kind: "email" | "phone" | "address" | "handle" | "name" | "link"; count: number };
@@ -53,6 +54,10 @@ export function scrubText(input: string, names: string[]): ScrubResult {
   text = text.replace(HANDLE, (_m, pre) => (counts.handle++, `${pre}[handle removed]`));
   text = text.replace(QUERY, (_m, base) => (counts.link++, base));
   const terms = nameTerms(names);
+  const keepFirst = new Set(names.map((n) => n.trim().split(/\s+/)[0]).filter((f) => KEEP_WORDS.has(f.toLowerCase())));
+  for (const f of keepFirst) {
+    text = text.replace(new RegExp(`(?<![\\p{L}])${escape(f)}'s(?![\\p{L}])`, "gu"), () => (counts.name++, "[name removed]'s"));
+  }
   if (terms.length) {
     // Names match whole words, case-insensitively for full names and capitalized for single words.
     for (const t of terms) {

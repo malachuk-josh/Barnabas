@@ -24,7 +24,7 @@ export const KIDS_TABS: Tab[] = [
 
 /**
  * The page frame for Serve, Services, Events and Kids: heading, section tabs and the demo banner, which goes
- * away once the church's real people are connected (Planning Center or an import).
+ * away once the church's own people are in Barnabas (added in People or moved in with the migration tool).
  */
 export async function OpsFrame({
   profile,

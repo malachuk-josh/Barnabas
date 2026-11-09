@@ -6,8 +6,8 @@ export * from "./types";
 let church: ChurchData | null = null;
 
 /**
- * The connected church database: the church's real people from Planning Center or a CSV import when
- * they're connected (`src/lib/chms/connected.ts`), otherwise the demo church. Tests can replace it.
+ * The church database: Barnabas's own People database once it has anyone in it (the native adapter,
+ * `src/lib/people/native.ts`), otherwise the demo church (`src/lib/chms/connected.ts`). Tests can replace it.
  */
 export function churchData(): ChurchData {
   if (!church) church = new ConnectedChurch();
@@ -23,7 +23,7 @@ export function invalidateChurchData() {
   if (church instanceof ConnectedChurch) church.invalidate();
 }
 
-/** "demo", "planning_center" or "import", read fresh. */
+/** "demo" or "native" (the church's own People database), read fresh. */
 export async function churchSource(): Promise<string> {
   const data = churchData();
   if (data instanceof ConnectedChurch) return (await data.current()).source;

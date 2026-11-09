@@ -49,12 +49,12 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const avg = prev4.length ? Math.round(prev4.reduce((a, r) => a + r.worship, 0) / prev4.length) : 0;
       return {
         id, title: "Attendance", allowed: true,
-        empty: any ? undefined : { title: "No attendance recorded yet", text: source === "demo" ? "Attendance comes from your church database. Connect Planning Center or import your people, and kids check-ins on Sundays count here too." : "Worship attendance isn't in the synced data yet. Kids check-ins count here as soon as the station is used on a Sunday.", actions: [{ label: "Church database", href: "/settings#church-database" }, { label: "Kids check-in", href: "/kids" }] },
+        empty: any ? undefined : { title: "No attendance recorded yet", text: source === "demo" ? "Record attendance in People (or move it in from ChurchTrac), and kids check-ins on Sundays count here too." : "No attendance is recorded for these Sundays yet. Take attendance in People, and kids check-ins count here as soon as the station is used.", actions: [{ label: "Take attendance", href: "/people/attendance" }, { label: "Move your church to Barnabas", href: "/people/import" }] },
         summary: any ? `Worship attendance was ${n(latest.worship)} on ${shortDay(latest.date)}${avg ? `, against an average of ${n(avg)} over the four Sundays before` : ""}. ${n(latest.kids)} children checked in.` : "No attendance yet.",
         stats: any ? [{ label: `Worship, ${shortDay(latest.date)}`, value: n(latest.worship) }, { label: "4-week average", value: n(avg) }, { label: "Kids checked in", value: n(latest.kids) }] : [],
         chart: any ? { kind: "lines", title: "Attendance by Sunday", x: rows.map((r) => shortDay(r.date)), series: [{ name: "Worship", values: rows.map((r) => r.worship), role: "primary" }, { name: "Kids checked in", values: rows.map((r) => r.kids), role: "reference" }], unit: "count", every: 2 } : undefined,
         table: { header: ["Sunday", "Worship", "Groups that week", "Kids checked in"], rows: rows.map((r) => [r.date, r.worship, r.groups, r.kids]) },
-        source: source === "demo" ? "Church database (demo: no attendance) and kids check-in." : "Church database attendance and kids check-in.",
+        source: source === "demo" ? "People attendance (the demo has none) and kids check-in." : "Attendance taken in People and kids check-in.",
       };
     }
     case "giving": {
@@ -66,7 +66,7 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const status = !g.hasBudget ? undefined : g.ytd >= g.pace ? ("ok" as const) : g.ytd >= g.pace * 0.95 ? ("watch" as const) : ("danger" as const);
       return {
         id, title: "Giving vs budget", allowed: true,
-        empty: any ? undefined : { title: "No giving recorded this year", text: "Record a Sunday batch in Finance, or import giving from ChurchTrac, and this fills in month by month.", actions: [{ label: "Record giving", href: "/finance/giving" }, { label: "Import from ChurchTrac", href: "/settings#church-database" }] },
+        empty: any ? undefined : { title: "No giving recorded this year", text: "Record a Sunday batch in Finance, or import giving from ChurchTrac, and this fills in month by month.", actions: [{ label: "Record giving", href: "/finance/giving" }, { label: "Move giving in from ChurchTrac", href: "/people/import" }] },
         summary: any
           ? `Giving this year is ${wholeDollars(g.ytd)}${g.hasBudget ? `, ${pctText(pct(g.ytd, g.pace))} of the budget's pace (${wholeDollars(g.pace)} by now)` : " (no giving budget set for this year)"}. Same period last year: ${wholeDollars(g.lastYear)}.`
           : "No giving yet this year.",
@@ -96,7 +96,7 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const busiest = v.teams[0];
       return {
         id, title: "Volunteer health", allowed: true,
-        empty: any ? undefined : { title: "No serving recorded yet", text: "Once people are on the Serve rosters (or serving comes in from Planning Center), this shows how the load is shared and who could use a break, week by week.", actions: [{ label: "Open Serve", href: "/serve" }] },
+        empty: any ? undefined : { title: "No serving recorded yet", text: "Once people are on the Serve rosters , this shows how the load is shared and who could use a break, week by week.", actions: [{ label: "Open Serve", href: "/serve" }] },
         summary: any ? `${n(last.active)} people served in the last eight weeks. This week ${n(last.high)} ${last.high === 1 ? "volunteer shows" : "volunteers show"} strong burnout signals and ${n(last.watch)} ${last.watch === 1 ? "is" : "are"} worth watching.${busiest ? ` ${busiest.team} asks the most of each volunteer: ${busiest.perVolunteer} slots each.` : ""}` : "No serving yet.",
         stats: any ? [{ label: "Serving (8 weeks)", value: n(last.active) }, { label: "Check in", value: n(last.high), tone: last.high ? "danger" : "ok" }, { label: "Watch", value: n(last.watch), tone: last.watch ? "watch" : "ok" }] : [],
         chart: any ? { kind: "lines", title: "Burnout radar over eight weeks", x: v.weekly.map((w) => shortDay(w.date)), series: [{ name: "Check in", values: v.weekly.map((w) => w.high), role: "primary" }, { name: "Watch", values: v.weekly.map((w) => w.watch), role: "reference" }], unit: "count" } : undefined,

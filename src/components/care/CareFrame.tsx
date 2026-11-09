@@ -23,7 +23,7 @@ export async function directory() {
   return (await churchData().listPeople()).filter((p) => !p.leadership).map((p) => ({ id: p.id, name: p.name, household: p.household ?? null }));
 }
 
-/** The demo banner goes away once the church's real people are connected (Planning Center or an import). */
+/** The demo banner goes away once the church's own people are in Barnabas (People, or the migration tool). */
 export async function CareFrame({ ctx, eyebrow = "Care", title, intro, actions, children }: { ctx: CarePageContext; eyebrow?: string; title: string; intro?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const connected = (await churchSource()) !== "demo";
   return (
