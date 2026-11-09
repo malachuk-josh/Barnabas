@@ -1,0 +1,58 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CASE_TYPES, CASE_TYPE_LABELS } from "@/lib/care/types";
+
+/** Mine / all, type, overdue and board / list, kept in the address so a view can be shared or reloaded. */
+export function CaseFilters({ canSeeOthers }: { canSeeOthers: boolean }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const scope = params.get("scope") === "all" ? "all" : "mine";
+  const view = params.get("view") === "list" ? "list" : "board";
+  const href = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(params.toString());
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) next.delete(k);
+      else next.set(k, v);
+    }
+    const q = next.toString();
+    return q ? `${pathname}?${q}` : pathname;
+  };
+  return (
+    <div className="care-filters" role="group" aria-label="Filter cases">
+      <span className="seg">
+        <Link className="seg-link" href={href({ scope: null })} aria-current={scope === "mine" ? "page" : undefined}>
+          Mine
+        </Link>
+        <Link className="seg-link" href={href({ scope: "all" })} aria-current={scope === "all" ? "page" : undefined}>
+          {canSeeOthers ? "All I can see" : "All"}
+        </Link>
+      </span>
+      <label className="care-select">
+        <span className="sr-only">Type</span>
+        <select value={params.get("type") ?? ""} onChange={(e) => router.push(href({ type: e.target.value || null }))}>
+          <option value="">Every type</option>
+          {CASE_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {CASE_TYPE_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={params.get("overdue") === "1"} onChange={(e) => router.push(href({ overdue: e.target.checked ? "1" : null }))} />
+        Overdue only
+      </label>
+      <span className="seg care-view">
+        <Link className="seg-link" href={href({ view: null })} aria-current={view === "board" ? "page" : undefined}>
+          Board
+        </Link>
+        <Link className="seg-link" href={href({ view: "list" })} aria-current={view === "list" ? "page" : undefined}>
+          List
+        </Link>
+      </span>
+    </div>
+  );
+}

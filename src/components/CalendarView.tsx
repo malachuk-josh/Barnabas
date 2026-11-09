@@ -54,7 +54,9 @@ function emptyDraft(date: string): Draft {
   return { title: "", date, start: "09:00", end: "10:00", allDay: false, location: "", notes: "", kind: "meeting" };
 }
 
-export function CalendarView({ timezone }: { timezone: string }) {
+export type Suggestion = { id: string; title: string; date: string; kind: "visit" | "rest"; reason: string; href: string };
+
+export function CalendarView({ timezone, suggestions = [] }: { timezone: string; suggestions?: Suggestion[] }) {
   const initialToday = todayIn(timezone);
   const [month, setMonth] = useState(monthStart(initialToday));
   const [selected, setSelected] = useState(initialToday);
@@ -172,6 +174,38 @@ export function CalendarView({ timezone }: { timezone: string }) {
           New event
         </button>
       </div>
+
+      {suggestions.length > 0 && (
+        <section className="card care-suggest" aria-label="Suggestions from Care" style={{ marginBottom: 16 }}>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <h2 style={{ fontSize: "1.1rem" }}>Suggestions from Care</h2>
+            <span className="small muted">Not on your calendar unless you add them</span>
+          </div>
+          <ul className="care-suggest-list">
+            {suggestions.map((s) => (
+              <li key={s.id} className={`src-${s.kind === "rest" ? "church" : "barnabas"}`}>
+                <span>
+                  <strong>{s.title}</strong>
+                  <small className="muted">
+                    {longDate(s.date)} · {s.reason} · <Link href={s.href}>{s.kind === "rest" ? "Your care load" : "Open the case"}</Link>
+                  </small>
+                </span>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => {
+                    setFormError(null);
+                    setConfirmDelete(false);
+                    setEditing({ ...emptyDraft(s.date), title: s.title, kind: s.kind, allDay: s.kind === "rest" });
+                  }}
+                >
+                  Add
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {data && data.problems.length > 0 && (
         <div className="notice" role="status" style={{ marginBottom: 16 }}>

@@ -484,3 +484,90 @@ details.fin-details[open] summary:where(:not(.word-root *)) { margin-bottom: 10p
   .fin-page-break:not(:first-child) { break-before: page; }
   a:where(:not(.word-root *)) { text-decoration: none; }
 }
+
+/* ---------- Care ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+input[type="tel"]:where(:not(.word-root *)) { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.care-stats { margin-bottom: 18px; }
+.care-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.care-filters .care-view { margin-left: auto; }
+.care-select select:where(:not(.word-root *)) { width: auto; max-width: 100%; padding: 8px 12px; border-radius: 999px; font-weight: 600; }
+.care-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+@media (max-width: 1100px) { .care-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .care-board { grid-template-columns: minmax(0, 1fr); } .care-filters .care-view { margin-left: 0; } }
+.care-col { display: grid; gap: 10px; align-content: start; background: var(--surface-2); border-radius: var(--radius); padding: 12px; min-width: 0; }
+.care-col h2 { font-family: var(--font-body); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.care-count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--surface); color: var(--fg); font-size: 0.75rem; font-weight: 700; letter-spacing: 0; }
+.care-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.care-card { display: grid; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--fg); min-width: 0; }
+.care-card:hover { border-color: var(--muted); }
+.care-card.overdue { border-left: 4px solid var(--watch); }
+.care-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.care-card-head strong { overflow-wrap: anywhere; }
+.care-next { display: grid; gap: 2px; font-size: 0.92rem; overflow-wrap: anywhere; }
+.care-next small { font-size: 0.8rem; }
+.care-overdue { color: var(--watch); font-weight: 700; }
+.care-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.8rem; color: var(--muted); }
+.care-type { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.care-col .care-type { background: var(--bg); }
+.care-type-crisis { background: var(--danger-bg) !important; color: var(--danger); }
+.care-type-grief { background: color-mix(in srgb, var(--accent) 16%, transparent) !important; color: var(--accent); }
+.care-type-hospital { background: var(--watch-bg) !important; color: var(--watch); }
+.care-conf { display: inline-block; justify-self: start; font-size: 0.74rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--fg); color: var(--bg); }
+.care-privacy { font-size: 0.82rem; color: var(--muted); border-left: 3px solid var(--sea-glass); padding-left: 10px; }
+.care-check-field { align-self: end; padding-bottom: 10px; }
+.care-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.care-timeline li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; align-items: start; }
+.care-timeline p { margin-top: 2px; overflow-wrap: anywhere; }
+.care-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--brass); margin-top: 7px; }
+.care-prayers { list-style: none; margin: 0; padding: 0; display: grid; }
+.care-prayer { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
+.care-prayer:first-child { border-top: 0; padding-top: 0; }
+.care-prayer p { overflow-wrap: anywhere; }
+.care-prayer .btn:where(:not(.word-root *)) { padding: 6px 14px; font-size: 0.88rem; }
+.care-prayer-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.care-share { font-size: 0.72rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); white-space: nowrap; }
+.care-share.private { background: var(--watch-bg); color: var(--watch); }
+.care-days { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.care-days li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.92rem; }
+.care-signal { border-left: 6px solid var(--ok); }
+.care-signal-full { border-left-color: var(--watch); }
+.care-signal-stretched { border-left-color: var(--danger); }
+.care-signal-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.care-signal-pill { font-family: var(--font-display); font-size: 1.6rem; color: var(--ok); }
+.care-signal-full .care-signal-pill { color: var(--watch); }
+.care-signal-stretched .care-signal-pill { color: var(--danger); }
+.care-reasons { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.care-spread { display: flex; align-items: flex-end; gap: 6px; height: 90px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.care-spread span { flex: 1 1 0; max-width: 48px; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 4px; }
+.care-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.care-chip { text-decoration: none; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 0.88rem; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.care-chip[aria-current="page"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.care-chip[aria-current="page"] .care-count { background: var(--accent-fg); color: var(--accent); }
+.care-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.care-steps li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
+.care-steps li:first-child { border-top: 0; }
+.care-steps li .muted { grid-column: 1 / -1; }
+.care-furthest { font-weight: 700; color: var(--accent); }
+.care-guest.waiting { border-left: 4px solid var(--brass); }
+.care-guest h3 { overflow-wrap: anywhere; }
+.care-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 0.9rem; }
+.care-dl dt { color: var(--muted); }
+.care-dl dd { margin: 0; overflow-wrap: anywhere; }
+.care-tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.care-tasks li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.care-tasks li > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.care-tasks li.done { opacity: 0.7; }
+.care-tasks li.overdue { box-shadow: inset 3px 0 0 var(--watch); }
+.care-tasks .btn:where(:not(.word-root *)) { padding: 5px 12px; font-size: 0.85rem; }
+.care-interests { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 6px 12px; }
+.care-interests legend { font-weight: 600; font-size: 0.92rem; margin-bottom: 6px; padding: 0; }
+.care-interests .check { font-weight: 500; }
+.care-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.welcome { align-items: start; }
+.welcome .card:where(:not(.word-root *)) { max-width: 560px; }
+.care-suggest { display: grid; gap: 10px; }
+.care-suggest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.care-suggest-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; border-left: 4px solid var(--chip-color); background: color-mix(in srgb, var(--chip-color) 8%, var(--surface)); }
+.care-suggest-list li > span { display: grid; gap: 2px; min-width: 0; }
+.care-suggest-list strong { overflow-wrap: anywhere; }

@@ -52,6 +52,11 @@ export const FinanceIcon = () => (
     <path d="M5 20h14M4 9.5h16M6.5 12v5.5M10 12v5.5M14 12v5.5M17.5 12v5.5" />
   </svg>
 );
+export const HeartIcon = () => (
+  <svg {...common}>
+    <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z" />
+  </svg>
+);
 export const MoreIcon = () => (
   <svg {...common}>
     <circle cx="5.5" cy="12" r="1.3" />

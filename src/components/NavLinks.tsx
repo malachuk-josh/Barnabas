@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookIcon, CalendarIcon, DraftsIcon, FinanceIcon, MemoryIcon, MoreIcon, SettingsIcon, TalkIcon } from "./icons";
+import { BookIcon, CalendarIcon, DraftsIcon, FinanceIcon, HeartIcon, MemoryIcon, MoreIcon, SettingsIcon, TalkIcon } from "./icons";
 
 export const NAV = [
   { href: "/", label: "Talk", Icon: TalkIcon },
   { href: "/word", label: "The Word", Icon: BookIcon },
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon },
   { href: "/finance", label: "Finance", Icon: FinanceIcon, finance: true },
+  { href: "/care", label: "Care", Icon: HeartIcon },
   { href: "/memory", label: "Memory", Icon: MemoryIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
