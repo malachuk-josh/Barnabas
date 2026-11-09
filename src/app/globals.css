@@ -1460,3 +1460,46 @@ input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 .kids-room-list > li.warn { box-shadow: none; background: var(--danger-bg); }
 .kids-room.warn .kids-warning { justify-self: start; padding: 2px 10px; border-radius: 999px; background: var(--danger-bg); }
 .kids-roster li { background: var(--surface-2); }
+
+/* ---------- Drafts ---------- */
+.drafts-setup .setup-card { margin: 0 12px 12px; box-shadow: none; }
+.btn-quiet:where(:not(.word-root *)) { background: transparent; border-color: transparent; color: var(--muted); }
+.btn-quiet:hover:where(:not(.word-root *)) { color: var(--fg); border-color: var(--line); }
+/* A draft is a message preview: who it goes to, the words, then Send */
+.draft-card { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); min-width: 0; }
+.draft-head { display: flex; align-items: center; gap: 12px; }
+.draft-title { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.draft-title strong { font-size: 1.05rem; }
+.draft-channel { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); color: var(--accent); }
+.draft-channel svg { width: 20px; height: 20px; }
+.draft-email { color: var(--highlight); }
+.draft-to { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.draft-to li { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--surface-2); font-size: 0.88rem; font-weight: 600; }
+.draft-to li.muted { padding-left: 10px; font-weight: 500; }
+.draft-avatar { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--accent); font-size: 0.66rem; font-weight: 700; }
+.draft-subject { font-weight: 600; overflow-wrap: anywhere; }
+.draft-subject .muted { font-weight: 500; margin-right: 6px; }
+.draft-message { display: grid; gap: 6px; min-width: 0; }
+/* A text reads like a text: a bubble; an email like a page */
+.draft-bubble { justify-self: start; max-width: 560px; padding: 12px 16px; border-radius: 18px 18px 18px 6px; background: var(--surface-2); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.draft-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.draft-actions .btn-primary:where(:not(.word-root *)) { min-height: 44px; padding-inline: 22px; }
+.draft-note { margin-top: -6px; text-align: right; }
+.draft-confirm { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) {
+  .draft-card { padding: 16px; }
+  .draft-actions { justify-content: stretch; }
+  .draft-actions .btn-primary:where(:not(.word-root *)) { flex: 1; }
+  .draft-note { text-align: left; }
+}
+/* Recent: one card of rows */
+.draft-recent-row { display: flex; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line-soft); min-width: 0; }
+.draft-recent-row:first-child { border-top: 0; }
+.draft-recent-row .draft-channel { width: 34px; height: 34px; border-radius: 10px; }
+.draft-recent-main { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.draft-recent-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.draft-recent-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.draft-status-sent { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
+.draft-status-partly_sent, .draft-status-queued { background: var(--watch-bg); color: var(--watch); }
+.draft-status-failed { background: var(--danger-bg); color: var(--danger); }
