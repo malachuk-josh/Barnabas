@@ -66,6 +66,9 @@ describe("roles and permissions", () => {
     "events.manage": ["pastor", "deacon", "staff"],
     "kids.checkin": ["pastor", "staff", "checkin"],
     "kids.admin": ["pastor", "staff"],
+    "messages.send": ["pastor", "staff"],
+    "people.export": ["pastor", "staff"],
+    "network.share": ["pastor", "staff"],
   };
 
   it("follows the role matrix", () => {

@@ -10,7 +10,8 @@ import { newId } from "../data/ids";
 import { calendarRange, createEvent, deleteEvent, updateEvent } from "../calendar/service";
 import { EventInputSchema, getEvent } from "../calendar/store";
 import { addDaysIso, time12, todayIn } from "../calendar/time";
-import { audit, getDraft, queueDraft, saveDraft, type Draft } from "../data/records";
+import { audit, getDraft, saveDraft, type Draft } from "../data/records";
+import { canSendDraft } from "../messages/permissions";
 import { getProfile } from "../profile";
 import { MemoryFS } from "../memory/fs";
 import { slug } from "../memory/paths";
@@ -287,7 +288,7 @@ const draftMessage = tool({
   def: {
     name: "draft_message",
     description:
-      "Create a draft text or email for one or more people (by person_id, or everyone serving on a team). Nothing is sent: the leader reviews it and you call send_draft only after they say yes. " +
+      "Create a draft text or email for one or more people (by person_id, or everyone serving on a team). You never send anything: the draft waits in the leader's Drafts screen, where they review it and tap Send. " +
       "For recipients whose written language isn't English, include a translation for each such language in `translations` (keys: es, ko).",
     eager_input_streaming: true,
     input_schema: {
@@ -346,6 +347,7 @@ const draftMessage = tool({
       leaderId: ctx.leader.leaderId,
       conversationId: ctx.meta.id,
       channel: input.channel,
+      kind: "general",
       subject: input.subject,
       baseText: input.text,
       recipients: people.map((p) => ({
@@ -364,7 +366,7 @@ const draftMessage = tool({
       draft_id: draft.id,
       recipients: people.length,
       by_language: langs.length ? [`${people.length - [...needed.values()].reduce((a, b) => a + b, 0)} in English`, ...langs] : ["all in English"],
-      status: "Waiting for the leader. Summarize it and ask whether to send it. It also appears in the Drafts screen.",
+      status: "Waiting in the leader's Drafts screen. Summarize it in a sentence and say they can review it and tap Send there. You can't send it.",
     });
   },
 });
@@ -372,7 +374,8 @@ const draftMessage = tool({
 const sendDraft = tool({
   def: {
     name: "send_draft",
-    description: "Send a draft the leader has heard and approved. Only call this after the leader says yes in their latest turn.",
+    description:
+      "You can't send messages. Delivery happens only when a leader taps Send on that draft in the Drafts screen. Call this when the leader says yes to sending: it checks the draft and returns what to tell them.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { draft_id: { type: "string" } }, required: ["draft_id"] },
   },
@@ -380,17 +383,13 @@ const sendDraft = tool({
   async run({ draft_id }, ctx) {
     const draft = await getDraft(ctx.leader, draft_id);
     if (!draft) return fail(`No draft ${draft_id}.`);
-    if (draft.status !== "needs_review") return fail(`That draft is already ${draft.status === "queued" ? "queued" : "discarded"}.`);
-    if (draft.createdAt >= ctx.turnStartedAt) {
-      return fail("Not confirmed: the leader hasn't heard this draft yet. Summarize it and ask whether to send it.");
-    }
-    if (!isAffirmative(ctx.lastUserText)) {
-      return fail("Not confirmed: the leader's last reply wasn't a clear yes. Ask: 'Want me to send it?'");
-    }
-    await queueDraft(ctx.leader, draft);
-    await audit(ctx.leader, { conversationId: ctx.meta.id, action: "draft.queue", detail: draft.id });
+    if (draft.status !== "needs_review") return fail(`That draft is already ${draft.status.replace("_", " ")}.`);
+    const access = await accessFor(ctx.leader);
+    await audit(ctx.leader, { conversationId: ctx.meta.id, action: "draft.ready", detail: draft.id });
     return ok(
-      `Queued ${draft.recipients.length} message${draft.recipients.length > 1 ? "s" : ""}. Text and email delivery isn't connected in this version, so tell the leader it's queued in the outbox, not delivered.`,
+      canSendDraft(access, draft)
+        ? `Not sent: only the leader can send, from the Drafts screen. Tell them it's waiting in Drafts and they can tap Send there after a last look (${draft.recipients.length} recipient${draft.recipients.length > 1 ? "s" : ""}).`
+        : "Not sent: only the leader's pastor or staff can send this, from the Drafts screen. Tell the leader it's waiting in Drafts and who can send it.",
     );
   },
 });

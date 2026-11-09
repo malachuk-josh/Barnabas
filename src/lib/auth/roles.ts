@@ -17,10 +17,10 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  pastor: "Full access, including finance, individual giving, every care case, scheduling, service planning, events and kids check-in",
+  pastor: "Full access, including finance, individual giving, every care case, scheduling, service planning, events, kids check-in and sending messages",
   treasurer: "Full finance access, including individual giving; can sign up to serve",
-  deacon: "Finance summaries without donor names; sees care cases assigned to them and non-confidential ones; manages events; leads their own serving team",
-  staff: "Everything except finance; schedules every team, plans services, manages events, runs kids check-in and keeps family records",
+  deacon: "Finance summaries without donor names; sees care cases assigned to them and non-confidential ones; manages events; sends care follow-ups; leads their own serving team",
+  staff: "Everything except finance; schedules every team, plans services, manages events, runs kids check-in, keeps family records and sends messages",
   leader: "Everything except finance and kids check-in; sees the care cases assigned to them; signs up to serve and leads their own team",
   checkin: "Only the kids check-in station: find families, check children in and out, print labels and see room counts. No other part of Barnabas",
 };
@@ -49,7 +49,16 @@ export type Permission =
   /** Run the kids check-in station: find families, check children in and out, print labels, see room counts. */
   | "kids.checkin"
   /** Add and edit families and children, including allergies, medical notes and authorized pickups. */
-  | "kids.admin";
+  | "kids.admin"
+  /**
+   * Send an approved draft by text or email from the Drafts screen. Deacons may send care follow-ups
+   * (guest thank-yous and care drafts) without this; see `canSendDraft` in `src/lib/messages/permissions.ts`.
+   */
+  | "messages.send"
+  /** Download the church directory (names, emails, phones, households) as CSV. */
+  | "people.export"
+  /** Share resources with connected churches in the Mesa network (connections themselves need an admin). */
+  | "network.share";
 
 const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "finance.view": ["pastor", "treasurer", "deacon"],
@@ -62,6 +71,9 @@ const MATRIX: Record<Exclude<Permission, "team.manage">, readonly Role[]> = {
   "events.manage": ["pastor", "deacon", "staff"],
   "kids.checkin": ["pastor", "staff", "checkin"],
   "kids.admin": ["pastor", "staff"],
+  "messages.send": ["pastor", "staff"],
+  "people.export": ["pastor", "staff"],
+  "network.share": ["pastor", "staff"],
 };
 
 /** What a signed-in leader may do: their role, and whether they administer the team. */

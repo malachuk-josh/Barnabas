@@ -4,8 +4,12 @@ import { jwtVerify } from "jose";
 const PATH_HEADER = "x-barnabas-path";
 
 // /welcome/{token} and /register/{token} (and their APIs) are the public guest card and event registration:
-// the token is checked and the API is rate-limited there.
-const PUBLIC_PATHS = ["/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg"];
+// the token is checked and the API is rate-limited there. The messaging webhooks verify Twilio's request
+// signature or Resend's svix signature on every call; unsubscribe links carry a signed token.
+const PUBLIC_PATHS = [
+  "/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg",
+  "/api/messages/twilio/status", "/api/messages/twilio/inbound", "/api/messages/resend", "/api/messages/unsubscribe",
+];
 
 function secret(): Uint8Array | null {
   const value = process.env.SESSION_SECRET;

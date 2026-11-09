@@ -5,19 +5,42 @@ import { newId } from "./ids";
 
 /* ---------- Drafts (review queue) ---------- */
 
-export type DraftRecipient = { personId: string; name: string; language: Language; text: string };
+export type DraftRecipient = {
+  personId: string;
+  name: string;
+  language: Language;
+  text: string;
+  /** Contact details known when the draft was made (a guest card, a volunteer record); looked up again at send time. */
+  phone?: string;
+  email?: string;
+};
+
+/**
+ * What a draft is for. Deacons may send `care` drafts (guest thank-yous, care follow-ups) without
+ * `messages.send`; see `canSendDraft`.
+ */
+export type DraftKind = "general" | "care" | "serve" | "report";
 
 export type Draft = {
   id: string;
   leaderId: string;
   conversationId: string;
   channel: "sms" | "email";
+  kind?: DraftKind;
   subject?: string;
   baseText: string;
   recipients: DraftRecipient[];
-  status: "needs_review" | "queued" | "discarded";
+  /**
+   * needs_review: waiting for a leader. sending/sent/partly_sent/failed: a leader tapped Send in the Drafts
+   * screen. queued: approved before delivery was connected (older drafts). discarded: thrown away.
+   */
+  status: "needs_review" | "sending" | "sent" | "partly_sent" | "failed" | "queued" | "discarded";
   createdAt: number;
   queuedAt?: number;
+  sentAt?: number;
+  sentBy?: string;
+  /** Per-status counts from the last send, for the queue's summary line. */
+  delivery?: { sent: number; failed: number; skipped: number; optedOut: number; noContact: number };
 };
 
 const draftKey = (l: Leader, id: string) => `draft:${l.churchId}:${l.leaderId}:${id}`;
@@ -39,8 +62,9 @@ export async function listDrafts(leader: Leader) {
 }
 
 /**
- * "Queue" stands in for delivery: no SMS or email provider is connected in this build,
- * so queued messages are recorded in the outbox and nothing leaves the app.
+ * The older "approve without sending" path, kept for drafts approved before delivery was connected:
+ * recorded in the outbox, nothing leaves the app. Sending now happens only in `src/lib/messages/service.ts`,
+ * from the Drafts screen.
  */
 export async function queueDraft(leader: Leader, draft: Draft) {
   draft.status = "queued";

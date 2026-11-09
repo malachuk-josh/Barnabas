@@ -171,7 +171,7 @@ const draftServingReminders = tool({
   def: {
     name: "draft_serving_reminders",
     description:
-      "Draft reminder texts for everyone serving on a date (optionally one team), each with their own positions and times, into the leader's Drafts review queue. Nothing is sent: delivery isn't connected yet. For teams the leader schedules or leads.",
+      "Draft reminder texts for everyone serving on a date (optionally one team), each with their own positions and times, into the leader's Drafts review queue. Nothing is sent: a leader reviews them and taps Send in Drafts. For teams the leader schedules or leads.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { date: { type: "string", description: "yyyy-mm-dd; default this coming Sunday" }, team: { type: "string" } } },
   },
@@ -188,7 +188,7 @@ const draftServingReminders = tool({
       }
       const draft = await draftReminders(actor, day, teamId, convId(ctx));
       if (!draft) return ok(`No one is scheduled ${team ? `on ${team} ` : ""}for ${friendlyDate(day)}, so there's nothing to remind. Say so.`);
-      return ok({ draft_id: draft.id, recipients: draft.recipients.map((r) => r.name), status: "In the Drafts screen for review. Nothing was sent; text and email delivery comes later. Tell the leader in one sentence." });
+      return ok({ draft_id: draft.id, recipients: draft.recipients.map((r) => r.name), status: "In the Drafts screen for review. Nothing was sent; the leader taps Send there after a look. Tell the leader in one sentence." });
     });
   },
 });

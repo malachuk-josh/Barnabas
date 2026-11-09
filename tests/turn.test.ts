@@ -105,7 +105,7 @@ describe("turn loop", () => {
     expect(JSON.stringify(calls[0].system)).toContain("ephemeral");
   });
 
-  it("won't send a draft in the same turn it was written, and sends after a yes", async () => {
+  it("drafts into the review queue and never sends, even after a yes", async () => {
     const meta = await newMeta();
     let draftId = "";
     scripted([
@@ -125,8 +125,8 @@ describe("turn loop", () => {
         return { content: [{ type: "tool_use", id: "tu2", name: "send_draft", input: { draft_id: draftId } }], stop_reason: "tool_use" };
       },
       (params) => {
-        expect(lastToolResult(params)).toContain("Not confirmed");
-        return { content: [{ type: "text", text: "It goes to Sarah and Ana. Want me to send it?" }], stop_reason: "end_turn" };
+        expect(lastToolResult(params)).toContain("Not sent");
+        return { content: [{ type: "text", text: "It goes to Sarah and Ana. It's waiting in Drafts." }], stop_reason: "end_turn" };
       },
     ]);
     await collect(runTurn({ leader, meta, text: "Thank Sarah and Ana for serving." }));
@@ -136,12 +136,14 @@ describe("turn loop", () => {
     scripted([
       () => ({ content: [{ type: "tool_use", id: "tu3", name: "send_draft", input: { draft_id: draftId } }], stop_reason: "tool_use" }),
       (params) => {
-        expect(lastToolResult(params)).toContain("Queued 2 messages");
-        return { content: [{ type: "text", text: "Queued." }], stop_reason: "end_turn" };
+        expect(lastToolResult(params)).toContain("Drafts screen");
+        return { content: [{ type: "text", text: "It's in Drafts; tap Send there." }], stop_reason: "end_turn" };
       },
     ]);
     await collect(runTurn({ leader, meta, text: "Yes, send it." }));
-    expect((await getDraft(leader, draftId))?.status).toBe("queued");
+    // Only the Drafts screen's Send button delivers; Barnabas's yes leaves it waiting for review.
+    expect((await getDraft(leader, draftId))?.status).toBe("needs_review");
+    expect((await getDraft(leader, draftId))?.kind).toBe("general");
   });
 
   it("requires translations for recipients who read another language", async () => {

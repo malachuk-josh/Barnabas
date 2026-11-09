@@ -25,7 +25,7 @@ export function RosterBoard({ date, gatherings, myVolunteerId, scheduler }: { da
           >
             Draft reminders for {scheduler ? "everyone" : "your team"}
           </button>
-          <span className="small muted">Drafts go to your review queue. Text and email delivery comes later.</span>
+          <span className="small muted">Drafts go to your review queue; nothing is sent until you tap Send there.</span>
         </div>
       )}
       {gatherings.length === 0 && <EmptyState title="No teams serve on this day">Pick another date above.</EmptyState>}

@@ -453,13 +453,14 @@ export async function draftReminders(actor: ServeActor, date: string, teamId?: s
       });
     const first = person?.firstName ?? vol.name.split(/\s+/)[0];
     const text = reminderText(first, lines, date, church);
-    recipients.push({ personId: vol.personId ?? vol.id, name: vol.name, language: "en", text });
+    recipients.push({ personId: vol.personId ?? vol.id, name: vol.name, language: "en", text, phone: vol.phone ?? person?.phone, email: vol.email ?? person?.email });
   }
   const draft: Draft = {
     id: newId("draft"),
     leaderId: actor.leader.leaderId,
     conversationId: conversationId ?? `serve:${date}`,
     channel: "sms",
+    kind: "serve",
     baseText: recipients[0].text,
     recipients,
     status: "needs_review",

@@ -622,9 +622,10 @@ export async function recordGuest(
       leaderId: owner.leader.leaderId,
       conversationId: conversationId ?? `guest:${card.id}`,
       channel: card.phone ? "sms" : "email",
+      kind: "care",
       subject: card.phone ? undefined : "Thank you for visiting",
       baseText: thanks.draftText,
-      recipients: [{ personId: card.id, name: card.name, language: "en", text: thanks.draftText }],
+      recipients: [{ personId: card.id, name: card.name, language: "en", text: thanks.draftText, phone: card.phone, email: card.email }],
       status: "needs_review",
       createdAt: now,
     };
@@ -704,9 +705,10 @@ export async function draftThankYou(actor: CareActor, guestId: string, taskId: s
     leaderId: actor.leader.leaderId,
     conversationId: `guest:${g.id}`,
     channel: g.phone ? "sms" : "email",
+    kind: "care",
     subject: g.phone ? undefined : "Thank you for visiting",
     baseText: text,
-    recipients: [{ personId: g.id, name: g.name, language: "en", text }],
+    recipients: [{ personId: g.id, name: g.name, language: "en", text, phone: g.phone, email: g.email }],
     status: "needs_review",
     createdAt: Date.now(),
   };
