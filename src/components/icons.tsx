@@ -64,3 +64,29 @@ export const MoreIcon = () => (
     <circle cx="18.5" cy="12" r="1.3" />
   </svg>
 );
+export const ServeIcon = () => (
+  <svg {...common}>
+    <circle cx="9" cy="7.5" r="3" />
+    <path d="M3.5 19.5a5.5 5.5 0 0 1 11 0" />
+    <path d="M16 4.8a3 3 0 0 1 0 5.4M17.5 14.2a5.5 5.5 0 0 1 3 5.3" />
+  </svg>
+);
+export const ServicesIcon = () => (
+  <svg {...common}>
+    <path d="M6 4.5h12M6 9h12M6 13.5h7" />
+    <path d="M8 20.5h8M12 16.5v4" />
+  </svg>
+);
+export const EventsIcon = () => (
+  <svg {...common}>
+    <path d="M4 7.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2.5 2.5 0 0 0 0 5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2.5 2.5 0 0 0 0-5Z" />
+    <path d="M14 5.5v13" strokeDasharray="2 2.2" />
+  </svg>
+);
+export const KidsIcon = () => (
+  <svg {...common}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M8.8 14.2a4 4 0 0 0 6.4 0" />
+    <path d="M9.2 9.8h.01M14.8 9.8h.01" strokeWidth="2.6" />
+  </svg>
+);

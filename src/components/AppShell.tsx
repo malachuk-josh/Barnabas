@@ -35,8 +35,11 @@ export async function AppShell({
   children: React.ReactNode;
 }) {
   // The Finance entry shows only for roles that can see finance; the server checks again on every request.
+  // Kids check-in shows only for roles that run it.
   const leader = await currentLeader();
-  const showFinance = leader ? can(await accessFor(leader), "finance.view") : false;
+  const access = leader ? await accessFor(leader) : null;
+  const showFinance = can(access, "finance.view");
+  const showKids = can(access, "kids.checkin");
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -44,7 +47,7 @@ export async function AppShell({
           <Mark light />
           Barnabas
         </Link>
-        <SideNav showFinance={showFinance} />
+        <SideNav showFinance={showFinance} showKids={showKids} />
         <div className="side-foot">
           <Link href="/settings" className="me-card">
             <span className="avatar" aria-hidden="true">
@@ -76,7 +79,7 @@ export async function AppShell({
           </main>
         )}
       </div>
-      <TabBar showFinance={showFinance} />
+      <TabBar showFinance={showFinance} showKids={showKids} />
       <PullToRefresh />
     </div>
   );
