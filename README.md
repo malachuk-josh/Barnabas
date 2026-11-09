@@ -431,9 +431,38 @@ So a church knows what it still needs before it lets the old platform go:
 | `APP_URL` | The public address for status callbacks and unsubscribe links (`https://barnabas-three.vercel.app`) |
 | `CHURCH_SITE_HOST` | The church's own domain(s) for the public website, comma-separated (see [Website](#website)) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob, for image uploads in the website editor (set by connecting a Blob store) |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional web push for member-app announcements |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional web push: leaders' notifications and member-app announcements (see Notifications) |
+| `CRON_SECRET` | Protects the hourly cron job that sends the morning briefing (see Notifications) |
 
 None is ever returned to the browser or logged: the app reports only which names are missing. (The VAPID public key is the one exception: browsers need it to subscribe, and it's public by design.)
+
+## Notifications
+
+Barnabas sends leaders push notifications, on by default. Each leader can turn them all off, or any one kind, in **Settings → Notifications**; turning them off keeps their devices set up so turning them back on just works. A browser only lets a page subscribe after the person taps to allow it, so Today shows a small card ("Turn on notifications so Barnabas can let you know when someone needs you") until this device is set up; Dismiss hides it on that device for 14 days.
+
+What Barnabas notifies about (each its own toggle, all on by default, sent only to the leaders who can already see the thing under the usual roles and visibility rules):
+
+| Kind | When | Who |
+| --- | --- | --- |
+| Morning briefing | About 7:00 AM in the leader's own time zone (Settings → time zone), and only on days something is waiting: needs whose next step is due today or overdue, newly assigned needs, guest follow-ups due, requests to cover a slot. Counts only. | Every leader with something due |
+| Shepherding | A need assigned to you by someone else; a guest card you're following up; a prayer request from the website or member app | The assignee; for prayer requests, whoever can see the request (shareable: the team; private: the pastors) |
+| Serving | Someone asks you to cover a slot; someone accepts your swap request | The person asked; the person who asked |
+| Event registrations | A new public registration, collapsed into one notification per event with a running count | The leader who created the event (or everyone with events access if they no longer have it) |
+| Website inbox | A new contact-form message | Pastors and staff (site editors) |
+| Kids check-in | A checkout refused because the person wasn't on the family's pickup list | Pastors and staff who keep family records |
+
+The kids check-in role gets the master switch only. **Privacy:** notifications carry counts and first names at most: never a need's type or notes, the words of a prayer or message, health details, pickup codes or giving amounts, and a confidential need has no name at all ("A confidential need was assigned to you.").
+
+**Setup (once):**
+
+1. Generate VAPID keys: `npx web-push generate-vapid-keys`. If you already set up member-app push, reuse those keys: both apps share them (each keeps its own subscriptions).
+2. In Vercel → Settings → Environment Variables, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (e.g. `mailto:office@yourchurch.org`).
+3. Set `CRON_SECRET` to a random string of at least 16 characters (`openssl rand -hex 32`). Vercel Cron sends it as `Authorization: Bearer …` to `/api/cron/notify`, which `vercel.json` schedules hourly (`0 * * * *`); each run sends the briefing to leaders for whom it's 7 AM. Hourly cron jobs need a Vercel Pro (or Enterprise) plan; on Hobby, crons run at most once a day.
+4. Redeploy. Without the VAPID keys, Settings says push isn't set up yet and the Today card doesn't appear; without `CRON_SECRET` the cron route answers 503 and only the morning briefing is missing.
+
+**iPhone and iPad:** web notifications work only from the Home Screen app (iOS 16.4 or later). Open Barnabas in Safari, tap Share → **Add to Home Screen**, open Barnabas from the Home Screen, then tap **Turn on** on Today (or Settings → Notifications → Turn on for this device) and allow. If notifications were blocked, turn them back on in the iPhone's Settings → Notifications → Barnabas. Android, Windows and Mac browsers can turn them on straight from the page.
+
+Under the hood: `public/sw.js` is the leader app's service worker (scope `/`, no caching, no fetch handler), registered from the app shell; the member app keeps its own at `/m/sw.js`. Subscriptions are stored per leader and device (at most 10), and ones the push service reports gone (404/410) are pruned. Test sends are recorded in the audit log.
 
 ## Website
 

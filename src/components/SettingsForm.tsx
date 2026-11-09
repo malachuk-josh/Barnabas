@@ -8,6 +8,8 @@ import { BIBLE_TRANSLATIONS, type BibleTranslation } from "@/lib/profile/transla
 import { ROLE_DESCRIPTIONS, ROLE_LABELS, isCheckinOnly, type Access } from "@/lib/auth/roles";
 import { CalendarIcon } from "./icons";
 import { TeamSettings } from "./TeamSettings";
+import { NotificationSettings } from "./NotificationSettings";
+import { typesFor } from "@/lib/notifications/types";
 
 type ProviderStatus = {
   id: "google" | "microsoft";
@@ -34,7 +36,7 @@ function timezones(): string[] {
   }
 }
 
-export function SettingsForm({ initial, access, leaderId }: { initial: Profile; access: Access; leaderId: string }) {
+export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null }: { initial: Profile; access: Access; leaderId: string; vapidPublicKey?: string | null }) {
   const router = useRouter();
   const params = useSearchParams();
   const [p, setP] = useState<Profile>(initial);
@@ -166,6 +168,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
       <nav className="settings-nav" aria-label="Settings sections">
         <a href="#profile">Profile</a>
         {!checkinOnly && <a href="#barnabas">Barnabas and voice</a>}
+        <a href="#notifications">Notifications</a>
         {!checkinOnly && <a href="#calendars">Calendars</a>}
         {access.admin && <a href="#team">Team</a>}
         <a href="#privacy">Privacy and data</a>
@@ -370,6 +373,8 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
             </button>
           </div>
         </form>
+
+        <NotificationSettings initial={initial.notifications} types={typesFor(access)} vapidPublicKey={vapidPublicKey} />
 
         {!checkinOnly && (
         <section id="calendars" className="card">

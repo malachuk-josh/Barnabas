@@ -6,6 +6,7 @@ import { newId } from "../data/ids";
 import { friendlyDate } from "../dates";
 import { GATHERING_KEYS, gathering, ISO_RE, meetsOn, type GatheringKey } from "../ops/gatherings";
 import { accessFor } from "../team";
+import { checkoutRefused } from "../notifications/notify";
 import { loadKids, updateKids } from "./store";
 import type { CheckIn, Child, Household, KidsBook, KidsLogEntry } from "./types";
 
@@ -206,6 +207,7 @@ export async function checkOutChildren(actor: KidsActor, input: z.input<typeof C
   });
   if (outcome.refused) {
     await log(actor.leader, "checkout.refused", v.checkinIds.join(","));
+    if ("unauthorized" in outcome) checkoutRefused(actor);
     fail("unauthorized" in outcome ? "That person isn't on this family's pickup list. Find a parent or guardian, or a pastor." : "That code doesn't match the parent's tag. Ask to see the tag again, or find a staff member.");
   }
   await log(actor.leader, "checkout", v.checkinIds.join(","));

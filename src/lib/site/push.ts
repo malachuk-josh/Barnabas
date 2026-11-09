@@ -2,23 +2,15 @@ import { audit } from "../data/records";
 import type { SiteActor } from "./service";
 import { SiteError } from "./service";
 import { loadSite, updateSite } from "./store";
+import { pushConfig, sendWebPush } from "../push/vapid";
 
 /**
- * Optional web push for the member app's announcements. Needs VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and
- * VAPID_SUBJECT (a mailto: or https: contact). Without them the member app shows no "notify me" button
- * and the leader app says push isn't set up. The private key never leaves the server; the public key is
- * public by design (browsers need it to subscribe).
+ * Optional web push for the member app's announcements. The VAPID keys and the sender are shared with the
+ * leader app (`src/lib/push/vapid.ts`); the member app's subscriptions stay here, on the site book.
+ * Without the keys the member app shows no "notify me" button and the leader app says push isn't set up.
  */
 
-export function pushConfig() {
-  const publicKey = process.env.VAPID_PUBLIC_KEY?.trim();
-  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
-  const subject = process.env.VAPID_SUBJECT?.trim();
-  if (!publicKey || !privateKey || !subject) return null;
-  return { publicKey, privateKey, subject };
-}
-
-export const vapidPublicKey = () => pushConfig()?.publicKey ?? null;
+export { pushConfig, vapidPublicKey } from "../push/vapid";
 
 export type PushPayload = { title: string; body: string; url: string };
 
@@ -32,22 +24,10 @@ export async function sendAnnouncementPush(actor: SiteActor, announcementId: str
   const a = book.announcements.find((x) => x.id === announcementId);
   if (!a) throw new SiteError("That announcement is gone.");
   if (a.pushedAt) throw new SiteError("That announcement was already sent as a notification.");
-  const webpush = (await import("web-push")).default;
-  webpush.setVapidDetails(cfg.subject, cfg.publicKey, cfg.privateKey);
   const payload = JSON.stringify({ title: a.title, body: a.body.slice(0, 180), url } satisfies PushPayload);
-  const gone: string[] = [];
-  let sent = 0;
-  await Promise.all(
-    book.push.map(async (sub) => {
-      try {
-        await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { TTL: 60 * 60 * 24 });
-        sent++;
-      } catch (err) {
-        const code = (err as { statusCode?: number }).statusCode;
-        if (code === 404 || code === 410) gone.push(sub.endpoint);
-      }
-    }),
-  );
+  const results = await Promise.all(book.push.map(async (sub) => ({ endpoint: sub.endpoint, result: await sendWebPush(sub, payload) })));
+  const gone = results.filter((r) => r.result === "gone").map((r) => r.endpoint);
+  const sent = results.filter((r) => r.result === "sent").length;
   await updateSite(actor.leader.churchId, ["push", "announcements"], (b) => {
     b.push = b.push.filter((p) => !gone.includes(p.endpoint));
     const x = b.announcements.find((y) => y.id === announcementId);

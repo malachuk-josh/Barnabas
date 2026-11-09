@@ -117,7 +117,7 @@ export function isCheckinOnly(access: Access | null | undefined): boolean {
 }
 
 const CHECKIN_PAGES = ["/kids", "/settings"];
-const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account"];
+const CHECKIN_APIS = ["/api/kids", "/api/profile", "/api/auth", "/api/account", "/api/push"];
 
 /** Whether a check-in-only volunteer may open this path. Family records stay behind kids.admin. */
 export function checkinMayUse(pathname: string): boolean {

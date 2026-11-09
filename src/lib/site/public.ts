@@ -9,6 +9,7 @@ import { newId } from "../data/ids";
 import { checkMemoryText } from "../policy/privacy";
 import { loadPeople } from "../people/store";
 import { getLeaderRecord } from "../team";
+import { inboxMessage, websitePrayer } from "../notifications/notify";
 import { loadSite, updateSite } from "./store";
 import type { BlockOf, InboxMessage, SiteBook, SiteDoc } from "./types";
 
@@ -110,6 +111,7 @@ export async function submitContact(churchId: string, raw: Record<string, unknow
     b.inbox = [msg, ...b.inbox].slice(0, 500);
   });
   await audit(sitePublicActor(churchId), { action: "site.contact.receive", detail: msg.id });
+  inboxMessage(churchId, msg);
   return msg;
 }
 
@@ -152,6 +154,7 @@ export async function submitPrayer(churchId: string, raw: Record<string, unknown
     book.prayers.push(prayer);
   });
   await audit(sitePublicActor(churchId), { action: "care.prayer.website", detail: `${prayer.id}${v.shareable ? " shareable" : " private"}` });
+  websitePrayer(churchId, prayer);
   return prayer;
 }
 

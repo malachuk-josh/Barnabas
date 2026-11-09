@@ -12,6 +12,8 @@ const PUBLIC_PATHS = [
   "/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg",
   "/api/messages/twilio/status", "/api/messages/twilio/inbound", "/api/messages/resend", "/api/messages/unsubscribe",
   "/api/stripe/webhook",
+  // The leader app's service worker script (it holds no data), and Vercel Cron, which checks CRON_SECRET itself.
+  "/sw.js", "/api/cron",
   // The church website (/s) and member app (/m) and their public forms (/api/s): published content only,
   // checked in the pages; forms are rate-limited there.
   "/s", "/m", "/api/s",

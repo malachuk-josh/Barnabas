@@ -4,6 +4,7 @@ import { isResponse, requireLeader } from "@/lib/auth/require";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
 import { getProfile, isValidTimezone, saveProfile, BIBLE_TRANSLATION_IDS } from "@/lib/profile";
 import { updateLeaderDisplay } from "@/lib/team";
+import { NOTIFICATION_TYPES, type NotificationType } from "@/lib/notifications/types";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,26 @@ const Body = z.object({
   pronunciations: z.array(z.object({ word: z.string().trim().min(1).max(40), sayAs: z.string().trim().min(1).max(60) })).max(50),
   about: z.string().max(1500),
 });
+
+const Notifications = z.object({
+  enabled: z.boolean().optional(),
+  types: z.partialRecord(z.enum(NOTIFICATION_TYPES), z.boolean()).optional(),
+});
+
+/** Changes only the notification settings (the Settings toggles save as they're flipped). */
+export async function PATCH(request: Request) {
+  const leader = await requireLeader();
+  if (isResponse(leader)) return leader;
+  const raw = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const parsed = Notifications.strict().safeParse(raw.notifications);
+  if (!parsed.success) return NextResponse.json({ error: "Check the notification settings." }, { status: 400 });
+  const current = await getProfile(leader);
+  const types = { ...current.notifications.types };
+  for (const [t, on] of Object.entries(parsed.data.types ?? {})) if (typeof on === "boolean") types[t as NotificationType] = on;
+  const next = { ...current, notifications: { enabled: parsed.data.enabled ?? current.notifications.enabled, types } };
+  await saveProfile(leader, next);
+  return NextResponse.json({ notifications: next.notifications });
+}
 
 export async function PUT(request: Request) {
   const leader = await requireLeader();

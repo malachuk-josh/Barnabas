@@ -7,6 +7,7 @@ import { newId } from "../data/ids";
 import { ISO_RE } from "../ops/gatherings";
 import { checkMemoryText } from "../policy/privacy";
 import { accessFor } from "../team";
+import { eventRegistration } from "../notifications/notify";
 import { dropLink, loadEvents, lookupLink, resetEvents, saveLink, updateEvents } from "./store";
 import { FIELD_KINDS, type Answer, type EventsBook, type FormField, type RegEvent, type Registration } from "./types";
 
@@ -251,6 +252,7 @@ export async function register(churchId: string, eventId: string, input: Registr
     return r;
   });
   if (leader) await log(leader, "register", `${eventId} ${reg.id} ${reg.status}`);
+  else eventRegistration(churchId, ev0, reg.status === "waitlisted" ? "waitlisted" : "registered");
   return reg;
 }
 

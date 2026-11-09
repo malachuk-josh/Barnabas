@@ -11,6 +11,7 @@ import { profileKey } from "@/lib/profile";
 import { kv } from "@/lib/store";
 import { forgetLeader } from "@/lib/team";
 import { careLeaderKeys } from "@/lib/care/store";
+import { subscriptionsKey } from "@/lib/notifications/subscriptions";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,7 @@ export async function DELETE(request: Request) {
   for (const p of Object.values(PROVIDERS)) await disconnect(leader, p.id);
   await stopFeed(leader);
   await clearCalendar(leader);
-  await kv().del(...leaderRecordKeys(leader), ...careLeaderKeys(leader.churchId, leader.leaderId), `pcare:${leader.churchId}:rest-seeded:${leader.leaderId}`, profileKey(leader), `cal:${leader.churchId}:${leader.leaderId}`, `leader:${leader.churchId}:${leader.leaderId}`);
+  await kv().del(...leaderRecordKeys(leader), ...careLeaderKeys(leader.churchId, leader.leaderId), `pcare:${leader.churchId}:rest-seeded:${leader.leaderId}`, profileKey(leader), subscriptionsKey(leader), `cal:${leader.churchId}:${leader.leaderId}`, `leader:${leader.churchId}:${leader.leaderId}`);
   await forgetLeader(leader);
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
