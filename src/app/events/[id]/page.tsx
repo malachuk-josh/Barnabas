@@ -32,26 +32,26 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         </>
       }
     >
-      <div className="fin-grid ops-stats">
-        <section className="fin-card">
-          <span className="label">Registered</span>
-          <div className="fin-stat">
+      <dl className="fact-strip event-summary">
+        <div>
+          <dt>Registered</dt>
+          <dd>
             {c.registered}
-            {event.capacity ? <span className="muted small"> of {event.capacity}</span> : null}
-          </div>
-          <span className="muted small">{c.spotsLeft === null ? "No limit" : c.spotsLeft ? `${c.spotsLeft} spots left` : event.waitlist ? "Full: new registrations join the waitlist" : "Full"}</span>
-        </section>
-        <section className="fin-card">
-          <span className="label">Waitlist</span>
-          <div className="fin-stat">{event.waitlist ? c.waitlisted : "Off"}</div>
-          <span className="muted small">Moves up automatically, in order, when someone cancels.</span>
-        </section>
-        <section className="fin-card">
-          <span className="label">Checked in</span>
-          <div className="fin-stat">{c.checkedIn}</div>
-          <span className="muted small">{event.priceCents ? `${c.paymentDue} payment${c.paymentDue === 1 ? "" : "s"} due at the door` : "Free event"}</span>
-        </section>
-      </div>
+            {event.capacity ? <span className="muted"> of {event.capacity}</span> : null}
+          </dd>
+          <span className="small muted">{c.spotsLeft === null ? "No limit" : c.spotsLeft ? `${c.spotsLeft} spots left` : event.waitlist ? "Full: new registrations join the waitlist" : "Full"}</span>
+        </div>
+        <div>
+          <dt>Waitlist</dt>
+          <dd>{event.waitlist ? c.waitlisted : "Off"}</dd>
+          <span className="small muted">Moves up in order when someone cancels.</span>
+        </div>
+        <div>
+          <dt>Checked in</dt>
+          <dd>{c.checkedIn}</dd>
+          <span className="small muted">{event.priceCents ? `${c.paymentDue} payment${c.paymentDue === 1 ? "" : "s"} due at the door` : "Free event"}</span>
+        </div>
+      </dl>
       {actor.manager ? (
         <div className="fin-grid-2">
           <Attendees event={event} registrations={book.registrations.filter((r) => r.eventId === id)} origin={origin} />
