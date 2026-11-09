@@ -4597,3 +4597,8 @@
  * section heading and the verse. Its box is kept from the picture's own
  * width and height before it arrives, so the text below does not jump.
  */
+
+/* Study mode switch in the side panel (Barnabas addition) */
+.word-root .sp-study { width: auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border-radius: 999px; }
+.word-root .sp-study-label { font-size: 0.85rem; font-weight: 600; }
+.word-root .sp-study.on { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }

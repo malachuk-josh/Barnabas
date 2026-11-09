@@ -423,7 +423,7 @@ export default function Reader({
   const [foundByClaude, setFoundByClaude] = useState(false);
   /** what Claude said with them, or why there are none */
   const [findNote, setFindNote] = useState("");
-  const { setPosition, panelOpen, setPanelOpen, study } = useReading();
+  const { setPosition, panelOpen, setPanelOpen, study, toggleStudy } = useReading();
   // Ask lives inside Compare, for the people the owner has switched on, and
   // the one pill's lamp says so rather than a second pill joining the row
   const [askStatus, setAskStatus] = useAskStatus(study);
@@ -4177,6 +4177,25 @@ export default function Reader({
                   the one reading in bed, and they should not have to leave the
                   chapter to reach it. */}
               <ThemeToggle className="sp-icon-btn" />
+              {/* Study mode, reachable from the panel too: on a phone the
+                  header star is small and far from the thumb. */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={study}
+                className={`sp-icon-btn sp-study${study ? " on" : ""}`}
+                onClick={toggleStudy}
+                aria-label={t("reader.study")}
+                title={t("reader.study")}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M12 1.4c.62 5.98 4.6 9.96 10.6 10.6-6 .62-9.98 4.6-10.6 10.6-.62-6-4.6-9.98-10.6-10.6C7.4 11.36 11.38 7.38 12 1.4Z"
+                  />
+                </svg>
+                <span className="sp-study-label">{t("reader.study")}</span>
+              </button>
               {/* No close button of its own: the tab on the page's right edge
                   that opened the panel closes it, and so do a tap on the
                   shade beside it and Escape. */}
