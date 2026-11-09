@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** Saved choice: "light" or "dark". With nothing saved, Barnabas follows the device. */
+/** Saved choice: "light" or "dark". With nothing saved, Barnabas is light. */
 export const THEME_KEY = "barnabas.theme";
 
 /** Runs before paint (in the layout) so a saved choice never flashes the other theme first. */
@@ -11,9 +11,7 @@ export const THEME_BOOTSTRAP = `try{var t=localStorage.getItem("${THEME_KEY}");i
 type Mode = "light" | "dark";
 
 function current(): Mode {
-  const set = document.documentElement.dataset.theme;
-  if (set === "light" || set === "dark") return set;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 const Sun = () => (
@@ -34,10 +32,6 @@ export function AppThemeSwitch() {
 
   useEffect(() => {
     setMode(current());
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const follow = () => setMode(current());
-    mq.addEventListener("change", follow);
-    return () => mq.removeEventListener("change", follow);
   }, []);
 
   function toggle() {
