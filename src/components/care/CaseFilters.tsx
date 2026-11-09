@@ -9,7 +9,7 @@ export function CaseFilters({ canSeeOthers }: { canSeeOthers: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const scope = params.get("scope") === "all" ? "all" : "mine";
+  const scope = params.get("scope") === "mine" ? "mine" : "all";
   const view = params.get("view") === "list" ? "list" : "board";
   const href = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString());
@@ -23,11 +23,11 @@ export function CaseFilters({ canSeeOthers }: { canSeeOthers: boolean }) {
   return (
     <div className="care-filters" role="group" aria-label="Filter needs">
       <span className="seg">
-        <Link className="seg-link" href={href({ scope: null })} aria-current={scope === "mine" ? "page" : undefined}>
-          Mine
-        </Link>
-        <Link className="seg-link" href={href({ scope: "all" })} aria-current={scope === "all" ? "page" : undefined}>
+        <Link className="seg-link" href={href({ scope: null })} aria-current={scope === "all" ? "page" : undefined}>
           {canSeeOthers ? "All I can see" : "All"}
+        </Link>
+        <Link className="seg-link" href={href({ scope: "mine" })} aria-current={scope === "mine" ? "page" : undefined}>
+          Mine
         </Link>
       </span>
       <label className="care-select">

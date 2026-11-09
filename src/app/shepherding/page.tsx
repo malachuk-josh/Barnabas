@@ -19,7 +19,8 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
   const q = await searchParams;
   const ctx = await carePage();
   const today = todayIso();
-  const scope = q.scope === "all" ? "all" : "mine";
+  // Everything the leader may see by default; "Mine" narrows it.
+  const scope = q.scope === "mine" ? "mine" : "all";
   const type = (CASE_TYPES as readonly string[]).includes(q.type ?? "") ? (q.type as CaseType) : undefined;
   const rows = caseRows(ctx.book, ctx.actor, { scope, type, overdue: q.overdue === "1" }, today);
   const mine = caseRows(ctx.book, ctx.actor, { scope: "mine" }, today);
