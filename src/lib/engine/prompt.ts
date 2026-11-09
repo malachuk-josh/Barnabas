@@ -85,6 +85,7 @@ export type ContextOptions = {
   briefing: Briefing;
   profile: Profile;
   calendar: { events: CalendarEvent[]; outside: OutsideEvent[] };
+  leadership?: { name: string; title: string; ministry?: string }[];
 };
 
 const REPLY_LANGUAGE: Record<Profile["replyLanguage"], string> = { en: "English", es: "Spanish", ko: "Korean" };
@@ -114,6 +115,10 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push("");
   lines.push("# Church");
   lines.push(`Name: ${config.churchName}`);
+  if (opts.leadership?.length) {
+    lines.push("Leadership team:");
+    for (const l of opts.leadership) lines.push(`- ${l.name}, ${l.title}${l.ministry ? ` (${l.ministry})` : ""}`);
+  }
   lines.push(
     `Memory policy: ${config.allowSensitiveMemory ? "the church's written policy allows remembering sensitive pastoral details when the leader asks; still keep them minimal" : "do not remember sensitive pastoral details (health, counseling, family conflict, addiction, legal or immigration status, finances)"}`,
   );

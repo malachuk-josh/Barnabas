@@ -1,5 +1,6 @@
 import { addDays, lastSunday, today } from "../dates";
 import type {
+  Leader as ChurchLeader,
   AttendanceRecord,
   ChurchData,
   ChurchEvent,
@@ -27,12 +28,56 @@ type DemoPerson = Person & {
 
 const TEAMS: Team[] = [
   { id: "worship", name: "Worship team" },
-  { id: "kids", name: "Kids ministry" },
-  { id: "hospitality", name: "Hospitality" },
-  { id: "tech", name: "Tech and sound" },
+  { id: "kids", name: "MGBC Kids" },
+  { id: "hospitality", name: "Hospitality & Connections" },
+  { id: "tech", name: "Tech & livestream" },
   { id: "greeters", name: "Greeters" },
   { id: "parking", name: "Parking" },
 ];
+
+/**
+ * Mount Greylock Baptist Church, North Adams, MA: leadership, weekly schedule and upcoming events
+ * as published on mountgreylockbaptist.com and mgbc.churchtrac.com (checked November 2026).
+ * The congregation below stays fictional: no real person's attendance or serving data is invented.
+ */
+const LEADERSHIP: ChurchLeader[] = [
+  { name: "Ethan Malachuk", title: "Lead Pastor", ministry: "Bible teaching" },
+  { name: "Eric Malachuk", title: "Care Pastor", ministry: "Discipleship and pastoral care" },
+  { name: "Aaron Malachuk", title: "Connections & Worship Pastor", ministry: "Worship and connections" },
+  { name: "Travis Willette", title: "Deacon" },
+  { name: "Cal Najimy", title: "Deacon" },
+  { name: "Micah Hayre", title: "Deacon" },
+];
+
+const CHURCH = "Mount Greylock Baptist Church, 35 Notch Road, North Adams, MA";
+
+const SPECIAL_EVENTS: ChurchEvent[] = [
+  { id: "mgbc-reverb", title: "MGBC Teens Reverb: All-Nighter", date: "2026-11-13", time: "3:00 PM", endTime: "11:59 PM", location: CHURCH,
+    description: "Word of Life REVERB All-Nighter with games, activities, food and a Gospel message. Runs until 8:00 AM Saturday. $67; bring money for food." },
+  { id: "mgbc-thanksgiving", title: "Thanksgiving Communion Service", date: "2026-11-22", time: "6:00 PM", endTime: "7:00 PM", location: CHURCH,
+    description: "An evening of worship and thanksgiving with singing and reflection as a church family. Registration open." },
+  { id: "mgbc-ladies-christmas", title: "Ladies Christmas Gathering", date: "2026-12-06", time: "4:00 PM", endTime: "5:00 PM", location: CHURCH,
+    description: "A festive Christmas get-together for the MGBC Ladies." },
+  { id: "mgbc-teens-christmas", title: "MGBC Teens Christmas Party", date: "2026-12-13", time: "5:00 PM", endTime: "8:00 PM", location: "Bennington Sports Center",
+    description: "Games, food and fun. Bring a gift for a game." },
+];
+
+/** The church's regular weekly schedule. */
+function weeklyEvents(fromISO: string, toISO: string): ChurchEvent[] {
+  const out: ChurchEvent[] = [];
+  for (let d = fromISO; d <= toISO; d = addDays(d, 1)) {
+    const dow = new Date(`${d}T00:00:00Z`).getUTCDay();
+    if (dow === 0) {
+      out.push({ id: `sun-830-${d}`, title: "Worship service", date: d, time: "8:30 AM", endTime: "9:30 AM", location: CHURCH, recurring: true });
+      out.push({ id: `sun-945-${d}`, title: "Growth Groups (all ages)", date: d, time: "9:45 AM", endTime: "10:30 AM", location: CHURCH, recurring: true });
+      out.push({ id: `sun-1045-${d}`, title: "Worship service", date: d, time: "10:45 AM", endTime: "12:00 PM", location: CHURCH, recurring: true });
+    } else if (dow === 3) {
+      out.push({ id: `wed-kids-${d}`, title: "Kids Club and Teen Group (dinner provided)", date: d, time: "6:00 PM", endTime: "7:30 PM", location: CHURCH, recurring: true });
+      out.push({ id: `wed-adults-${d}`, title: "Adult Growth Groups", date: d, time: "6:30 PM", endTime: "7:30 PM", location: CHURCH, recurring: true });
+    }
+  }
+  return out;
+}
 
 const PEOPLE: DemoPerson[] = [
   { id: "p01", name: "Sarah Kim", firstName: "Sarah", language: "en", smallGroup: "Tuesday women's group",
@@ -170,14 +215,12 @@ export class DemoChurch implements ChurchData {
     return out;
   }
 
+  async leadership() {
+    return LEADERSHIP;
+  }
+
   async events(fromISO: string, toISO: string) {
-    const sunday = this.sunday();
-    const all: ChurchEvent[] = [
-      { id: "e1", title: "Elders meeting", date: addDays(sunday, 4), time: "7:00 PM", location: "Conference room" },
-      { id: "e2", title: "Community food drive with Iglesia Nueva Vida", date: addDays(sunday, 6), time: "9:00 AM", location: "Fellowship hall parking lot" },
-      { id: "e3", title: "Sunday worship", date: addDays(sunday, 7), time: "9:30 AM and 11:15 AM", location: "Sanctuary" },
-      { id: "e4", title: "Volunteer appreciation lunch", date: addDays(sunday, 14), time: "12:30 PM", location: "Fellowship hall" },
-    ];
-    return all.filter((e) => e.date >= fromISO && e.date <= toISO);
+    const all = [...SPECIAL_EVENTS.filter((e) => e.date >= fromISO && e.date <= toISO), ...weeklyEvents(fromISO, toISO)];
+    return all.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   }
 }

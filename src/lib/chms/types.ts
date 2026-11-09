@@ -45,7 +45,13 @@ export type ChurchEvent = {
   id: string;
   title: string;
   date: string;
+  /** Start time, e.g. "6:00 PM". */
   time: string;
+  /** End time, e.g. "7:00 PM"; "next day" events end at midnight on the calendar. */
+  endTime?: string;
+  description?: string;
+  /** Part of the regular weekly schedule (services, groups). */
+  recurring?: boolean;
   location: string;
 };
 
@@ -56,7 +62,11 @@ export type Roster = {
   people: { personId: string; name: string; status: ServingStatus }[];
 };
 
+export type Leader = { name: string; title: string; ministry?: string };
+
 export interface ChurchData {
+  /** Pastors, deacons and staff as published by the church. */
+  leadership(): Promise<Leader[]>;
   readonly source: string;
   listPeople(): Promise<Person[]>;
   getPerson(id: string): Promise<Person | null>;

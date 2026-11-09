@@ -16,7 +16,7 @@ export const config = {
   model: process.env.BARNABAS_MODEL || "claude-opus-5-5",
   effort: effortFrom(process.env.BARNABAS_EFFORT, "low"),
   memoryEffort: effortFrom(process.env.BARNABAS_MEMORY_EFFORT, "medium"),
-  churchName: process.env.BARNABAS_CHURCH_NAME || "Grace Fellowship (demo)",
+  churchName: process.env.BARNABAS_CHURCH_NAME || "Mount Greylock Baptist Church (demo)",
   churchId: "demo",
   allowSensitiveMemory: process.env.BARNABAS_ALLOW_SENSITIVE_MEMORY === "true",
   /** Beta header for server-side refusal fallback with fallbacks: "default". */

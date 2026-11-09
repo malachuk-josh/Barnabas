@@ -95,24 +95,17 @@ export async function outsideEvents(leader: Leader, from: string, to: string, op
   const church = churchData()
     .events(from, to)
     .then((events) => {
+      const to24 = (t?: string) => {
+        const m = t ? /^(\d{1,2}):(\d{2}) (AM|PM)/.exec(t) : null;
+        if (!m) return undefined;
+        let h = Number(m[1]) % 12;
+        if (m[3] === "PM") h += 12;
+        return `${String(h).padStart(2, "0")}:${m[2]}`;
+      };
       for (const e of events) {
-        const m = /^(\d{1,2}):(\d{2}) (AM|PM)/.exec(e.time);
-        let startTime: string | undefined;
-        if (m) {
-          let h = Number(m[1]) % 12;
-          if (m[3] === "PM") h += 12;
-          startTime = `${String(h).padStart(2, "0")}:${m[2]}`;
-        }
-        out.push({
-          id: `church:${e.id}`,
-          source: "church",
-          title: e.title,
-          date: e.date,
-          start: startTime,
-          end: startTime ? `${String(Math.min(23, Number(startTime.slice(0, 2)) + 1)).padStart(2, "0")}:${startTime.slice(3)}` : undefined,
-          allDay: !startTime,
-          location: e.location,
-        });
+        const startTime = to24(e.time);
+        const endTime = to24(e.endTime) ?? (startTime ? `${String(Math.min(23, Number(startTime.slice(0, 2)) + 1)).padStart(2, "0")}:${startTime.slice(3)}` : undefined);
+        out.push({ id: `church:${e.id}`, source: "church", title: e.title, date: e.date, start: startTime, end: endTime, allDay: !startTime, location: e.location });
       }
     });
   const all = Promise.allSettled([...tasks, church]);

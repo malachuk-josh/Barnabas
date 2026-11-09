@@ -52,12 +52,13 @@ export async function briefing(leader: Leader, date = todayIso()): Promise<Brief
   const [{ radar }, follow, events] = await Promise.all([
     radarNow(date),
     followUps(leader, date),
-    data.events(date, addDays(date, 14)),
+    data.events(date, addDays(date, 45)),
   ]);
   return {
     date,
     radar: radar.filter((r) => r.band !== "ok"),
     followUps: follow,
-    upcoming: events.map(({ date, title, time, location }) => ({ date, title, time, location })),
+    // Special events only; the weekly services and groups are on the calendar.
+    upcoming: events.filter((e) => !e.recurring).map(({ date, title, time, location }) => ({ date, title, time, location })),
   };
 }
