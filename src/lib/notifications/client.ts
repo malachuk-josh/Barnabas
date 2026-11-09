@@ -48,7 +48,8 @@ export async function deviceStatus(): Promise<DeviceStatus> {
 }
 
 function keyBytes(base64: string) {
-  const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+  const clean = base64.replace(/[^A-Za-z0-9_+/-]/g, "");
+  const padded = (clean + "=".repeat((4 - (clean.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(padded);
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);

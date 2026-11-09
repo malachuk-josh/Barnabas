@@ -23,7 +23,7 @@ const STATUS_PILL: Record<DeviceStatus, { text: string; tone: string }> = {
 };
 
 /** Settings → Notifications: the master switch, each type, this device, and a test. Saves as it's flipped. */
-export function NotificationSettings({ initial, types, vapidPublicKey }: { initial: Settings; types: NotificationType[]; vapidPublicKey: string | null }) {
+export function NotificationSettings({ initial, types, vapidPublicKey, setupProblem = null }: { initial: Settings; types: NotificationType[]; vapidPublicKey: string | null; setupProblem?: string | null }) {
   const [s, setS] = useState<Settings>(initial);
   const [status, setStatus] = useState<DeviceStatus>("loading");
   const [busy, setBusy] = useState(false);
@@ -82,6 +82,11 @@ export function NotificationSettings({ initial, types, vapidPublicKey }: { initi
       <section id="notifications" className="card">
         <h2>Notifications</h2>
         <p className="muted">Push notifications aren&apos;t set up yet.</p>
+        {setupProblem && (
+          <p className="notice notice-danger small" role="alert">
+            {setupProblem} Fix it in Vercel → Settings → Environment Variables, then redeploy.
+          </p>
+        )}
         <ol className="small muted setup-steps">
           <li>
             Generate keys once: <code>npx web-push generate-vapid-keys</code>

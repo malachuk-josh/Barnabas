@@ -36,7 +36,7 @@ function timezones(): string[] {
   }
 }
 
-export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null }: { initial: Profile; access: Access; leaderId: string; vapidPublicKey?: string | null }) {
+export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null, pushProblem = null }: { initial: Profile; access: Access; leaderId: string; vapidPublicKey?: string | null; pushProblem?: string | null }) {
   const router = useRouter();
   const params = useSearchParams();
   const [p, setP] = useState<Profile>(initial);
@@ -374,7 +374,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null 
           </div>
         </form>
 
-        <NotificationSettings initial={initial.notifications} types={typesFor(access)} vapidPublicKey={vapidPublicKey} />
+        <NotificationSettings initial={initial.notifications} types={typesFor(access)} vapidPublicKey={vapidPublicKey} setupProblem={access.admin ? pushProblem : null} />
 
         {!checkinOnly && (
         <section id="calendars" className="card">

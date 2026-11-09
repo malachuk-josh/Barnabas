@@ -5,12 +5,47 @@
  * need it to subscribe). Each app keeps its own subscriptions; only the keys and the sender are shared.
  */
 
+/**
+ * Forgives the usual paste slips in Vercel: the "NAME=" label pasted along with the value, quotes around
+ * it, and spaces or line breaks inside it.
+ */
+export function cleanEnvValue(raw: string | undefined, name: string): string {
+  let v = (raw ?? "").trim();
+  if (v.toUpperCase().startsWith(`${name}=`)) v = v.slice(name.length + 1).trim();
+  v = v.replace(/^["'`]+|["'`]+$/g, "").trim();
+  return v;
+}
+
+const b64urlBytes = (v: string) => {
+  if (!/^[A-Za-z0-9_+/-]+=*$/.test(v)) return -1;
+  return Buffer.from(v.replace(/-/g, "+").replace(/_/g, "/"), "base64").length;
+};
+
+/** Why the keys can't be used, in plain words, or null when they're fine. */
+export function vapidProblem(publicKey: string, privateKey: string, subject: string): string | null {
+  if (b64urlBytes(publicKey) !== 65 || !publicKey.startsWith("B")) return "VAPID_PUBLIC_KEY doesn't look right. In Vercel it should be one unbroken line of letters, numbers, - and _ (about 87 characters, starting with B), with no quotes and without the name in front.";
+  if (b64urlBytes(privateKey) !== 32) return "VAPID_PRIVATE_KEY doesn't look right. It should be one unbroken line of about 43 letters, numbers, - and _, with no quotes and without the name in front.";
+  if (!/^(mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/.test(subject)) return "VAPID_SUBJECT should be a contact like mailto:office@yourchurch.org.";
+  return null;
+}
+
 export function pushConfig() {
-  const publicKey = process.env.VAPID_PUBLIC_KEY?.trim();
-  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
-  const subject = process.env.VAPID_SUBJECT?.trim();
+  const publicKey = cleanEnvValue(process.env.VAPID_PUBLIC_KEY, "VAPID_PUBLIC_KEY").replace(/\s+/g, "");
+  const privateKey = cleanEnvValue(process.env.VAPID_PRIVATE_KEY, "VAPID_PRIVATE_KEY").replace(/\s+/g, "");
+  const subject = cleanEnvValue(process.env.VAPID_SUBJECT, "VAPID_SUBJECT");
   if (!publicKey || !privateKey || !subject) return null;
+  if (vapidProblem(publicKey, privateKey, subject)) return null;
   return { publicKey, privateKey, subject };
+}
+
+/** Set but unusable: the message to show admins in Settings (no key values in it). */
+export function pushConfigProblem(): string | null {
+  const publicKey = cleanEnvValue(process.env.VAPID_PUBLIC_KEY, "VAPID_PUBLIC_KEY").replace(/\s+/g, "");
+  const privateKey = cleanEnvValue(process.env.VAPID_PRIVATE_KEY, "VAPID_PRIVATE_KEY").replace(/\s+/g, "");
+  const subject = cleanEnvValue(process.env.VAPID_SUBJECT, "VAPID_SUBJECT");
+  if (!publicKey && !privateKey && !subject) return null;
+  if (!publicKey || !privateKey || !subject) return "One of VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY or VAPID_SUBJECT is missing in Vercel.";
+  return vapidProblem(publicKey, privateKey, subject);
 }
 
 export const vapidPublicKey = () => pushConfig()?.publicKey ?? null;

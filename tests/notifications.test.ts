@@ -53,7 +53,7 @@ const member: Leader = { churchId: "demo", leaderId: "nt000004", name: "Lee Lead
 const checkin: Leader = { churchId: "demo", leaderId: "nt000005", name: "Cam Checkin", email: "cam@example.org", role: "Check-in" };
 const member2: Leader = { churchId: "demo", leaderId: "nt000006", name: "Casey Volunteer", email: "casey@example.org", role: "Tech" };
 
-const ENV = { VAPID_PUBLIC_KEY: "BPublicKeyForTests", VAPID_PRIVATE_KEY: "private-key-for-tests", VAPID_SUBJECT: "mailto:office@example.org", CRON_SECRET: "cron-secret-for-tests-0123456789" };
+const ENV = { VAPID_PUBLIC_KEY: "BN4-i-wzKBXKcmr3U4GpIbS5X06bzorlt3kpz6kJSNqJduv61uyfERKCrnIb6ueDYx2yi9mDVyCodlXvabVuyY0", VAPID_PRIVATE_KEY: "NhG43LLimaWyjPnjHTql3GjylhybXsi-h_Co4wZ8lA0", VAPID_SUBJECT: "mailto:office@example.org", CRON_SECRET: "cron-secret-for-tests-0123456789" };
 const saved: Record<string, string | undefined> = {};
 beforeAll(() => {
   for (const [k, v] of Object.entries(ENV)) {
@@ -364,5 +364,19 @@ describe("the hourly cron job and the morning briefing", () => {
     expect(sentTo("device-9401")).toHaveLength(1);
     expect(briefingPayload({ needs: 2, guests: 1, swaps: 0 })!.body).toBe("Good morning. 2 needs and 1 guest to welcome are waiting on you today.");
     expect(briefingPayload({ needs: 0, guests: 0, swaps: 0 })).toBeNull();
+  });
+});
+
+describe("VAPID key pasting slips", () => {
+  it("forgives the name pasted in front, quotes and spaces; rejects keys that aren't keys", async () => {
+    const { cleanEnvValue, vapidProblem } = await import("@/lib/push/vapid");
+    // Test-only keys (generated once for this test; never used anywhere else).
+    const k = { publicKey: "BN4-i-wzKBXKcmr3U4GpIbS5X06bzorlt3kpz6kJSNqJduv61uyfERKCrnIb6ueDYx2yi9mDVyCodlXvabVuyY0", privateKey: "NhG43LLimaWyjPnjHTql3GjylhybXsi-h_Co4wZ8lA0" };
+    expect(cleanEnvValue(`VAPID_PUBLIC_KEY=${k.publicKey}`, "VAPID_PUBLIC_KEY")).toBe(k.publicKey);
+    expect(cleanEnvValue(`"${k.publicKey}"`, "VAPID_PUBLIC_KEY")).toBe(k.publicKey);
+    expect(vapidProblem(k.publicKey, k.privateKey, "mailto:office@example.org")).toBeNull();
+    expect(vapidProblem("not a key!", k.privateKey, "mailto:office@example.org")).toMatch(/VAPID_PUBLIC_KEY/);
+    expect(vapidProblem(k.publicKey, k.publicKey, "mailto:office@example.org")).toMatch(/VAPID_PRIVATE_KEY/);
+    expect(vapidProblem(k.publicKey, k.privateKey, "office@example.org")).toMatch(/VAPID_SUBJECT/);
   });
 });
