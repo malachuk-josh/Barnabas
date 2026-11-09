@@ -13,7 +13,7 @@ import { checkMemoryText } from "../policy/privacy";
 import { updateServe } from "../serve/store";
 import { accessFor } from "../team";
 import { displayName, isActive } from "./native";
-import { loadPeople, updatePeople } from "./store";
+import { loadPeople, updatePeople, LEADERSHIP_FIELD_ID } from "./store";
 import { FIELD_KINDS, GROUP_KINDS, HOUSEHOLD_ROLES, MEMBER_STATUSES, type GroupRecord, type PeopleBook, type PersonRecord } from "./types";
 
 /**
@@ -350,6 +350,8 @@ export function personView(book: PeopleBook, actor: PeopleActor, p: PersonRecord
     language: p.language,
     household: h ? { id: h.id, name: h.name } : null,
     householdRole: p.householdRole,
+    /** Their leadership role (Lead Pastor, Deacon, Worship Leader…), shown to everyone who can see the directory. */
+    leadershipRole: p.custom[LEADERSHIP_FIELD_ID]?.trim() || undefined,
     birthday: p.birthdate ? p.birthdate.slice(5) : undefined,
     archived: Boolean(p.archivedAt),
     groups: book.groups.filter((g) => !g.archivedAt && g.memberIds.includes(p.id)).map((g) => ({ id: g.id, name: g.name, leader: g.leaderIds.includes(p.id) })),

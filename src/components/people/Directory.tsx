@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { formatPhone } from "@/lib/messages/phone";
 import { MEMBER_LABELS, type MemberStatus } from "@/lib/people/types";
 
-export type Row = { id: string; name: string; status: MemberStatus; household: { id: string; name: string } | null; groups: { name: string }[]; contact: { email?: string; phone?: string } | null; archived: boolean };
+export type Row = { id: string; name: string; status: MemberStatus; household: { id: string; name: string } | null; leadershipRole?: string; groups: { name: string }[]; contact: { email?: string; phone?: string } | null; archived: boolean };
 
 /** The directory list with search and a status filter. Contact columns appear only for roles that see them. */
 export function Directory({ people, showContacts }: { people: Row[]; showContacts: boolean }) {
@@ -13,14 +13,14 @@ export function Directory({ people, showContacts }: { people: Row[]; showContact
   const [status, setStatus] = useState<MemberStatus | "">("");
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return people.filter((p) => (!status || p.status === status) && (!t || `${p.name} ${p.household?.name ?? ""} ${p.contact?.email ?? ""}`.toLowerCase().includes(t)));
+    return people.filter((p) => (!status || p.status === status) && (!t || `${p.name} ${p.leadershipRole ?? ""} ${p.household?.name ?? ""} ${p.contact?.email ?? ""}`.toLowerCase().includes(t)));
   }, [people, q, status]);
   return (
     <div className="stack" style={{ gap: 14 }}>
       <div className="mesa-search" role="search">
         <div className="field">
           <label htmlFor="ppl-q">Search</label>
-          <input id="ppl-q" type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, household or email" />
+          <input id="ppl-q" type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, role, household or email" />
         </div>
         <div className="field">
           <label htmlFor="ppl-status">Status</label>
@@ -42,7 +42,7 @@ export function Directory({ people, showContacts }: { people: Row[]; showContact
           <thead>
             <tr>
               <th scope="col">Name</th>
-              <th scope="col">Household</th>
+              <th scope="col">Role</th>
               <th scope="col">Status</th>
               {showContacts && <th scope="col">Contact</th>}
               <th scope="col">Groups</th>
@@ -56,7 +56,7 @@ export function Directory({ people, showContacts }: { people: Row[]; showContact
                     <strong>{p.name}</strong>
                   </Link>
                 </td>
-                <td>{p.household?.name ?? <span className="muted">–</span>}</td>
+                <td>{p.leadershipRole ?? <span className="muted">–</span>}</td>
                 <td className="nowrap">{MEMBER_LABELS[p.status]}</td>
                 {showContacts && (
                   <td className="small">
