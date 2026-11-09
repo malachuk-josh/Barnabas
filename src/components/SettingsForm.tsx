@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile";
@@ -309,6 +310,11 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
               ) : (
                 <span className="small muted">
                   Using your device&apos;s built-in voice until Barnabas&apos;s voice is set up (ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID).
+                </span>
+              )}
+              {access.admin && (
+                <span className="small muted">
+                  Administrators: <Link href="/voice-test">compare voice options in the voice test</Link>.
                 </span>
               )}
             </div>
