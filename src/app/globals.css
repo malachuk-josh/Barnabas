@@ -812,7 +812,7 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .rchart-legend li { display: inline-flex; align-items: center; gap: 6px; }
 .rchart-plot { position: relative; }
 .rchart-plot svg { display: block; width: 100%; height: auto; overflow: visible; }
-.rc-axis text, .rc-xlabel { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; font-family: var(--font-body); }
+.rc-axis text, .rc-xlabel { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; font-family: var(--font-body); }
 .rc-grid { stroke: var(--chart-grid); stroke-width: 1; }
 .rc-line { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 .rc-line.rc-primary { stroke: var(--chart-1); }

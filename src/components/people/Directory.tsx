@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatPhone } from "@/lib/messages/phone";
 import { MEMBER_LABELS, type MemberStatus } from "@/lib/people/types";
 
 export type Row = { id: string; name: string; status: MemberStatus; household: { id: string; name: string } | null; groups: { name: string }[]; contact: { email?: string; phone?: string } | null; archived: boolean };
@@ -59,7 +60,7 @@ export function Directory({ people, showContacts }: { people: Row[]; showContact
                 <td className="nowrap">{MEMBER_LABELS[p.status]}</td>
                 {showContacts && (
                   <td className="small">
-                    {p.contact?.phone && <div className="nowrap">{p.contact.phone}</div>}
+                    {p.contact?.phone && <div className="nowrap">{formatPhone(p.contact.phone)}</div>}
                     {p.contact?.email && <div className="ppl-email">{p.contact.email}</div>}
                   </td>
                 )}

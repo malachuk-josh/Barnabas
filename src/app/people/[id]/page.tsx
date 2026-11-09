@@ -6,6 +6,7 @@ import { PeopleFrame } from "@/components/people/PeopleFrame";
 import { PersonForm } from "@/components/people/PersonForm";
 import { ArchiveButton, HouseholdEditor, Notes } from "@/components/people/PersonPanels";
 import { addDays, friendlyDate, today } from "@/lib/dates";
+import { formatPhone } from "@/lib/messages/phone";
 import { gathering } from "@/lib/ops/gatherings";
 import { displayName, isActive } from "@/lib/people/native";
 import { peopleFor, personView } from "@/lib/people/service";
@@ -13,7 +14,8 @@ import { MEMBER_LABELS, ROLE_LABELS } from "@/lib/people/types";
 
 export const dynamic = "force-dynamic";
 
-const fmt = (iso?: string) => (!iso ? undefined : iso.startsWith("1900-") ? new Date(`2000${iso.slice(4)}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" }) : friendlyDate(iso));
+/** "March 4, 1980"; a birthday stored without a year (1900) reads "March 4". */
+const fmt = (iso?: string) => (!iso ? undefined : new Date(`${iso.startsWith("1900-") ? `2000${iso.slice(4)}` : iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: iso.startsWith("1900-") ? undefined : "numeric", timeZone: "UTC" }));
 
 export default async function PersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> }) {
   const { leader, profile } = await requirePageLeader();
@@ -52,7 +54,7 @@ export default async function PersonPage({ params, searchParams }: { params: Pro
                 {v.contact ? (
                   <>
                     <dt>Email</dt><dd>{v.contact.email ?? "–"}</dd>
-                    <dt>Mobile</dt><dd>{v.contact.phone ?? "–"}</dd>
+                    <dt>Mobile</dt><dd>{formatPhone(v.contact.phone) || "–"}</dd>
                     {v.contact.homePhone && (<><dt>Home phone</dt><dd>{v.contact.homePhone}</dd></>)}
                     {v.contact.address && (<><dt>Address</dt><dd>{[v.contact.address.street, v.contact.address.city, [v.contact.address.state, v.contact.address.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")}</dd></>)}
                     <dt>Birthday</dt><dd>{fmt(v.contact.birthdate) ?? "–"}</dd>

@@ -22,3 +22,10 @@ export function maskAddress(to: string): string {
   }
   return `•••${to.replace(/\D/g, "").slice(-4)}`;
 }
+
+/** "+14135550100" → "(413) 555-0100" for screens; other countries stay as stored. */
+export function formatPhone(p: string | undefined | null): string {
+  if (!p) return "";
+  const m = p.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : p;
+}

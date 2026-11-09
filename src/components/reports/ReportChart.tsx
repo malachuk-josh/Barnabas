@@ -32,9 +32,9 @@ export function ReportChart({ chart }: { chart: Chart }) {
   );
 }
 
-const W = 640;
-const H = 220;
-const PAD = { top: 14, right: 16, bottom: 26, left: 48 };
+const W = 440;
+const H = 200;
+const PAD = { top: 14, right: 12, bottom: 26, left: 46 };
 
 function Axis({ top, step, unit, y }: { top: number; step: number; unit: Chart["unit"]; y: (v: number) => number }) {
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
