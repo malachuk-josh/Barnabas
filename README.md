@@ -369,6 +369,18 @@ So a church knows what it still needs before it lets the old platform go:
 
 None is ever returned to the browser or logged: the app reports only which names are missing.
 
+## Getting to know each leader
+
+Barnabas works through twenty questions with every leader over many conversations, ranked so their ministry comes first (calling, biggest challenge, hope for the year, their role, the people they invest in) and their own rest, walk and support after. The list and its order are in `src/lib/engine/know.ts`.
+
+The rules are enforced in code, not only in the instructions:
+
+- Never in Barnabas's first reply of a conversation, never off the record, never in a turn where crisis language is detected.
+- At most two per conversation, one per reply, unless the conversation has passed 15 exchanges.
+- Once per conversation Barnabas may ask whether the leader minds a few more questions; only a clear yes on the next turn raises the limit (to five), and anything else ends it for that conversation.
+- Barnabas must call `ask_to_know` with the specific reason the question fits what the leader just said; generic reasons are refused. A question already answered, or asked in the last two weeks, is refused.
+- Answers are saved with `record_to_know` (privacy rules apply) to `/memories/getting-to-know-you.md`, one line per question. Barnabas reads that file at the start of every conversation to see what's still open, and the leader can edit or delete any line on the Memory screen.
+
 ## Before real congregants' data goes in
 
 - **Sign-in** is a shared church access code plus email, enough for a pilot. Move to per-person accounts (for example Clerk or Auth.js with email links) before a wider rollout.

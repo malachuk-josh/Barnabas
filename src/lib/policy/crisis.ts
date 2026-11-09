@@ -9,6 +9,7 @@ const CRISIS = [
   /\bsuicid\w*/i,
   /\b(end|take) (his|her|their|my) (own )?life\b/i,
   /\bwants? to die\b/i,
+  /\b(don'?t|do not|doesn'?t|does not) want to (live|be alive|be here)( anymore)?\b/i,
   /\b(overdos\w*)\b/i,
   /\b(going to|gonna|threaten\w*( to)?) (kill|shoot|hurt) (someone|somebody|people|him|her|them)\b/i,
   /\bgun\b.*\b(threat\w*|kill|shoot)\b/i,

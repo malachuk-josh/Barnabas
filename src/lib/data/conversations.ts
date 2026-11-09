@@ -19,6 +19,8 @@ export type ConversationMeta = {
   consolidationError?: string;
   /** An action Barnabas proposed that needs the leader's yes on a later turn. */
   pending?: { tool: string; key: string; turn: number };
+  /** Getting-to-know-you questions asked in this conversation (see engine/know.ts). */
+  know?: { asked: string[]; lastAskTurn?: number; permission?: { status: "asked" | "granted" | "declined"; turn: number } };
 };
 
 export type Message = Anthropic.Beta.BetaMessageParam;

@@ -5,6 +5,7 @@ import type { Mode } from "../data/conversations";
 import { MemoryFS } from "../memory/fs";
 import type { CalendarEvent, OutsideEvent } from "../calendar/types";
 import { time12 } from "../calendar/time";
+import { knowContext, KNOW_PATH } from "./know";
 import { BIBLE_TRANSLATIONS, DEFAULT_BIBLE_TRANSLATION, type Profile } from "../profile";
 import type { Briefing } from "./briefing";
 
@@ -81,6 +82,15 @@ Memory
 - If the leader asks what you remember, tell them honestly. If they say "forget that", tell them you won't use it, and that they can delete it in the Memory screen.
 - If the conversation is off the record, you can't save anything. Say so if the leader asks you to remember something.
 
+Getting to know the leader
+- Over many conversations you are getting to know this leader through twenty questions, listed by priority in "Getting to know this leader" below. Their ministry comes first: their calling, their challenges, their hopes and the people they invest in.
+- Ask one only when it truly fits what they just said, never as a survey. Help with what they came for first; the question comes last in your reply, once, in your own words.
+- Never in your first reply of a conversation. At most two in a conversation, unless it has gone past 15 exchanges. One per reply.
+- Before asking, call ask_to_know with the question and the specific reason it fits now. If it's refused, don't ask it, and don't mention the refusal.
+- Once in a conversation, when it's relaxed and you've reached the limit, you may ask whether they'd mind a few more questions (ask_permission_to_know first). Anything but a clear yes means no; drop it graciously.
+- When they answer, or share the answer on their own, save it with record_to_know in one short line. Use what you learn naturally later; don't recite it back.
+- Never in a hard or crisis moment, never off the record, and never press if they'd rather not answer.
+
 Pastoral care
 - Care tools: list_care_cases, care_case_detail, my_care_load, discipleship_next_steps and recent_guests look things up. open_care_case, log_care_contact, add_prayer_request and record_guest you may do when the leader asks; then say in one short sentence what you did ("I opened a hospital case for Jamie and logged today's visit."). log_care_event is the older way to log a contact; prefer log_care_contact.
 - Assigning a case to someone else (assign_care_case) and closing a case (close_care_case) are confirmed in code: propose it, wait for a yes in the leader's next turn, then call it again with the same details. Taking a case yourself needs no confirmation.
@@ -146,7 +156,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   const fs = new MemoryFS({ churchId: opts.leader.churchId, leaderId: opts.leader.leaderId });
   const core = (await fs.read(CORE_PATH)) ?? "";
   const inbox = (await fs.read(INBOX_PATH)) ?? "";
-  const others = (await fs.paths()).filter((p) => p !== CORE_PATH && p !== INBOX_PATH);
+  const others = (await fs.paths()).filter((p) => p !== CORE_PATH && p !== INBOX_PATH && p !== KNOW_PATH);
   const b = opts.briefing;
 
   const lines: string[] = [];
@@ -185,6 +195,8 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
     lines.push("## Recent notes not yet organized");
     lines.push(trimTo(inbox.trim().split("\n").slice(-40).join("\n"), 4000));
   }
+  lines.push("");
+  lines.push(await knowContext(opts.leader, opts.offRecord));
   if (others.length) {
     lines.push("");
     lines.push("## Other memory files (open with recall_memory)");

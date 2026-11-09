@@ -11,6 +11,7 @@ import {
 import { CRISIS_REMINDER, detectCrisis } from "../policy/crisis";
 import { withLock } from "../store";
 import { claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
+import { resolvePermission } from "./know";
 import { executeTool, holdingPhrase, type ToolContext } from "./tools";
 
 export type TurnEvent =
@@ -96,6 +97,9 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   if (crisis) {
     emit({ type: "notice", kind: "crisis", text: "If anyone is in immediate danger, call 911. The 988 Suicide & Crisis Lifeline is available by call or text: 988." });
   }
+
+  // If Barnabas asked "may I ask a few more questions?" last reply, these words are the answer.
+  resolvePermission(meta, input.text);
 
   const added: Message[] = [{ role: "user", content: input.text }];
   const note = operatorNote(input, crisis);
