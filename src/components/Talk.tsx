@@ -225,7 +225,8 @@ export function Talk({
 
     const update = (fn: (t: Turn) => Turn) => setTurns((all) => all.map((t) => (t.id === reply.id ? fn(t) : t)));
     const voiced = via === "voice" && speak;
-    const chunker = new SentenceChunker(voiced);
+    // Whole sentences only: speaking an opening clause on its own flattens its intonation.
+    const chunker = new SentenceChunker();
     const say = (s: string) => {
       if (voiced && !ignoreReply.current) speaker.current?.speak(s);
     };
