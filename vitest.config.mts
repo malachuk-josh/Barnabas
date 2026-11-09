@@ -10,5 +10,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // Most tests start from an empty directory; tests/leadership.test.ts turns the leader seeding back on.
+    env: { BARNABAS_SKIP_LEADER_SEED: "1" },
   },
 });

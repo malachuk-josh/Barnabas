@@ -53,6 +53,8 @@ const LEADERSHIP: ChurchLeader[] = [
   { name: "Cal Najimy", title: "Deacon", bio: "Serves with the pastors in caring for the church family." },
   { name: "Micah Hayre", title: "Deacon", lighterLoad: true,
     bio: "Serves with the pastors in caring for the church family. Married, with two kids in high school, and a very busy life; serves with Parking about twice a month." },
+  // Added at the church's request (not on the website's leadership page): a worship leader.
+  { name: "Adam Malachuk", title: "Worship Leader", ministry: "Worship", published: false },
 ];
 
 const CHURCH = "Mount Greylock Baptist Church, 35 Notch Road, North Adams, MA";

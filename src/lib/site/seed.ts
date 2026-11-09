@@ -101,7 +101,7 @@ export function initialsName(name: string) {
 /** The demo church's draft: the starter site with its real address and website bios for its published leadership. */
 export async function seedDemoDoc(): Promise<SiteDoc> {
   const doc = starterDoc(churchDisplayName(), MGBC_ADDRESS);
-  const leaders = await churchData().leadership();
+  const leaders = (await churchData().leadership()).filter((l) => l.published !== false);
   for (const p of doc.pages) {
     for (const block of p.blocks) {
       if (block.type === "leadership") block.bios = leaders.map((l) => ({ name: l.name, bio: publicBio(l.bio) }));

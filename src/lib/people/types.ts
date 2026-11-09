@@ -110,7 +110,7 @@ export type ImportBatch = {
   undoneBy?: string;
 };
 
-export type PeopleMeta = { demo: boolean; createdAt: number; clearedAt?: number };
+export type PeopleMeta = { demo: boolean; createdAt: number; clearedAt?: number; /** When the church's published leaders were added to the directory (once). */ leadersAddedAt?: number };
 
 export type PeopleBook = {
   meta: PeopleMeta;

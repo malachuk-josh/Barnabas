@@ -82,6 +82,8 @@ export type Leader = {
   bio?: string;
   /** In a busy season of life: give them a lighter share of follow-up assignments. */
   lighterLoad?: boolean;
+  /** false: known to Barnabas and in the directory, but not on the church's published leadership page. */
+  published?: boolean;
 };
 
 export interface ChurchData {

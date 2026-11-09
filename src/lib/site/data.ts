@@ -82,7 +82,7 @@ export async function publicEvents(asOf = today(), days = 120): Promise<PublicEv
 }
 
 export async function publicLeaders(): Promise<PublicLeader[]> {
-  return (await churchData().leadership()).map((l) => ({ name: l.name, title: l.title, ministry: l.ministry }));
+  return (await churchData().leadership()).filter((l) => l.published !== false).map((l) => ({ name: l.name, title: l.title, ministry: l.ministry }));
 }
 
 export async function publicSermons(asOf = today()): Promise<PublicSermons> {
