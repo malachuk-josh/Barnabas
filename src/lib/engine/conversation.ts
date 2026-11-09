@@ -50,10 +50,10 @@ export async function startConversation(
           ? "summaries and reports only, no donor names, can't record anything"
           : "none",
       careAccess: can(access, "care.view_all")
-        ? "every case, including confidential ones"
+        ? "every need, including confidential ones"
         : access.role === "deacon"
-          ? "their own and every non-confidential case"
-          : "only the cases assigned to them",
+          ? "their own and every non-confidential need"
+          : "only the needs assigned to them",
       opsAccess: await opsAccessLine({ leader }),
     },
     care,

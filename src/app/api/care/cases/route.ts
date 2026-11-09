@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const id = q.get("id");
     if (id) {
       const c = caseDetail(book, actor, id);
-      return c ? { case: c } : NextResponse.json({ error: "That case isn't one you can see." }, { status: 404 });
+      return c ? { case: c } : NextResponse.json({ error: "That need isn't one you can see." }, { status: 404 });
     }
     const type = q.get("type");
     return {

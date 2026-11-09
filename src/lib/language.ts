@@ -6,6 +6,7 @@
  *   "check on"          -> encourage            1 Thessalonians 5:11
  *   burnout             -> weariness            Galatians 6:9
  *   Care (the area)     -> Shepherding          1 Peter 5:2
+ *   case(s)             -> need(s)              1 Peter 5:2 (a need is noted, then met)
  *
  * Code identifiers, Redis keys, permission ids (care.view_all, ...), API paths and tool names keep
  * their old names; only the words people read change. Scripture is quoted word for word from the KJV.
@@ -49,9 +50,10 @@ export const TERMS = {
   weariness: { one: "weariness", many: "weariness", One: "Weariness", Many: "Weariness", verse: "weariness" },
   /** The radar that watches for weariness (once the "burnout radar"). */
   wearinessWatch: { one: "weariness watch", many: "weariness watch", One: "Weariness watch", Many: "Weariness watch", verse: "weariness" },
-  /** In place of "Care" as the area's name ("Care", "care cases", "care team"). */
+  /** In place of "Care" as the area's name ("Care", "care team"). */
   shepherding: { one: "shepherding", many: "shepherding", One: "Shepherding", Many: "Shepherding", verse: "shepherding" },
-  shepherdingCase: { one: "shepherding case", many: "shepherding cases", One: "Shepherding case", Many: "Shepherding cases", verse: "shepherding" },
+  /** In place of "case": one person or situation being cared for. A need is noted, then met (not opened and closed). */
+  shepherdingCase: { one: "need", many: "needs", One: "Need", Many: "Needs", verse: "shepherding" },
   shepherdingTeam: { one: "shepherding team", many: "shepherding teams", One: "Shepherding team", Many: "Shepherding teams", verse: "shepherding" },
 } as const satisfies Record<string, { one: string; many: string; One: string; Many: string; verse: VerseKey }>;
 
@@ -79,4 +81,4 @@ export function quote(key: VerseKey, opts: { short?: boolean } = {}): string {
 export const SHEPHERDING_PATH = "/shepherding";
 
 /** Words Barnabas uses, for its system prompt. */
-export const LANGUAGE_NOTE = `Words: the church calls the people who serve "${TERMS.colaborer.many}" (${VERSES.colaborers.reference}), never volunteers; you "${TERMS.encourage.one}" them rather than check on them (${VERSES.encourage.reference}); you speak of "${TERMS.weariness.one}" (${VERSES.weariness.reference}), never burnout; and pastoral care is "${TERMS.shepherding.one}" (${VERSES.shepherding.reference}): ${TERMS.shepherdingCase.many}, the ${TERMS.shepherdingTeam.one}, and the Shepherding page. Tool names keep their older words (get_volunteer_load, list_care_cases, ...); don't read them out.`;
+export const LANGUAGE_NOTE = `Words: the church calls the people who serve "${TERMS.colaborer.many}" (${VERSES.colaborers.reference}), never volunteers; you "${TERMS.encourage.one}" them rather than check on them (${VERSES.encourage.reference}); you speak of "${TERMS.weariness.one}" (${VERSES.weariness.reference}), never burnout; and pastoral care is "${TERMS.shepherding.one}" (${VERSES.shepherding.reference}): the people and situations being cared for are "${TERMS.shepherdingCase.many}", never cases (you note a ${TERMS.shepherdingCase.one} and, once care is complete, mark it met), held by the ${TERMS.shepherdingTeam.one} on the Shepherding page. Tool names keep their older words (get_volunteer_load, list_care_cases, ...); don't read them out.`;

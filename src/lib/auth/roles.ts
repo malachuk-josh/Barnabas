@@ -17,11 +17,11 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  pastor: "Full access, including finance, individual giving, every shepherding case, scheduling, service planning, events, kids check-in and sending messages",
+  pastor: "Full access, including finance, individual giving, every shepherding need, scheduling, service planning, events, kids check-in and sending messages",
   treasurer: "Full finance access, including individual giving; can sign up to serve",
-  deacon: "Finance summaries without donor names; sees shepherding cases assigned to them and non-confidential ones; manages events; sends shepherding follow-ups; leads their own serving team",
+  deacon: "Finance summaries without donor names; sees shepherding needs assigned to them and non-confidential ones; manages events; sends shepherding follow-ups; leads their own serving team",
   staff: "Everything except finance; schedules every team, plans services, manages events, runs kids check-in, keeps family records and sends messages",
-  leader: "Everything except finance and kids check-in; sees the shepherding cases assigned to them; signs up to serve and leads their own team",
+  leader: "Everything except finance and kids check-in; sees the shepherding needs assigned to them; signs up to serve and leads their own team",
   checkin: "Only the kids check-in station: find families, check children in and out, print labels and see room counts. No other part of Barnabas",
 };
 
@@ -36,9 +36,9 @@ export type Permission =
   | "giving.donors"
   /** Set other leaders' roles. */
   | "team.manage"
-  /** See every shepherding case, including confidential ones. */
+  /** See every shepherding need, including confidential ones. */
   | "care.view_all"
-  /** Assign shepherding cases to someone else, and keep the discipleship pathway and classes. */
+  /** Assign shepherding needs to someone else, and keep the discipleship pathway and classes. */
   | "care.assign"
   /** Edit any team's roster, positions and co-laborers (team leads may always edit their own team). */
   | "ops.schedule"

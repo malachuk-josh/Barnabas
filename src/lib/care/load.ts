@@ -108,7 +108,7 @@ export function careLoad(input: LoadInput): CareLoad {
     {
       key: "weighted",
       level: level(weighted, LOAD_THRESHOLDS.weighted),
-      text: `${plural(open.length, "open case")}${byType.length ? ` (${byType.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(", ")})` : ""}, a weighted load of ${weighted}`,
+      text: `${plural(open.length, "open need")}${byType.length ? ` (${byType.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(", ")})` : ""}, a weighted load of ${weighted}`,
     },
     {
       key: "noDayOff",
@@ -120,7 +120,7 @@ export function careLoad(input: LoadInput): CareLoad {
         : `No day off recorded since ${start === asOf ? "today" : start}`,
     },
     { key: "contacts", level: level(contactsThisWeek, LOAD_THRESHOLDS.contacts), text: `${plural(contactsThisWeek, "care contact")} in the last 7 days` },
-    { key: "crisis", level: level(crisisOpen, LOAD_THRESHOLDS.crisis), text: `${plural(crisisOpen, "crisis case")} open` },
+    { key: "crisis", level: level(crisisOpen, LOAD_THRESHOLDS.crisis), text: `${plural(crisisOpen, "crisis need")} open` },
     { key: "overdue", level: level(overdue, LOAD_THRESHOLDS.overdue), text: `${plural(overdue, "next step")} past due` },
   ];
   const signal = signalFor(factors.map((f) => f.level));
@@ -145,8 +145,8 @@ export function careLoad(input: LoadInput): CareLoad {
     factors,
     reasons,
     sources: [
-      "Open cases assigned to you in Shepherding, weighted: crisis 3, grief, hospital and counseling referral 2, illness 1.5, new baby, homebound and other 1, prayer 0.5.",
-      "Contacts you logged on any case in the last 7 days, today included.",
+      "Open needs assigned to you in Shepherding, weighted: crisis 3, grief, hospital and counseling referral 2, illness 1.5, new baby, homebound and other 1, prayer 0.5.",
+      "Contacts you logged on any need in the last 7 days, today included.",
       "Days off: \"Rest / sabbath\" events on your Barnabas calendar and days you logged with \"I took a day off\".",
     ],
   };
@@ -174,10 +174,10 @@ export function teamSpread(openCases: Pick<CareCase, "assigneeId">[]): TeamSprea
   const shares = [...per.values()].sort((a, b) => b - a).map((n) => n / (assigned || 1));
   const carers = per.size;
   let evenness: TeamSpread["evenness"] = "none";
-  let text = "No open cases are assigned yet.";
+  let text = "No open needs are assigned yet.";
   if (carers === 1) {
     evenness = "concentrated";
-    text = "One person is carrying every assigned case.";
+    text = "One person is carrying every assigned need.";
   } else if (carers > 1) {
     const fair = 1 / carers;
     const top = shares[0];
@@ -185,10 +185,10 @@ export function teamSpread(openCases: Pick<CareCase, "assigneeId">[]): TeamSprea
     const pct = Math.round(top * 100);
     text =
       evenness === "even"
-        ? `Fairly even: the busiest carer holds ${pct}% of assigned cases across ${carers} people.`
+        ? `Fairly even: the busiest carer holds ${pct}% of assigned needs across ${carers} people.`
         : evenness === "uneven"
-          ? `A little uneven: one carer holds ${pct}% of assigned cases across ${carers} people.`
-          : `Concentrated: one carer holds ${pct}% of assigned cases across ${carers} people.`;
+          ? `A little uneven: one carer holds ${pct}% of assigned needs across ${carers} people.`
+          : `Concentrated: one carer holds ${pct}% of assigned needs across ${carers} people.`;
   }
   return { totalOpen: openCases.length, unassigned, carers, shares, evenness, text };
 }

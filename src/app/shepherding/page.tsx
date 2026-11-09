@@ -26,14 +26,14 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
   const team = teamView(ctx.book);
   const waiting = recentGuests(ctx.book, ctx.actor, { uncontactedOnly: true }, today);
   const role = ctx.actor.viewer.access.role;
-  const sees = ctx.isPastor ? "every case, including confidential ones" : role === "deacon" ? "your cases and every case that isn't confidential" : "the cases assigned to you";
+  const sees = ctx.isPastor ? "every need, including confidential ones" : role === "deacon" ? "your needs and every need that isn't confidential" : "the needs assigned to you";
   const people = await directory();
   const members = ctx.actor.members.map((m) => ({ id: m.id, name: m.name, title: m.title, role: m.role }));
 
   return (
     <CareFrame
       ctx={ctx}
-      title="Shepherding cases"
+      title="Shepherding needs"
       verse="shepherding"
       verseShort
       intro={`Who needs care, who's caring for them, and what's next. You see ${sees}.`}
@@ -41,23 +41,23 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
     >
       {q.opened === "confidential" && (
         <div className="notice success" role="status" style={{ marginBottom: 16 }}>
-          The confidential case is with the pastors now.
+          The confidential need is with the pastors now.
         </div>
       )}
       <div className="fin-grid care-stats">
         <section className="fin-card">
-          <span className="label">Your open cases</span>
+          <span className="label">Your open needs</span>
           <div className="fin-stat">{mine.length}</div>
           <span className="muted small">{mine.filter((c) => c.overdue).length} with a next step past due</span>
-          <p className="fin-source">Cases assigned to you that aren&apos;t closed.</p>
+          <p className="fin-source">Needs assigned to you that haven&apos;t been met yet.</p>
         </section>
         <section className="fin-card">
           <span className="label">Across the church</span>
           <div className="fin-stat">{team.totalOpen}</div>
           <span className="muted small">
-            open cases, {team.unassigned} waiting in the pastors&apos; queue
+            open needs, {team.unassigned} waiting in the pastors&apos; queue
           </span>
-          <p className="fin-source">Every open case, counted without names. <Link href="/shepherding/load#team">How they&apos;re spread</Link></p>
+          <p className="fin-source">Every open need, counted without names. <Link href="/shepherding/load#team">How they&apos;re spread</Link></p>
         </section>
         <section className="fin-card">
           <span className="label">Guests not reached yet</span>
@@ -76,11 +76,11 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
       {rows.length === 0 ? (
         team.totalOpen === 0 ? (
           <EmptyState title="No one is on the shepherding list yet" actions={[{ label: "Record a guest", href: "/shepherding/guests" }, { label: "Add a prayer request", href: "/shepherding/prayer#add-prayer" }]}>
-            When someone needs a visit, a call or a meal, tap Open a case above, or just tell Barnabas (&ldquo;I visited Jamie in the hospital today&rdquo;). Cases are private to the people caring for them.
+            When someone needs a visit, a call or a meal, tap Note a need above, or just tell Barnabas (&ldquo;I visited Jamie in the hospital today&rdquo;). Needs are private to the people caring for them.
           </EmptyState>
         ) : (
           <div className="card">
-            <p className="muted">{scope === "mine" ? "No open cases are assigned to you with these filters." : "No open cases match these filters."}</p>
+            <p className="muted">{scope === "mine" ? "No open needs are assigned to you with these filters." : "No open needs match these filters."}</p>
           </div>
         )
       ) : q.view === "list" ? (
@@ -108,7 +108,7 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
         </div>
       )}
       <p className="fin-source" style={{ marginTop: 14 }}>
-        Shepherding cases in Barnabas, sorted with overdue next steps first. Closed cases stay on each case&apos;s page.
+        Shepherding needs in Barnabas, sorted with overdue next steps first. Needs that have been met stay on their own pages.
       </p>
     </CareFrame>
   );

@@ -409,7 +409,7 @@ const logCareEvent = tool({
   def: {
     name: "log_care_event",
     description:
-      "Older way to record a pastoral contact (visit, call, hospital visit, prayer, text) with an optional minimal follow-up and due date. It lands on the person's open shepherding case held by this leader, or opens one. Prefer log_care_contact. Keep it minimal, without sensitive details.",
+      "Older way to record a pastoral contact (visit, call, hospital visit, prayer, text) with an optional minimal follow-up and due date. It lands on the person's open shepherding need held by this leader, or notes a new one. Prefer log_care_contact. Keep it minimal, without sensitive details.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -435,7 +435,7 @@ const logCareEvent = tool({
       const actor = await careActor(ctx.leader);
       const c = await logCareEventCompat(actor, { personId: person.id, kind: input.kind, followUp: input.follow_up, due: input.due }, convId(ctx));
       await audit(ctx.leader, { conversationId: ctx.meta.id, action: "care.log", detail: `${input.kind} ${person.id} -> ${c.id}` });
-      return `Logged ${input.kind} with ${person.name} on shepherding case ${c.id}${input.follow_up ? `, next step: ${input.follow_up}` : ""}.`;
+      return `Logged ${input.kind} with ${person.name} on shepherding need ${c.id}${input.follow_up ? `, next step: ${input.follow_up}` : ""}.`;
     });
   },
 });
@@ -471,14 +471,14 @@ const listCareCases = tool({
   def: {
     name: "list_care_cases",
     description:
-      "Open shepherding cases this leader can see: scope 'mine' (assigned to them, the default) or 'all'; optionally one type or only overdue next steps. Each case has its type, status, who holds it, the next step and when it's due, and the last contact.",
+      "Open shepherding needs this leader can see: scope 'mine' (assigned to them, the default) or 'all'; optionally one type or only overdue next steps. Each need has its type, status, who holds it, the next step and when it's due, and the last contact.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
       properties: {
         scope: { type: "string", enum: ["mine", "all"] },
         type: { type: "string", enum: [...CASE_TYPES] },
-        overdue: { type: "boolean", description: "Only cases whose next step is past due" },
+        overdue: { type: "boolean", description: "Only needs whose next step is past due" },
       },
     },
   },
@@ -488,7 +488,7 @@ const listCareCases = tool({
     const rows = caseRows(book, actor, { scope, type, overdue });
     return ok({
       as_of: today(),
-      showing: `${scope === "mine" ? "cases assigned to you" : "every case you can see"}${type ? `, ${CASE_TYPE_LABELS[type].toLowerCase()} only` : ""}${overdue ? ", overdue only" : ""}`,
+      showing: `${scope === "mine" ? "needs assigned to you" : "every need you can see"}${type ? `, ${CASE_TYPE_LABELS[type].toLowerCase()} only` : ""}${overdue ? ", overdue only" : ""}`,
       cases: rows.slice(0, 15).map((r) => ({
         case_id: r.id,
         name: r.name,
@@ -508,10 +508,10 @@ const listCareCases = tool({
 });
 
 const careCaseDetail = tool({
-  phrase: "Let me pull up that case.",
+  phrase: "Let me pull up that need.",
   def: {
     name: "care_case_detail",
-    description: "One shepherding case: who it's for, type, status, who holds it, the summary, the next step, and the timeline of contacts with their minimal notes.",
+    description: "One shepherding need: who it's for, type, status, who holds it, the summary, the next step, and the timeline of contacts with their minimal notes.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { case_id: { type: "string" } }, required: ["case_id"] },
   },
@@ -519,7 +519,7 @@ const careCaseDetail = tool({
   async run({ case_id }, ctx) {
     const { actor, book } = await careFor(ctx.leader);
     const c = caseDetail(book, actor, case_id);
-    if (!c) return fail("No shepherding case with that id that this leader can see. Use list_care_cases.");
+    if (!c) return fail("No shepherding need with that id that this leader can see. Use list_care_cases.");
     return ok({
       case_id: c.id,
       for: c.subject.name,
@@ -540,7 +540,7 @@ const myCareLoadTool = tool({
   def: {
     name: "my_care_load",
     description:
-      "This leader's own care load, private to them: open cases by type and weight (crisis and grief count more), contacts in the last 7 days, days since their last day off, rest days in the last 30 days, and a gentle signal (steady, full or stretched) with the reasons.",
+      "This leader's own care load, private to them: open needs by type and weight (crisis and grief count more), contacts in the last 7 days, days since their last day off, rest days in the last 30 days, and a gentle signal (steady, full or stretched) with the reasons.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: {} },
   },
@@ -618,14 +618,14 @@ const openCareCase = tool({
   def: {
     name: "open_care_case",
     description:
-      "Open a shepherding case for a person or household when the leader asks. It's assigned to the leader unless they name someone else (pastors, deacons and staff can) or 'unassigned' for the pastors' queue. Optionally log the first contact and a next step. Notes stay minimal: no diagnoses or sensitive details.",
+      "Note a shepherding need for a person or household when the leader asks. It's assigned to the leader unless they name someone else (pastors, deacons and staff can) or 'unassigned' for the pastors' queue. Optionally log the first contact and a next step. Notes stay minimal: no diagnoses or sensitive details.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
       properties: {
         person_id: { type: "string", description: "From find_person" },
         name: { type: "string", description: "Only for someone not in the directory" },
-        household: { type: "boolean", description: "The case is for the whole household" },
+        household: { type: "boolean", description: "The need is for the whole household" },
         type: { type: "string", enum: [...CASE_TYPES] },
         confidential: { type: "boolean", description: "Pastors only. Use when the leader asks for it" },
         assignee: { type: "string", description: "'me' (default), 'unassigned', or a team member's name" },
@@ -679,7 +679,7 @@ const openCareCase = tool({
         convId(ctx),
       );
       return {
-        done: `Opened a ${CASE_TYPE_LABELS[c.type].toLowerCase()} case for ${c.subject.name}${c.assigneeId ? `, held by ${c.assigneeId === actor.self.id ? "you" : actor.members.find((m) => m.id === c.assigneeId)?.name}` : ", unassigned for the pastors"}${c.contacts.length ? ", with today's contact logged" : ""}${c.nextStep ? `. Next step: ${c.nextStep.text}` : ""}.`,
+        done: `Noted ${/^[aeiou]/i.test(CASE_TYPE_LABELS[c.type]) ? "an" : "a"} ${CASE_TYPE_LABELS[c.type].toLowerCase()} need for ${c.subject.name}${c.assigneeId ? `, held by ${c.assigneeId === actor.self.id ? "you" : actor.members.find((m) => m.id === c.assigneeId)?.name}` : ", unassigned for the pastors"}${c.contacts.length ? ", with today's contact logged" : ""}${c.nextStep ? `. Next step: ${c.nextStep.text}` : ""}.`,
         case_id: c.id,
         confidential: c.confidential,
         tell_the_leader: "Say in one short sentence what you did.",
@@ -691,7 +691,7 @@ const openCareCase = tool({
 const logCareContact = tool({
   def: {
     name: "log_care_contact",
-    description: "Log a contact on a shepherding case (visit, call, text, card, meal) when the leader tells you about one, with an optional minimal note and the next step. Date defaults to today.",
+    description: "Log a contact on a shepherding need (visit, call, text, card, meal) when the leader tells you about one, with an optional minimal note and the next step. Date defaults to today.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -794,7 +794,7 @@ const assignCareCase = tool({
   def: {
     name: "assign_care_case",
     description:
-      "Give a shepherding case to a team member, or 'me' to take it yourself, or 'unassigned' to hand it to the pastors' queue. Giving it to someone else is confirmed in code: the first call proposes it; tell the leader and ask; call again with the same details after they say yes.",
+      "Give a shepherding need to a team member, or 'me' to take it yourself, or 'unassigned' to hand it to the pastors' queue. Giving it to someone else is confirmed in code: the first call proposes it; tell the leader and ask; call again with the same details after they say yes.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { case_id: { type: "string" }, assignee: { type: "string", description: "'me', 'unassigned', or a team member's name" } }, required: ["case_id", "assignee"] },
   },
@@ -803,7 +803,7 @@ const assignCareCase = tool({
     return careWrite(async () => {
       const { actor, book } = await careFor(ctx.leader);
       const c = caseDetail(book, actor, input.case_id);
-      if (!c) return fail("No shepherding case with that id that this leader can see.");
+      if (!c) return fail("No shepherding need with that id that this leader can see.");
       let target: TeamMember | null = null;
       if (input.assignee.trim().toLowerCase() === "me") target = actor.self;
       else if (input.assignee.trim().toLowerCase() !== "unassigned") {
@@ -814,11 +814,11 @@ const assignCareCase = tool({
       }
       const toSelf = target ? isMine(actor.viewer, target.id) : false;
       if (!toSelf) {
-        const summary = target ? `give ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} case to ${target.name}` : `hand ${c.subject.name}'s case back to the pastors' queue, unassigned`;
+        const summary = target ? `give ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} need to ${target.name}` : `hand ${c.subject.name}'s need back to the pastors' queue, unassigned`;
         if (!gateConfirmed(ctx, "assign_care_case", JSON.stringify([c.id, target?.id ?? null]))) return fail(`Not confirmed yet. Ask the leader: ${summary}? Call assign_care_case again with the same details after they say yes.`);
       }
       const updated = await assignCase(actor, c.id, target?.id ?? null, convId(ctx));
-      return `${toSelf ? "You now hold" : target ? `${target.name} now holds` : "The pastors' queue now has"} ${updated.subject.name}'s case. Tell the leader in one short sentence.`;
+      return `${toSelf ? "You now hold" : target ? `${target.name} now holds` : "The pastors' queue now has"} ${updated.subject.name}'s need. Tell the leader in one short sentence.`;
     });
   },
 });
@@ -826,20 +826,20 @@ const assignCareCase = tool({
 const closeCareCase = tool({
   def: {
     name: "close_care_case",
-    description: "Close a shepherding case when care is complete. Confirmed in code: the first call proposes it; ask the leader; call again with the same case_id after they say yes.",
+    description: "Mark a shepherding need as met when care is complete. Confirmed in code: the first call proposes it; ask the leader; call again with the same case_id after they say yes.",
     eager_input_streaming: true,
-    input_schema: { type: "object", properties: { case_id: { type: "string" }, note: { type: "string", description: "Optional minimal closing note" } }, required: ["case_id"] },
+    input_schema: { type: "object", properties: { case_id: { type: "string" }, note: { type: "string", description: "Optional minimal note on how it was met" } }, required: ["case_id"] },
   },
   schema: z.object({ case_id: z.string().min(1).max(60), note: z.string().max(400).optional() }),
   async run(input, ctx) {
     return careWrite(async () => {
       const { actor, book } = await careFor(ctx.leader);
       const c = caseDetail(book, actor, input.case_id);
-      if (!c) return fail("No shepherding case with that id that this leader can see.");
-      if (!c.canClose) return fail("Only whoever holds the case, or a pastor, deacon or staff member, can close it. Tell the leader kindly.");
-      if (!gateConfirmed(ctx, "close_care_case", c.id)) return fail(`Not confirmed yet. Ask the leader: close ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} case? Call close_care_case again after they say yes.`);
+      if (!c) return fail("No shepherding need with that id that this leader can see.");
+      if (!c.canClose) return fail("Only whoever holds the need, or a pastor, deacon or staff member, can mark it met. Tell the leader kindly.");
+      if (!gateConfirmed(ctx, "close_care_case", c.id)) return fail(`Not confirmed yet. Ask the leader: mark ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} need as met? Call close_care_case again after they say yes.`);
       await closeCase(actor, c.id, input.note, convId(ctx));
-      return `Closed ${c.subject.name}'s case. Tell the leader in one short sentence.`;
+      return `Marked ${c.subject.name}'s need as met. Tell the leader in one short sentence.`;
     });
   },
 });

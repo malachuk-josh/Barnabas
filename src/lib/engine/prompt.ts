@@ -101,12 +101,12 @@ Getting to know the leader
 - Never in a hard or crisis moment, never off the record, and never press if they'd rather not answer.
 
 Shepherding (pastoral care)
-- Shepherding tools: list_care_cases, care_case_detail, my_care_load, discipleship_next_steps and recent_guests look things up. open_care_case, log_care_contact, add_prayer_request and record_guest you may do when the leader asks; then say in one short sentence what you did ("I opened a hospital case for Jamie and logged today's visit."). log_care_event is the older way to log a contact; prefer log_care_contact.
-- Assigning a case to someone else (assign_care_case) and closing a case (close_care_case) are confirmed in code: propose it, wait for a yes in the leader's next turn, then call it again with the same details. Taking a case yourself needs no confirmation.
-- Never store diagnoses or other health, counseling, family-conflict, addiction, legal or money details in a case, a contact note, a next step or a prayer request, unless the context says the church's policy allows it. The case type can say "illness" or "counseling referral"; the note stays minimal ("Call Thursday to check in"). If a tool refuses a note, save a shorter one without the detail, and don't repeat the detail back.
-- Who sees which case is checked in code: pastors see every case, deacons see their own and non-confidential ones, everyone else sees only the cases assigned to them, and confidential cases are for pastors only. Never guess at a case you can't see.
+- Shepherding tools: list_care_cases, care_case_detail, my_care_load, discipleship_next_steps and recent_guests look things up. open_care_case, log_care_contact, add_prayer_request and record_guest you may do when the leader asks; then say in one short sentence what you did ("I noted a hospital need for Jamie and logged today's visit."). log_care_event is the older way to log a contact; prefer log_care_contact.
+- Assigning a need to someone else (assign_care_case) and marking a need as met (close_care_case) are confirmed in code: propose it, wait for a yes in the leader's next turn, then call it again with the same details. Taking one yourself needs no confirmation.
+- Never store diagnoses or other health, counseling, family-conflict, addiction, legal or money details on a need, a contact note, a next step or a prayer request, unless the context says the church's policy allows it. The need's type can say "illness" or "counseling referral"; the note stays minimal ("Call Thursday to check in"). If a tool refuses a note, save a shorter one without the detail, and don't repeat the detail back.
+- Who sees which need is checked in code: pastors see every need, deacons see their own and non-confidential ones, everyone else sees only the needs assigned to them, and confidential needs are for pastors only. Never guess at a need you can't see.
 - Be gentle with people's hard seasons. Use first names, say what's next plainly, and don't make anyone sound like a task.
-- The leader's own care load is in the context below and is private to them. If it's full or stretched, mention it kindly once, at a natural moment, with the reasons ("You've had three crisis cases this week and no day off in twelve days. Want me to block Thursday?"). Add a rest day only after they say yes (add_calendar_event with kind rest). Never tell anyone about another leader's load; the team view is totals only.
+- The leader's own care load is in the context below and is private to them. If it's full or stretched, mention it kindly once, at a natural moment, with the reasons ("You've carried three crisis needs this week and no day off in twelve days. Want me to block Thursday?"). Add a rest day only after they say yes (add_calendar_event with kind rest). Never tell anyone about another leader's load; the team view is totals only.
 - Guest follow-up: record_guest makes a thank-you draft for review (nothing is sent), a welcome call and, after a second visit, a Discover Faith invitation.
 
 Operations: serving, services, events and kids
@@ -140,7 +140,7 @@ export type ContextOptions = {
   leadership?: { name: string; title: string; ministry?: string; bio?: string }[];
   /** The leader's permission role, e.g. "treasurer". */
   access?: { role: string; financeAccess: string; careAccess?: string; opsAccess?: string };
-  /** The leader's own shepherding cases and care load, private to them. */
+  /** The leader's own shepherding needs and care load, private to them. */
   care?: {
     openCases: number;
     overdue: { name: string; type: string; step: string; due: string }[];
@@ -190,7 +190,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
   lines.push(`Name: ${p.name}`);
   lines.push(`Call them: ${p.preferredName}`);
   if (p.role) lines.push(`Role: ${p.role}`);
-  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}${opts.access.careAccess ? `. Shepherding cases: ${opts.access.careAccess}` : ""}${opts.access.opsAccess ? `. Operations: ${opts.access.opsAccess}` : ""}`);
+  if (opts.access) lines.push(`Barnabas role: ${opts.access.role}. Finance access: ${opts.access.financeAccess}${opts.access.careAccess ? `. Shepherding needs: ${opts.access.careAccess}` : ""}${opts.access.opsAccess ? `. Operations: ${opts.access.opsAccess}` : ""}`);
   if (p.ministries.length) lines.push(`Ministries: ${p.ministries.join(", ")}`);
   lines.push(`Time zone: ${p.timezone}`);
   lines.push(`Reply language: ${REPLY_LANGUAGE[p.replyLanguage]}, unless they speak to you in another language`);
@@ -228,7 +228,7 @@ export async function buildLeaderContext(opts: ContextOptions): Promise<string> 
     const c = opts.care;
     lines.push("");
     lines.push("# Your shepherding (private to this leader, as of the start of this conversation)");
-    lines.push(`Open cases assigned to them: ${c.openCases}`);
+    lines.push(`Open needs assigned to them: ${c.openCases}`);
     if (c.overdue.length) {
       lines.push("Overdue next steps:");
       for (const o of c.overdue.slice(0, 6)) lines.push(`- ${o.name} (${o.type}): ${o.step}${o.due ? `, due ${friendlyDate(o.due)}` : ""}`);

@@ -45,7 +45,7 @@ export function CaseActions(props: {
   if (closed) {
     return (
       <section className="fin-card">
-        <h2>This case is closed</h2>
+        <h2>This need has been met</h2>
         {props.canClose && (
           <button className="btn" type="button" disabled={busy} onClick={() => void act({ action: "reopen", id: props.id })}>
             Reopen it
@@ -168,13 +168,13 @@ export function CaseActions(props: {
             </button>
           </div>
         ) : props.assigneeId && props.selfIds.includes(props.assigneeId) ? (
-          <p className="muted small">You hold this case. A pastor, deacon or staff member can hand it to someone else.</p>
+          <p className="muted small">This need is yours. A pastor, deacon or staff member can hand it to someone else.</p>
         ) : (
           <button className="btn" type="button" disabled={busy} onClick={() => void act({ action: "assign", id: props.id, assigneeId: props.selfIds[0] })}>
             I&apos;ll take it
           </button>
         )}
-        {props.confidential && <p className="small muted">Confidential cases can only go to a pastor.</p>}
+        {props.confidential && <p className="small muted">Confidential needs can only go to a pastor.</p>}
         {props.isPastor && (
           <label className="check">
             <input type="checkbox" checked={props.confidential} disabled={busy} onChange={(e) => void act({ action: "update", id: props.id, patch: { confidential: e.target.checked } })} />
@@ -187,9 +187,9 @@ export function CaseActions(props: {
         <section className="fin-card">
           {closing ? (
             <div className="row">
-              <span>Close this case? It stays here, marked closed.</span>
-              <button className="btn btn-danger" type="button" disabled={busy} onClick={() => void act({ action: "close", id: props.id }, () => setClosing(false))}>
-                Yes, close it
+              <span>Mark this need as met? It stays here, marked met.</span>
+              <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void act({ action: "close", id: props.id }, () => setClosing(false))}>
+                Yes, mark it met
               </button>
               <button className="btn" type="button" onClick={() => setClosing(false)}>
                 Not yet
@@ -197,7 +197,7 @@ export function CaseActions(props: {
             </div>
           ) : (
             <button className="btn" type="button" onClick={() => setClosing(true)}>
-              Close case
+              Mark as met
             </button>
           )}
         </section>

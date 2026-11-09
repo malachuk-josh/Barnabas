@@ -40,13 +40,13 @@ export default async function LoadPage() {
             </p>
           )}
           <p className="fin-source">
-            Steady unless something is full; full when one thing is; stretched when one thing is heavy or two are full. Full and heavy: weighted load {LOAD_THRESHOLDS.weighted.full} and {LOAD_THRESHOLDS.weighted.stretched}; days without a day off {LOAD_THRESHOLDS.noDayOff.full} and {LOAD_THRESHOLDS.noDayOff.stretched}; contacts in 7 days {LOAD_THRESHOLDS.contacts.full} and {LOAD_THRESHOLDS.contacts.stretched}; open crisis cases {LOAD_THRESHOLDS.crisis.full} and {LOAD_THRESHOLDS.crisis.stretched}; overdue next steps {LOAD_THRESHOLDS.overdue.full} and {LOAD_THRESHOLDS.overdue.stretched}.
+            Steady unless something is full; full when one thing is; stretched when one thing is heavy or two are full. Full and heavy: weighted load {LOAD_THRESHOLDS.weighted.full} and {LOAD_THRESHOLDS.weighted.stretched}; days without a day off {LOAD_THRESHOLDS.noDayOff.full} and {LOAD_THRESHOLDS.noDayOff.stretched}; contacts in 7 days {LOAD_THRESHOLDS.contacts.full} and {LOAD_THRESHOLDS.contacts.stretched}; open crisis needs {LOAD_THRESHOLDS.crisis.full} and {LOAD_THRESHOLDS.crisis.stretched}; overdue next steps {LOAD_THRESHOLDS.overdue.full} and {LOAD_THRESHOLDS.overdue.stretched}.
           </p>
         </section>
 
         <div className="fin-grid">
           <section className="fin-card">
-            <span className="label">Open cases</span>
+            <span className="label">Open needs</span>
             <div className="fin-stat">{load.openCases}</div>
             <span className="muted small">
               weighted load {load.weighted} · {LEVEL[factor("weighted").level]}
@@ -97,7 +97,7 @@ export default async function LoadPage() {
           <section className="fin-card" id="team">
             <h2>The team</h2>
             <div className="fin-sub">
-              <span>Open cases across the church</span>
+              <span>Open needs across the church</span>
               <span>{team.totalOpen}</span>
             </div>
             <div className="fin-sub">
@@ -105,17 +105,17 @@ export default async function LoadPage() {
               <span>{team.unassigned}</span>
             </div>
             <div className="fin-sub">
-              <span>People carrying cases</span>
+              <span>People carrying needs</span>
               <span>{team.carers}</span>
             </div>
             <p>{team.text}</p>
-            <div className="care-spread" role="img" aria-label={`Share of assigned cases per carer: ${team.shares.map((s) => `${Math.round(s * 100)}%`).join(", ")}`}>
+            <div className="care-spread" role="img" aria-label={`Share of assigned needs per carer: ${team.shares.map((s) => `${Math.round(s * 100)}%`).join(", ")}`}>
               {team.shares.map((s, i) => (
                 <span key={i} style={{ height: `${Math.max(6, Math.round(s * 100))}%` }} />
               ))}
             </div>
             <div className="small muted">{team.byType.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(" · ")}</div>
-            <p className="fin-source">Every open case, counted by holder without names. Each bar is one person&apos;s share; no one&apos;s wellbeing details are shown here.</p>
+            <p className="fin-source">Every open need, counted by holder without names. Each bar is one person&apos;s share; no one&apos;s wellbeing details are shown here.</p>
           </section>
         </div>
       </div>

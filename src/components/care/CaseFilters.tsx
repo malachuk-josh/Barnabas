@@ -21,7 +21,7 @@ export function CaseFilters({ canSeeOthers }: { canSeeOthers: boolean }) {
     return q ? `${pathname}?${q}` : pathname;
   };
   return (
-    <div className="care-filters" role="group" aria-label="Filter cases">
+    <div className="care-filters" role="group" aria-label="Filter needs">
       <span className="seg">
         <Link className="seg-link" href={href({ scope: null })} aria-current={scope === "mine" ? "page" : undefined}>
           Mine

@@ -72,7 +72,7 @@ async function log(leader: Leader, action: string, detail: string, conversationI
 
 function findCase(book: CareBook, id: string) {
   const c = book.cases.find((x) => x.id === id);
-  if (!c) throw new CareError("That shepherding case doesn't exist anymore.");
+  if (!c) throw new CareError("That shepherding need doesn't exist anymore.");
   return c;
 }
 
@@ -111,17 +111,17 @@ export async function openCase(actor: CareActor, input: z.input<typeof OpenCaseI
     if (!person) fail(`No one with id ${v.personId} is in the directory.`);
     subjectName = v.household && person!.household ? person!.household : person!.name;
   }
-  if (!subjectName) fail("Who is this case for? Pick someone from the directory or type a name.");
+  if (!subjectName) fail("Whose need is this? Pick someone from the directory or type a name.");
 
   let assigneeId: string | undefined;
   if (v.assignee === "me") assigneeId = actor.self.id;
   else if (v.assignee !== "unassigned") {
     const m = member(actor, v.assignee);
-    if (!isMine(actor.viewer, m.id) && !can(actor.viewer.access, "care.assign")) fail("Your role can open cases for yourself or hand them to the pastors, not assign them to someone else.");
-    if (!canHoldCase(m, { confidential: v.confidential })) fail("A confidential case can only be assigned to a pastor.");
+    if (!isMine(actor.viewer, m.id) && !can(actor.viewer.access, "care.assign")) fail("Your role can note needs for yourself or hand them to the pastors, not assign them to someone else.");
+    if (!canHoldCase(m, { confidential: v.confidential })) fail("A confidential need can only be assigned to a pastor.");
     assigneeId = m.id;
   }
-  if (assigneeId === actor.self.id && !canHoldCase(actor.self, { confidential: v.confidential })) fail("Only pastors hold confidential cases. Leave it unassigned for the pastors, or assign it to one.");
+  if (assigneeId === actor.self.id && !canHoldCase(actor.self, { confidential: v.confidential })) fail("Only pastors hold confidential needs. Leave it unassigned for the pastors, or assign it to one.");
 
   const now = Date.now();
   const c: CareCase = {
@@ -160,8 +160,8 @@ export async function logContact(actor: CareActor, caseId: string, input: z.inpu
   checkNote(v.note, v.nextStep);
   const result = await updateCare(actor.leader.churchId, ["cases"], (book) => {
     const c = findCase(book, caseId);
-    if (!canWorkCase(actor.viewer, c)) fail("That case isn't one you can see.");
-    if (c.status === "closed") fail("That case is closed. Reopen it to log a contact.");
+    if (!canWorkCase(actor.viewer, c)) fail("That need isn't one you can see.");
+    if (c.status === "closed") fail("That need has been met. Reopen it to log a contact.");
     c.contacts.push({ id: newId("ct"), kind: v.kind, date: v.date, byId: actor.self.id, byName: actor.self.name, note: v.note || undefined, at: Date.now() });
     c.contacts.sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at);
     if (v.nextStep) c.nextStep = { text: v.nextStep, due: v.due };
@@ -187,10 +187,10 @@ export async function updateCase(actor: CareActor, caseId: string, input: z.inpu
   checkNote(v.summary, v.nextStep);
   const result = await updateCare(actor.leader.churchId, ["cases"], (book) => {
     const c = findCase(book, caseId);
-    if (!canWorkCase(actor.viewer, c)) fail("That case isn't one you can see.");
-    if (c.status === "closed") fail("That case is closed. Reopen it first.");
+    if (!canWorkCase(actor.viewer, c)) fail("That need isn't one you can see.");
+    if (c.status === "closed") fail("That need has been met. Reopen it first.");
     if (v.confidential !== undefined && v.confidential !== c.confidential) {
-      if (actor.viewer.access.role !== "pastor") fail("Only a pastor can change whether a case is confidential.");
+      if (actor.viewer.access.role !== "pastor") fail("Only a pastor can change whether a need is confidential.");
       if (v.confidential && c.assigneeId) {
         const holder = findMember(actor.members, c.assigneeId);
         if (holder && !canHoldCase(holder, { confidential: true })) fail("Assign it to a pastor before marking it confidential.");
@@ -213,13 +213,13 @@ export async function updateCase(actor: CareActor, caseId: string, input: z.inpu
 export async function assignCase(actor: CareActor, caseId: string, assigneeId: string | null, conversationId?: string) {
   const result = await updateCare(actor.leader.churchId, ["cases"], (book) => {
     const c = findCase(book, caseId);
-    if (!canSeeCase(actor.viewer, c)) fail("That case isn't one you can see.");
-    if (c.status === "closed") fail("That case is closed.");
+    if (!canSeeCase(actor.viewer, c)) fail("That need isn't one you can see.");
+    if (c.status === "closed") fail("That need has been met.");
     const toSelf = assigneeId !== null && isMine(actor.viewer, assigneeId);
-    if (!toSelf && !canAssignCase(actor.viewer, c)) fail("Your role can't assign shepherding cases to someone else. A pastor or deacon can.");
+    if (!toSelf && !canAssignCase(actor.viewer, c)) fail("Your role can't assign shepherding needs to someone else. A pastor or deacon can.");
     if (assigneeId) {
       const m = member(actor, assigneeId);
-      if (!canHoldCase(m, c)) fail("A confidential case can only be assigned to a pastor.");
+      if (!canHoldCase(m, c)) fail("A confidential need can only be assigned to a pastor.");
     }
     c.assigneeId = assigneeId ?? undefined;
     if (c.status === "new" && assigneeId) c.status = "assigned";
@@ -236,8 +236,8 @@ export async function closeCase(actor: CareActor, caseId: string, note?: string,
   checkNote(closing);
   const result = await updateCare(actor.leader.churchId, ["cases"], (book) => {
     const c = findCase(book, caseId);
-    if (!canCloseCase(actor.viewer, c)) fail("Only whoever holds the case, or a pastor or deacon, can close it.");
-    if (c.status === "closed") fail("That case is already closed.");
+    if (!canCloseCase(actor.viewer, c)) fail("Only whoever holds the need, or a pastor or deacon, can mark it met.");
+    if (c.status === "closed") fail("That need is already marked met.");
     c.status = "closed";
     c.closedAt = Date.now();
     c.closedNote = closing || undefined;
@@ -251,7 +251,7 @@ export async function closeCase(actor: CareActor, caseId: string, note?: string,
 export async function reopenCase(actor: CareActor, caseId: string) {
   const result = await updateCare(actor.leader.churchId, ["cases"], (book) => {
     const c = findCase(book, caseId);
-    if (!canCloseCase(actor.viewer, c)) fail("Only whoever held the case, or a pastor or deacon, can reopen it.");
+    if (!canCloseCase(actor.viewer, c)) fail("Only whoever held the need, or a pastor or deacon, can reopen it.");
     c.status = c.contacts.length ? "active" : c.assigneeId ? "assigned" : "new";
     c.closedAt = undefined;
     c.updatedAt = Date.now();

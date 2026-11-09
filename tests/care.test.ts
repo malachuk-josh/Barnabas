@@ -101,7 +101,7 @@ describe("care visibility", () => {
       const d = await careActor(deacon);
       const p = await careActor(pastor);
       // Only a pastor can hold a confidential case.
-      await expect(openCase(d, { personId: "p12", type: "crisis", confidential: true, assignee: "me" })).rejects.toThrow("Only pastors hold confidential cases");
+      await expect(openCase(d, { personId: "p12", type: "crisis", confidential: true, assignee: "me" })).rejects.toThrow("Only pastors hold confidential needs");
       const c = await openCase(d, { personId: "p12", type: "crisis", confidential: true, assignee: "unassigned" });
       const open = await openCase(d, { personId: "p05", type: "hospital", assignee: leaderMemberId(staff.leaderId) });
 
@@ -177,7 +177,7 @@ describe("care-load signal", () => {
     expect(l.signal).toBe("steady");
     expect(l.weighted).toBe(2);
     expect(l.daysWithoutDayOff).toBe(3);
-    expect(l.reasons[0]).toContain("2 open cases");
+    expect(l.reasons[0]).toContain("2 open needs");
   });
 
   it("weights crisis and grief more than routine visits, and ignores closed cases", () => {
@@ -433,7 +433,7 @@ describe("Barnabas care tools", () => {
     const opened = await executeTool("open_care_case", { person_id: "p05", type: "hospital", contact_kind: "visit", next_step: "Call Thursday", due: addDays(today(), 3) }, c);
     expect(opened.isError).toBe(false);
     const { case_id, done } = JSON.parse(opened.content);
-    expect(done).toContain("Opened a hospital case for Grace Lee");
+    expect(done).toContain("Noted a hospital need for Grace Lee");
     const logged = await executeTool("log_care_contact", { case_id, kind: "call", note: "Home tomorrow" }, c);
     expect(logged.isError).toBe(false);
     const prayer = await executeTool("add_prayer_request", { person_id: "p05", request: "Rest as she recovers", shareable: true }, c);

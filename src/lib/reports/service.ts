@@ -113,16 +113,16 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const any = book.cases.length > 0;
       return {
         id, title: "Shepherding pipeline", allowed: true,
-        empty: any ? undefined : { title: "No shepherding cases yet", text: "When someone opens a case (a hospital visit, a new baby, a hard season), the pipeline shows how many are open, how fast someone reaches out, and how many close each month.", actions: [{ label: "Open Shepherding", href: "/shepherding" }] },
-        summary: any ? `${n(c.open)} cases are open and ${n(c.closed)} closed.${c.medianDaysToFirstContact !== null ? ` Someone reaches out a median of ${c.medianDaysToFirstContact < 1 ? "less than a day" : `${Math.round(c.medianDaysToFirstContact * 10) / 10} days`} after a case opens.` : ""}${c.noContactYet ? ` ${n(c.noContactYet)} open ${c.noContactYet === 1 ? "case has" : "cases have"} no contact yet.` : ""}` : "No cases yet.",
-        stats: any ? [{ label: "Open", value: n(c.open) }, { label: "Closed", value: n(c.closed) }, { label: "Median days to first contact", value: c.medianDaysToFirstContact === null ? "–" : String(Math.round(c.medianDaysToFirstContact * 10) / 10) }, { label: "Open, no contact yet", value: n(c.noContactYet), tone: c.noContactYet ? "watch" : "ok" }] : [],
-        chart: any ? { kind: "bars", title: "Open cases by status", x: c.byStatus.map((s) => s.status), series: [{ name: "Open cases", values: c.byStatus.map((s) => s.count), role: "primary" }], unit: "count" } : undefined,
-        extra: any ? { kind: "lines", title: "Cases opened and closed by month", x: c.monthly.map((m) => monthLabel(m.month)), series: [{ name: "Opened", values: c.monthly.map((m) => m.opened), role: "primary" }, { name: "Closed", values: c.monthly.map((m) => m.closed), role: "reference" }], unit: "count" } : undefined,
+        empty: any ? undefined : { title: "No shepherding needs yet", text: "When someone notes a need (a hospital visit, a new baby, a hard season), the pipeline shows how many are open, how fast someone reaches out, and how many are met each month.", actions: [{ label: "Open Shepherding", href: "/shepherding" }] },
+        summary: any ? `${n(c.open)} ${c.open === 1 ? "need is" : "needs are"} open and ${n(c.closed)} met.${c.medianDaysToFirstContact !== null ? ` Someone reaches out a median of ${c.medianDaysToFirstContact < 1 ? "less than a day" : `${Math.round(c.medianDaysToFirstContact * 10) / 10} days`} after a need is noted.` : ""}${c.noContactYet ? ` ${n(c.noContactYet)} open ${c.noContactYet === 1 ? "need has" : "needs have"} no contact yet.` : ""}` : "No needs yet.",
+        stats: any ? [{ label: "Open", value: n(c.open) }, { label: "Met", value: n(c.closed) }, { label: "Median days to first contact", value: c.medianDaysToFirstContact === null ? "–" : String(Math.round(c.medianDaysToFirstContact * 10) / 10) }, { label: "Open, no contact yet", value: n(c.noContactYet), tone: c.noContactYet ? "watch" : "ok" }] : [],
+        chart: any ? { kind: "bars", title: "Open needs by status", x: c.byStatus.map((s) => s.status), series: [{ name: "Open needs", values: c.byStatus.map((s) => s.count), role: "primary" }], unit: "count" } : undefined,
+        extra: any ? { kind: "lines", title: "Needs noted and met by month", x: c.monthly.map((m) => monthLabel(m.month)), series: [{ name: "Noted", values: c.monthly.map((m) => m.opened), role: "primary" }, { name: "Met", values: c.monthly.map((m) => m.closed), role: "reference" }], unit: "count" } : undefined,
         table: {
           header: c.assignees ? ["Group", "Label", "Count"] : ["Group", "Label", "Count"],
-          rows: [...c.byStatus.map((s) => ["Status", s.status, s.count]), ...c.byType.map((t) => ["Type", t.type, t.count]), ...c.monthly.flatMap((m) => [["Opened", m.month, m.opened], ["Closed", m.month, m.closed]]), ...(c.assignees ?? []).map((a) => ["Held by", a.name, a.count])],
+          rows: [...c.byStatus.map((s) => ["Status", s.status, s.count]), ...c.byType.map((t) => ["Type", t.type, t.count]), ...c.monthly.flatMap((m) => [["Noted", m.month, m.opened], ["Met", m.month, m.closed]]), ...(c.assignees ?? []).map((a) => ["Held by", a.name, a.count])],
         },
-        source: can(access, "care.view_all") ? "Shepherding cases, including confidential ones (pastors only), with who holds them." : "Shepherding cases, as totals only: no names, notes or who holds what.",
+        source: can(access, "care.view_all") ? "Shepherding needs, including confidential ones (pastors only), with who holds them." : "Shepherding needs, as totals only: no names, notes or who holds what.",
       };
     }
     case "guests": {

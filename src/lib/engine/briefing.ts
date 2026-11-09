@@ -49,7 +49,7 @@ export async function radarNow(date = todayIso(), churchId = config.churchId) {
 export async function followUps(leader: Leader, date = todayIso()): Promise<FollowUp[]> {
   const { people, attendance, serving, sunday } = await radarNow(date);
   const out: FollowUp[] = [];
-  // Next steps on the leader's own shepherding cases (older log_care_event records are folded in first) and their guest follow-ups.
+  // Next steps on the leader's own shepherding needs (older log_care_event records are folded in first) and their guest follow-ups.
   const { actor, book } = await careFor(leader);
   out.push(...careFollowUps(book, actor, date));
   // People who have dropped out of worship and aren't serving: a gentle check-in.

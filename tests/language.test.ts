@@ -66,7 +66,8 @@ describe("biblical language", () => {
     expect(TERMS.colaborer).toMatchObject({ one: "co-laborer", many: "co-laborers", One: "Co-laborer", Many: "Co-laborers" });
     expect(count(1, "colaborer")).toBe("1 co-laborer");
     expect(count(3, "colaborer")).toBe("3 co-laborers");
-    expect(count(2, "shepherdingCase")).toBe("2 shepherding cases");
+    expect(count(1, "shepherdingCase")).toBe("1 need");
+    expect(count(2, "shepherdingCase")).toBe("2 needs");
     expect(TERMS.wearinessWatch.One).toBe("Weariness watch");
     expect(verseFor("encourage").reference).toBe("1 Thessalonians 5:11");
     expect(verseFor("shepherdingTeam").reference).toBe("1 Peter 5:2");
@@ -98,6 +99,22 @@ describe("biblical language", () => {
       if (SKIP.some((s) => rel === s || rel.startsWith(s))) continue;
       for (const s of userFacingStrings(file)) if (OLD_WORDS.test(s.text)) hits.push(`${rel}:${s.line}: ${s.text.trim().slice(0, 100)}`);
     }
+    expect(hits).toEqual([]);
+  });
+
+  it("Shepherding speaks of needs, not cases, in what people read and in Barnabas's prompt", () => {
+    const CASE = /\bcases?\b/i;
+    const files = [
+      ...sourceFiles(path.join(SRC, "app/shepherding")),
+      ...sourceFiles(path.join(SRC, "components/care")),
+      path.join(SRC, "lib/engine/prompt.ts"),
+    ];
+    const hits: string[] = [];
+    for (const file of files) {
+      const rel = path.relative(ROOT, file).split(path.sep).join("/");
+      for (const s of userFacingStrings(file)) if (CASE.test(s.text)) hits.push(`${rel}:${s.line}: ${s.text.trim().slice(0, 100)}`);
+    }
+    expect(files.length).toBeGreaterThan(10);
     expect(hits).toEqual([]);
   });
 });

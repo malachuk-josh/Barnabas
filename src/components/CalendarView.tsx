@@ -196,7 +196,7 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
                 <span>
                   <strong>{s.title}</strong>
                   <small className="muted">
-                    {longDate(s.date)} · {s.reason} · <Link href={s.href}>{s.kind === "rest" ? "Your care load" : "Open the case"}</Link>
+                    {longDate(s.date)} · {s.reason} · <Link href={s.href}>{s.kind === "rest" ? "Your care load" : "Open the need"}</Link>
                   </small>
                 </span>
                 <button

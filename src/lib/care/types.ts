@@ -45,7 +45,7 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   assigned: "Assigned",
   active: "Active",
   follow_up: "Follow-up",
-  closed: "Closed",
+  closed: "Met",
 };
 
 export const CONTACT_KINDS = ["visit", "call", "text", "card", "meal", "other"] as const;

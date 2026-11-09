@@ -8,7 +8,7 @@ import { careApi, localToday } from "./client";
 type Person = { id: string; name: string; household: string | null };
 type Member = { id: string; name: string; title: string; role: string };
 
-/** "Open a case": who, what kind, who holds it, and optionally the first contact and next step. */
+/** "Note a need": who, what kind, who holds it, and optionally the first contact and next step. */
 export function NewCase({ people, members, selfId, canAssign, isPastor }: { people: Person[]; members: Member[]; selfId: string; canAssign: boolean; isPastor: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -52,12 +52,12 @@ export function NewCase({ people, members, selfId, canAssign, isPastor }: { peop
   return (
     <>
       <button className="btn btn-primary" type="button" onClick={() => setOpen(true)}>
-        Open a case
+        Note a need
       </button>
       {open && (
         <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="new-case-title" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <form className="sheet" onSubmit={submit}>
-            <h2 id="new-case-title">Open a shepherding case</h2>
+            <h2 id="new-case-title">Note a need</h2>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="nc-person">Who</label>
@@ -158,7 +158,7 @@ export function NewCase({ people, members, selfId, canAssign, isPastor }: { peop
                 Cancel
               </button>
               <button className="btn btn-primary" type="submit" disabled={busy}>
-                {busy ? "Opening…" : "Open case"}
+                {busy ? "Saving…" : "Note need"}
               </button>
             </div>
           </form>

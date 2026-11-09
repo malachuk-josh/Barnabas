@@ -10,7 +10,7 @@ import { can } from "@/lib/auth/roles";
 import { today as todayIso, friendlyDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Shepherding case · Barnabas" };
+export const metadata: Metadata = { title: "Shepherding need · Barnabas" };
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,16 +26,16 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   return (
     <CareFrame ctx={ctx} eyebrow={`${CASE_TYPE_LABELS[c.type]} · ${CASE_STATUS_LABELS[c.status]}`} title={c.subject.name} intro={c.summary}>
       <p className="small" style={{ marginBottom: 14 }}>
-        <Link href="/shepherding">← All cases</Link>
+        <Link href="/shepherding">← All needs</Link>
       </p>
       <div className="fin-grid-2">
         <div className="fin-stack">
           <section className="fin-card">
             <div className="fin-card-head">
-              <h2>About this case</h2>
+              <h2>About this need</h2>
               <TypePill type={c.type} label={CASE_TYPE_LABELS[c.type]} />
             </div>
-            {c.confidential && <span className="care-conf">Confidential: only pastors can see this case</span>}
+            {c.confidential && <span className="care-conf">Confidential: only pastors can see this need</span>}
             <div className="fin-sub">
               <span>For</span>
               <span>{c.subject.kind === "household" ? `${c.subject.name} (household)` : c.subject.name}</span>
@@ -45,7 +45,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
               <span>{ctx.actor.viewer.memberIds.includes(c.assigneeId ?? "") ? "You" : c.assigneeName}</span>
             </div>
             <div className="fin-sub">
-              <span>Opened</span>
+              <span>Noted</span>
               <span>
                 {friendlyDate(new Date(c.openedAt).toISOString().slice(0, 10))} by {c.openedByName}
               </span>
@@ -56,7 +56,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
                 {c.nextStep ? `${c.nextStep.text}${c.nextStep.due ? `, by ${friendlyDate(c.nextStep.due)}` : ""}` : "None set"}
               </span>
             </div>
-            <p className="fin-source">This case&apos;s record in Barnabas. {c.source === "legacy" ? "It was made from an earlier shepherding log." : c.source === "barnabas" ? "Barnabas opened it when you asked." : ""}</p>
+            <p className="fin-source">This need&apos;s record in Barnabas. {c.source === "legacy" ? "It was made from an earlier shepherding log." : c.source === "barnabas" ? "Barnabas noted it when you asked." : ""}</p>
           </section>
 
           <section className="fin-card">
@@ -76,8 +76,8 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
                 ))}
               </ol>
             )}
-            {c.closedAt && <p className="small muted">Closed {friendlyDate(new Date(c.closedAt).toISOString().slice(0, 10))}{c.closedNote ? `: ${c.closedNote}` : ""}.</p>}
-            <p className="fin-source">Every contact logged on this case, newest first.</p>
+            {c.closedAt && <p className="small muted">Met on {friendlyDate(new Date(c.closedAt).toISOString().slice(0, 10))}{c.closedNote ? `: ${c.closedNote}` : ""}.</p>}
+            <p className="fin-source">Every contact logged on this need, newest first.</p>
           </section>
         </div>
         <CaseActions

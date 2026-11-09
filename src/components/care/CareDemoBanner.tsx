@@ -25,7 +25,7 @@ export function CareDemoBanner({ canClear }: { canClear: boolean }) {
     <div className="fin-demo" role="note">
       <span className="fin-badge-demo">Demo data</span>
       <span>
-        Only the example classes are seeded, taught by MGBC&apos;s pastors. <strong>No one&apos;s shepherding records are made up</strong>: cases, prayer requests and guests start empty.
+        Only the example classes are seeded, taught by MGBC&apos;s pastors. <strong>No one&apos;s shepherding records are made up</strong>: needs, prayer requests and guests start empty.
       </span>
       {canClear &&
         (asking ? (

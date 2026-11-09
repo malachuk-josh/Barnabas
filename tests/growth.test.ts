@@ -104,7 +104,7 @@ describe("reports and permissions", () => {
     const { sections } = await buildReports(pastor);
     const by = Object.fromEntries(sections.map((s) => [s.id, s]));
     expect(by.attendance.empty?.title).toMatch(/No attendance/);
-    expect(by.care.empty?.title).toMatch(/No shepherding cases/);
+    expect(by.care.empty?.title).toMatch(/No shepherding needs/);
     expect(by.guests.empty).toBeTruthy();
     expect(by.kids.empty).toBeTruthy();
     // Nothing invented: the demo directory's leaders aren't counted as attendance.
