@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { TERMS } from "@/lib/language";
+import { TERMS, VERSES, type VerseKey } from "@/lib/language";
 import { ASK_EVENT } from "./NavLinks";
 import { VerseNote } from "./VerseNote";
 
@@ -42,7 +42,7 @@ function ask(text: string) {
   window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: text }));
 }
 
-export function Briefing() {
+export function Briefing({ todaysVerse }: { todaysVerse: VerseKey }) {
   const [data, setData] = useState<BriefingData | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [failed, setFailed] = useState(false);
@@ -97,7 +97,8 @@ export function Briefing() {
           <h2 id="needs-head">Needs you</h2>
           <span className="small muted">Most important first</span>
         </div>
-        <VerseNote verse="encourage" />
+        {/* On the days "For today" is this same verse, it isn't shown twice. */}
+        {todaysVerse !== "encourage" && <VerseNote verse="encourage" />}
         <div className="list-card">
           {!data && !failed && <p className="list-empty muted">Loading…</p>}
           {failed && <p className="list-empty muted">Couldn&apos;t load the briefing.</p>}
@@ -196,6 +197,12 @@ export function Briefing() {
             </ul>
           )}
         </section>
+
+        <figure className="today-verse">
+          <p className="today-verse-label">For today</p>
+          <blockquote>&ldquo;{VERSES[todaysVerse].text}&rdquo;</blockquote>
+          <figcaption>{VERSES[todaysVerse].reference}, KJV</figcaption>
+        </figure>
       </aside>
     </>
   );
