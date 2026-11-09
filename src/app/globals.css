@@ -641,9 +641,9 @@ input[type="tel"]:where(:not(.word-root *)) { width: 100%; padding: 11px 14px; b
 .care-col h2 { font-family: var(--font-body); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .care-count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--surface); color: var(--fg); font-size: 0.75rem; font-weight: 700; letter-spacing: 0; }
 .care-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
-.care-card { display: grid; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--fg); min-width: 0; }
-.care-card:hover { border-color: var(--muted); }
-.care-card.overdue { border-left: 4px solid var(--watch); }
+.care-card { display: grid; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid transparent; box-shadow: var(--shadow-card); text-decoration: none; color: var(--fg); min-width: 0; }
+.care-card:hover { border-color: var(--line); }
+.care-card.overdue { box-shadow: var(--shadow-card), inset 0 3px 0 var(--watch); }
 .care-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .care-card-head strong { overflow-wrap: anywhere; }
 .care-next { display: grid; gap: 2px; font-size: 0.92rem; overflow-wrap: anywhere; }
@@ -1177,3 +1177,64 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .setup-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
 .setup-steps code { overflow-wrap: anywhere; }
 @media (max-width: 480px) { .push-card-actions { width: 100%; } }
+
+/* ---------- Shepherding ---------- */
+.page-intro { display: block; }
+.care-area .fin-source { font-size: 0.78rem; }
+.care-summary { margin-bottom: 18px; }
+.care-summary dd a { text-decoration: none; color: var(--fg); }
+.care-summary dd a:hover { text-decoration: underline; }
+.care-filters .filter-chip { text-decoration: none; }
+.filter-chip[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.care-col { background: var(--surface-2); }
+
+/* Needs by due date: a heading per group, the needs as rows in one card */
+.need-groups { display: grid; gap: 22px; }
+.need-group { display: grid; gap: 10px; }
+.need-group h2 { font-family: var(--font-body); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.need-group h2.is-overdue { color: var(--watch); }
+.need-line { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-top: 1px solid var(--line-soft); text-decoration: none; color: var(--fg); min-width: 0; }
+.need-line:first-child { border-top: 0; }
+.need-line:hover { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.need-line-main { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.need-line-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.need-line-head strong { overflow-wrap: anywhere; }
+.need-line-next { overflow-wrap: anywhere; }
+.need-line-go { width: 18px; height: 18px; flex: none; color: var(--muted); }
+.need-line .care-meta span + span::before { content: "· "; }
+.need-line .care-meta { gap: 2px 6px; }
+@media (max-width: 560px) {
+  .need-line { padding: 12px 14px; gap: 12px; align-items: flex-start; }
+  .need-line .ppl-avatar { margin-top: 2px; }
+  .need-line-go { display: none; }
+}
+
+/* A need's page: the next step first, then the timeline beside the actions */
+.next-banner {
+  display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px;
+  padding: 18px 20px; border-radius: var(--radius); background: var(--talk-bg); color: var(--talk-fg);
+}
+.next-banner .muted { color: var(--talk-muted); }
+.next-banner .care-overdue { color: var(--brass); }
+.next-banner-text { display: grid; gap: 2px; flex: 1 1 260px; min-width: 0; }
+.next-banner-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--talk-muted); }
+.next-banner-step { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.25; overflow-wrap: anywhere; }
+.next-banner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.next-banner .btn-primary:where(:not(.word-root *)) { background: var(--brass); border-color: var(--brass); color: var(--night); }
+.next-banner .btn:where(:not(.word-root *)):not(.btn-primary) { background: transparent; color: var(--talk-fg); border-color: rgba(243, 246, 244, 0.35); }
+.need-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+@media (max-width: 960px) { .need-detail-grid { grid-template-columns: minmax(0, 1fr); } }
+.care-dot.is-start { background: var(--surface); box-shadow: inset 0 0 0 2px var(--muted); }
+#log-contact { scroll-margin-top: 80px; }
+@media (max-width: 640px) {
+  /* The three Shepherding facts stay on one row; the filters scroll sideways in one row */
+  .care-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .care-summary > div { padding: 10px 12px; }
+  .care-summary > div:nth-child(3) { border-left: 1px solid var(--line-soft); }
+  .care-summary > div:nth-child(n + 3) { border-top: 0; }
+  .care-summary dd { font-size: 0.92rem; }
+  .care-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left))); padding-inline: max(16px, env(safe-area-inset-left)); padding-bottom: 2px; }
+  .care-filters::-webkit-scrollbar { display: none; }
+  .care-filters > * { flex: none; }
+  .care-filters .care-view { margin-left: 0; }
+}

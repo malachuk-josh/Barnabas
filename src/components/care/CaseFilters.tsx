@@ -4,13 +4,15 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CASE_TYPES, CASE_TYPE_LABELS } from "@/lib/care/types";
 
-/** Mine / all, type, overdue and board / list, kept in the address so a view can be shared or reloaded. */
+/** Mine / all, type, overdue and due-date / stage views, kept in the address so a view can be shared or reloaded. */
 export function CaseFilters({ canSeeOthers }: { canSeeOthers: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const scope = params.get("scope") === "mine" ? "mine" : "all";
-  const view = params.get("view") === "list" ? "list" : "board";
+  // "By due date" is the default; the board (by stage) is ?view=board. An old ?view=list link lands on due dates.
+  const view = params.get("view") === "board" ? "board" : "due";
+  const overdue = params.get("overdue") === "1";
   const href = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(patch)) {
@@ -41,16 +43,15 @@ export function CaseFilters({ canSeeOthers }: { canSeeOthers: boolean }) {
           ))}
         </select>
       </label>
-      <label className="check">
-        <input type="checkbox" checked={params.get("overdue") === "1"} onChange={(e) => router.push(href({ overdue: e.target.checked ? "1" : null }))} />
+      <Link className="filter-chip" href={href({ overdue: overdue ? null : "1" })} aria-current={overdue ? "true" : undefined}>
         Overdue only
-      </label>
+      </Link>
       <span className="seg care-view">
-        <Link className="seg-link" href={href({ view: null })} aria-current={view === "board" ? "page" : undefined}>
-          Board
+        <Link className="seg-link" href={href({ view: null })} aria-current={view === "due" ? "page" : undefined}>
+          By due date
         </Link>
-        <Link className="seg-link" href={href({ view: "list" })} aria-current={view === "list" ? "page" : undefined}>
-          List
+        <Link className="seg-link" href={href({ view: "board" })} aria-current={view === "board" ? "page" : undefined}>
+          By stage
         </Link>
       </span>
     </div>

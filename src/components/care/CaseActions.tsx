@@ -65,6 +65,7 @@ export function CaseActions(props: {
         </div>
       )}
       <form
+        id="log-contact"
         className="fin-card fin-form"
         onSubmit={(e) => {
           e.preventDefault();

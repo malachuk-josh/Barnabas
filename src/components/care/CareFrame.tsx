@@ -26,22 +26,46 @@ export async function directory() {
 }
 
 /** The demo banner goes away once the church's own people are in Barnabas (People, or the migration tool). */
-export async function CareFrame({ ctx, eyebrow = "Shepherding", title, verse, verseShort = false, intro, actions, children }: { ctx: CarePageContext; eyebrow?: string; title: string; /** A KJV verse under the heading (once in the area, on its landing page). */ verse?: VerseKey; /** Quote only the verse's first clause, where space is tight. */ verseShort?: boolean; intro?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+export async function CareFrame({
+  ctx,
+  eyebrow = "Shepherding",
+  title,
+  verse,
+  verseShort = false,
+  intro,
+  actions,
+  lead,
+  children,
+}: {
+  ctx: CarePageContext;
+  eyebrow?: React.ReactNode;
+  title: string;
+  /** A KJV verse under the heading (once in the area, on its landing page). */
+  verse?: VerseKey;
+  /** Quote only the verse's first clause, where space is tight. */
+  verseShort?: boolean;
+  intro?: React.ReactNode;
+  actions?: React.ReactNode;
+  /** Shown beside the title (the person's avatar on a need's page). */
+  lead?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const connected = (await churchSource()) !== "demo";
   return (
     <AppShell profile={ctx.profile}>
       <div className="page-head">
-        <div>
+        {lead}
+        <div className={lead ? "page-head-main" : undefined}>
           <span className="eyebrow">{eyebrow}</span>
           <h1>{title}</h1>
           {verse && <VerseNote verse={verse} short={verseShort} />}
-          {intro && <p className="muted">{intro}</p>}
+          {intro && <div className="muted page-intro">{intro}</div>}
         </div>
-        {actions}
+        {actions && <div className="page-actions">{actions}</div>}
       </div>
       <CareTabs />
       {ctx.book.meta.demo && !connected && <CareDemoBanner canClear={ctx.isPastor} />}
-      {children}
+      <div className="care-area">{children}</div>
     </AppShell>
   );
 }
