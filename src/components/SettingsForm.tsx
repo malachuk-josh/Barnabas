@@ -64,7 +64,7 @@ export function SettingsForm({ initial, access, leaderId }: { initial: Profile; 
       const res = await fetch("/api/voice/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: `Good morning, ${p.preferredName}. Sarah has served nine Sundays in a row. Want me to draft her a thank-you?`, lang: p.voice.language.slice(0, 2) }),
+        body: JSON.stringify({ text: `Good morning, ${p.preferredName}. Your greeters had a wonderful Sunday. Want me to draft them a thank-you?`, lang: p.voice.language.slice(0, 2) }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Preview didn't work.");
       const url = URL.createObjectURL(await res.blob());

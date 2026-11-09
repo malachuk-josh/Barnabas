@@ -136,7 +136,7 @@ export function StepForm({ everyone }: { everyone: Who[] }) {
         void act({ action: "set-step", step: { key: f.key, step: f.step, date: f.date } });
       }}
     >
-      <h2>Record a step</h2>
+      <h2 id="record-step">Record a step</h2>
       <div className="field">
         <label htmlFor="st-who">Who</label>
         <select id="st-who" required value={f.key} onChange={(e) => setF({ ...f, key: e.target.value })}>

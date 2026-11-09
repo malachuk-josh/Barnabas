@@ -25,7 +25,7 @@ export function DemoBanner({ canClear }: { canClear: boolean }) {
     <div className="fin-demo no-print" role="note">
       <span className="fin-badge-demo">Demo data</span>
       <span>
-        These numbers are <strong>made up</strong> so you can try Finance. Missions partners and the extra households are fictional.
+        These numbers are <strong>made up</strong> so you can try Finance. Giving is recorded as anonymous offering lines with no donor attached, and the missions partners are fictional.
       </span>
       {canClear &&
         (asking ? (

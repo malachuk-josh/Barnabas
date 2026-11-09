@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/EmptyState";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -71,9 +72,15 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
       </Suspense>
 
       {rows.length === 0 ? (
-        <div className="card">
-          <p className="muted">{scope === "mine" ? "No open cases are assigned to you with these filters." : "No open cases match these filters."}</p>
-        </div>
+        team.totalOpen === 0 ? (
+          <EmptyState title="No one is on the care list yet" actions={[{ label: "Record a guest", href: "/care/guests" }, { label: "Add a prayer request", href: "/care/prayer#add-prayer" }]}>
+            When someone needs a visit, a call or a meal, tap Open a case above, or just tell Barnabas (&ldquo;I visited Jamie in the hospital today&rdquo;). Cases are private to the people caring for them.
+          </EmptyState>
+        ) : (
+          <div className="card">
+            <p className="muted">{scope === "mine" ? "No open cases are assigned to you with these filters." : "No open cases match these filters."}</p>
+          </div>
+        )
       ) : q.view === "list" ? (
         <div className="care-list">
           {rows.map((c) => (

@@ -53,7 +53,7 @@ export async function briefing(leader: Leader, date = todayIso()): Promise<Brief
     followUps(leader, date),
     data.events(date, addDays(date, 45)),
   ]);
-  // The demo congregation is fictional; on the home card show only the church's real leaders.
+  // Belt and braces: the demo directory has only the real leaders, and the home card never shows anyone else there.
   const realLeaders = new Set(people.filter((p) => p.leadership).map((p) => p.id));
   return {
     date,

@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -277,7 +278,13 @@ export function GuestList({ guests, selfIds, canAssign, timeZone }: { guests: Gu
           ))}
         </div>
       ) : (
-        <p className="muted">No guests here.</p>
+        guests.length === 0 ? (
+          <EmptyState title="No guest cards yet" actions={[{ label: "Make a guest-card link", href: "#guest-link" }]}>
+            When someone visits for the first time, tap Add a guest card, or make a guest-card link that guests fill in on their own phone. Each card gets a thank-you draft and a welcome call.
+          </EmptyState>
+        ) : (
+          <p className="muted">No guests here.</p>
+        )
       )}
     </div>
   );
@@ -289,7 +296,7 @@ export function WelcomeLinks({ links, origin }: { links: Link_[]; origin: string
   const [copied, setCopied] = useState<string | null>(null);
   return (
     <section className="fin-card fin-form">
-      <h2>Guest card link</h2>
+      <h2 id="guest-link">Guest card link</h2>
       <p className="small muted">A private link guests can open on their phone (for example from a QR code at the welcome table) to fill in their own card. Anyone with the link can use it, so turn it off when you&apos;re done.</p>
       {links.map((l) => {
         const url = `${origin}/welcome/${l.token}`;

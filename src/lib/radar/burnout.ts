@@ -116,7 +116,10 @@ export function scoreVolunteers(input: {
     }
 
     score = Math.min(10, Math.round(score * 10) / 10);
-    const band: RadarBand = score >= 6 ? "high" : score >= 3.5 ? "watch" : "ok";
+    let band: RadarBand = score >= 6 ? "high" : score >= 3.5 ? "watch" : "ok";
+    // The church's own leaders who serve on a team are thanked and offered a break, never flagged as
+    // burning out: a long run means faithfulness worth honoring, and the radar says no more than that.
+    if (person.leadership && band === "high") band = "watch";
     out.push({
       personId: person.id,
       name: person.name,
@@ -137,6 +140,7 @@ export function scoreVolunteers(input: {
 function suggestionFor(person: Person, band: RadarBand, drivers: string[]): string {
   if (band === "ok") return "No action needed.";
   const first = person.firstName;
+  if (person.leadership) return `Thank ${first} for serving so faithfully, and offer a Sunday off.`;
   const withdrawing = drivers.some((d) => d.includes("worship") || d.includes("small-group"));
   const unthanked = drivers.some((d) => d.includes("thank"));
   if (band === "high" && withdrawing) {

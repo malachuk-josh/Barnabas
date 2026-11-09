@@ -11,14 +11,15 @@ import type {
 } from "./types";
 
 /**
- * A fictional congregation so Barnabas works before any ChMS is connected.
- * Serving and attendance patterns are written most-recent-Sunday first:
+ * The demo church (Mount Greylock Baptist Church) before any ChMS is connected: its published leadership,
+ * teams, weekly schedule and events, and the serving patterns of the leaders who serve on teams.
+ * Tests can pass their own fictional people. Serving and attendance patterns are written most-recent-Sunday first:
  *   serving: S = served, D = declined, . = not scheduled
  *   attendance: 1 = present, 0 = absent
  * All dates are computed relative to today, so the data never goes stale.
  */
 
-type DemoPerson = Person & {
+export type DemoPerson = Person & {
   serving?: Record<string, string>;
   worship: string;
   group?: string;
@@ -38,7 +39,7 @@ const TEAMS: Team[] = [
 /**
  * Mount Greylock Baptist Church, North Adams, MA: leadership, weekly schedule and upcoming events
  * as published on mountgreylockbaptist.com and mgbc.churchtrac.com (checked November 2026).
- * The congregation below stays fictional: no real person's attendance or serving data is invented.
+ * No congregation is invented: the directory below has only the real leaders who serve on teams.
  */
 const LEADERSHIP: ChurchLeader[] = [
   { name: "Ethan Malachuk", title: "Lead Pastor", ministry: "Bible teaching",
@@ -98,46 +99,12 @@ function weeklyEvents(fromISO: string, toISO: string): ChurchEvent[] {
   return out;
 }
 
+/**
+ * The demo directory holds only the church's real leaders who also serve on a volunteer team, with the
+ * serving patterns the church described. There is no fictional congregation: a church's own people come in
+ * from its ChMS (or the CSV import), and every list starts empty with a first step to take.
+ */
 const PEOPLE: DemoPerson[] = [
-  { id: "p01", name: "Sarah Kim", firstName: "Sarah", language: "en", smallGroup: "Tuesday women's group",
-    serving: { worship: "SSSSSSSSS...", kids: "S.S.S.S.S.S.", hospitality: ".S.S.S......" },
-    worship: "111111111111", group: "00110111", next: ["worship", "kids"], thankedDaysAgo: 140 },
-  { id: "p02", name: "Marcus Bell", firstName: "Marcus", language: "en", smallGroup: "Men's breakfast",
-    serving: { tech: "SDSSSSD.S.S.", parking: "S.S.S.S....." },
-    worship: "111111111111", group: "10111111", next: ["tech"], thankedDaysAgo: 75 },
-  { id: "p03", name: "Ana López", firstName: "Ana", language: "es", household: "López family", smallGroup: "Grupo de jóvenes adultos",
-    serving: { kids: "SSSSS.S.S...", greeters: "..S..S..S..." },
-    worship: "111111110111", group: "11011111", next: ["kids"], thankedDaysAgo: 30 },
-  { id: "p04", name: "Daniel Okafor", firstName: "Daniel", language: "en",
-    serving: { worship: "S.S.S.S.S.S." }, worship: "111111111111", next: ["worship"], thankedDaysAgo: 20 },
-  { id: "p05", name: "Grace Lee", firstName: "Grace", language: "en", smallGroup: "Tuesday women's group",
-    serving: { hospitality: "...S.S.S.S.S" }, worship: "000111111111", group: "00011111", thankedDaysAgo: 45 },
-  { id: "p06", name: "Jin-woo Park", firstName: "Jin-woo", language: "ko", household: "Park family",
-    serving: { tech: "SSS...S...S." }, worship: "111111111111", next: ["tech"], thankedDaysAgo: 15 },
-  { id: "p07", name: "Min-ji Park", firstName: "Min-ji", language: "ko", household: "Park family",
-    serving: { kids: "S..S..S..S.." }, worship: "111111111111", thankedDaysAgo: 15 },
-  { id: "p08", name: "Luis Hernández", firstName: "Luis", language: "es", household: "Hernández family",
-    serving: { parking: "SSSSSSS.S.S." }, worship: "001001111111", next: ["parking"], thankedDaysAgo: 200 },
-  { id: "p09", name: "Carmen Hernández", firstName: "Carmen", language: "es", household: "Hernández family",
-    serving: { hospitality: "S.S.S.S.S.S." }, worship: "111111111111", thankedDaysAgo: 40 },
-  { id: "p10", name: "Tom Reyes", firstName: "Tom", language: "en",
-    serving: { greeters: "S..S..S..S.." }, worship: "111111111111", next: ["greeters"], thankedDaysAgo: 10 },
-  { id: "p11", name: "Priya Shah", firstName: "Priya", language: "en", smallGroup: "Young families",
-    serving: { kids: "S.S..S.S..S." }, worship: "111111111111", group: "11111111", next: ["kids"], thankedDaysAgo: 25 },
-  { id: "p12", name: "Ben Carter", firstName: "Ben", language: "en", smallGroup: "Men's breakfast",
-    worship: "000001111111", group: "00001111" },
-  { id: "p13", name: "Ruth Adeyemi", firstName: "Ruth", language: "en",
-    serving: { greeters: ".S..S..S..S." }, worship: "111111111111", thankedDaysAgo: 12 },
-  { id: "p14", name: "Sofía Ramírez", firstName: "Sofía", language: "es",
-    serving: { worship: ".S.S.S.S.S.S" }, worship: "111111111111", thankedDaysAgo: 18 },
-  { id: "p15", name: "Hannah Wright", firstName: "Hannah", language: "en",
-    serving: { kids: "DDS.D.S.S.S." }, worship: "101111111111", thankedDaysAgo: 90 },
-  { id: "p16", name: "David Cho", firstName: "David", language: "ko",
-    serving: { greeters: "S...S...S..." }, worship: "111111111111", next: ["greeters"], thankedDaysAgo: 22 },
-  { id: "p17", name: "Elena Torres", firstName: "Elena", language: "es",
-    serving: { kids: ".S...S...S.." }, worship: "111111111111", thankedDaysAgo: 35 },
-  { id: "p18", name: "Nate Brooks", firstName: "Nate", language: "en",
-    serving: { tech: "SSSSSSSSSS.." }, worship: "111111111111", next: ["tech"], thankedDaysAgo: 100 },
   // Real leaders who also serve on volunteer teams, with patterns the church described. Only their serving
   // and worship attendance appear here; nothing else about them is made up.
   { id: "p19", name: "Aaron Malachuk", firstName: "Aaron", language: "en", leadership: true,
@@ -149,11 +116,7 @@ const PEOPLE: DemoPerson[] = [
     serving: { parking: ".S.S.S.S.S.S" }, worship: "111111111111", thankedDaysAgo: 20 },
 ];
 
-for (const p of PEOPLE) {
-  if (p.leadership) continue; // no made-up contact details for real people
-  p.phone = `(555) 01${p.id.slice(1)}-${String(1000 + Number(p.id.slice(1)) * 37).slice(-4)}`;
-  p.email = `${p.firstName.toLowerCase().replace(/[^a-z]/g, "")}.${p.id}@example.org`;
-}
+// Real leaders get no made-up phone numbers or email addresses.
 
 function strip(p: DemoPerson, base: string): Person {
   const { serving: _s, worship: _w, group: _g, next: _n, thankedDaysAgo, ...person } = p;
@@ -166,18 +129,25 @@ function normalize(s: string): string {
 
 export class DemoChurch implements ChurchData {
   readonly source = "demo";
-  constructor(private readonly clock: () => string = () => today()) {}
+  private readonly people: DemoPerson[];
+  constructor(
+    private readonly clock: () => string = () => today(),
+    /** Extra people (test fixtures only); the demo church itself has none. */
+    extra: DemoPerson[] = [],
+  ) {
+    this.people = [...extra, ...PEOPLE];
+  }
 
   private sunday() {
     return lastSunday(this.clock());
   }
 
   async listPeople() {
-    return PEOPLE.map((p) => strip(p, this.clock()));
+    return this.people.map((p) => strip(p, this.clock()));
   }
 
   async getPerson(id: string) {
-    const p = PEOPLE.find((x) => x.id === id);
+    const p = this.people.find((x) => x.id === id);
     return p ? strip(p, this.clock()) : null;
   }
 
@@ -185,7 +155,7 @@ export class DemoChurch implements ChurchData {
     const q = normalize(query.trim());
     if (!q) return [];
     const words = q.split(/\s+/);
-    return PEOPLE.filter((p) => {
+    return this.people.filter((p) => {
       const name = normalize(p.name);
       return words.every((w) => name.includes(w));
     }).map((p) => strip(p, this.clock()));
@@ -198,7 +168,7 @@ export class DemoChurch implements ChurchData {
   async serving(sinceISO: string) {
     const sunday = this.sunday();
     const out: ServingRecord[] = [];
-    for (const p of PEOPLE) {
+    for (const p of this.people) {
       for (const [teamId, pattern] of Object.entries(p.serving ?? {})) {
         [...pattern].forEach((ch, i) => {
           const date = addDays(sunday, -7 * i);
@@ -214,7 +184,7 @@ export class DemoChurch implements ChurchData {
   async attendance(sinceISO: string) {
     const sunday = this.sunday();
     const out: AttendanceRecord[] = [];
-    for (const p of PEOPLE) {
+    for (const p of this.people) {
       [...p.worship].forEach((ch, i) => {
         const date = addDays(sunday, -7 * i);
         if (date >= sinceISO) out.push({ personId: p.id, date, kind: "worship", present: ch === "1" });
@@ -234,7 +204,7 @@ export class DemoChurch implements ChurchData {
     if (nextSunday < fromISO || nextSunday > toISO) return [];
     const out: Roster[] = [];
     for (const team of TEAMS) {
-      const people = PEOPLE.filter((p) => p.next?.includes(team.id)).map((p) => ({
+      const people = this.people.filter((p) => p.next?.includes(team.id)).map((p) => ({
         personId: p.id,
         name: p.name,
         status: "scheduled" as const,

@@ -25,7 +25,7 @@ export function CareDemoBanner({ canClear }: { canClear: boolean }) {
     <div className="fin-demo" role="note">
       <span className="fin-badge-demo">Demo data</span>
       <span>
-        The people receiving care, the guests and the prayer requests are <strong>made up</strong>. MGBC&apos;s pastors and deacons appear only as the people doing the caring.
+        Only the example classes are seeded, taught by MGBC&apos;s pastors. <strong>No one&apos;s care records are made up</strong>: cases, prayer requests and guests start empty.
       </span>
       {canClear &&
         (asking ? (

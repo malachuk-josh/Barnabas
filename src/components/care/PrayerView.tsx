@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { careApi, localToday, shortDate } from "./client";
@@ -71,7 +72,13 @@ export function PrayerView({ prayers, people }: { prayers: Prayer[]; people: { i
             <h2>Praying for</h2>
             <span className="muted small">{open.length} open</span>
           </div>
-          {open.length ? <ul className="care-prayers">{open.map(item)}</ul> : <p className="muted">No open requests you can see.</p>}
+          {open.length ? (
+            <ul className="care-prayers">{open.map(item)}</ul>
+          ) : (
+            <EmptyState compact title="No prayer requests yet" actions={[{ label: "Add the first request", href: "#add-prayer", primary: true }]}>
+              Requests the team is praying for show here. Keep them short; private ones stay with the pastors and you.
+            </EmptyState>
+          )}
           <p className="fin-source">Shareable requests from the whole team, and private ones you added. Pastors see every request.</p>
         </section>
         {answered.length > 0 && (
@@ -88,7 +95,7 @@ export function PrayerView({ prayers, people }: { prayers: Prayer[]; people: { i
           void act({ action: "add", prayer: { personId: f.personId || undefined, name: f.personId ? undefined : f.name, request: f.request, shareable: f.shareable } }, () => setF({ personId: "", name: "", request: "", shareable: false }));
         }}
       >
-        <h2>Add a request</h2>
+        <h2 id="add-prayer">Add a request</h2>
         <div className="field">
           <label htmlFor="pr-person">Who</label>
           <select id="pr-person" value={f.personId} onChange={(e) => setF({ ...f, personId: e.target.value })}>

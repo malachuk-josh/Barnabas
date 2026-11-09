@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/EmptyState";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CareFrame, carePage, directory } from "@/components/care/CareFrame";
@@ -68,7 +69,13 @@ export default async function DiscipleshipPage({ searchParams }: { searchParams:
               ))}
             </ul>
           ) : (
-            <p className="muted">No one is waiting on this step.</p>
+            ctx.book.pathways.length === 0 ? (
+              <EmptyState compact title="No pathways recorded yet" actions={[{ label: "Record a step", href: "#record-step" }]}>
+                As people take steps (a first visit, a class, baptism, membership), record them here and Barnabas will show who&apos;s ready for what&apos;s next. Guest cards start a pathway on their own.
+              </EmptyState>
+            ) : (
+              <p className="muted">No one is waiting on this step.</p>
+            )
           )}
           <p className="fin-source">
             Each person&apos;s pathway dates. Discover Faith: came back a second time, or first visited 4+ weeks ago. Baptism: a salvation decision without baptism. Membership class: baptized, not a member. Membership: finished the class. Group: attending 3+ months, not in a Growth Group or Life Group. Serving: a member or in a group for 6+ months, not serving.

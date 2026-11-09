@@ -1,14 +1,12 @@
-import { churchData } from "../chms";
 import { addDays, today } from "../dates";
 import { defaultChart } from "./chart";
-import { dueOccurrences } from "./giving";
 import { txnTotal } from "./ledger";
-import type { Books, Budget, Gift, GiftMethod, Missions, MissionsPartner, Reconciliation, Recurring, Transaction, TxnLine } from "./types";
+import type { Books, Budget, Gift, Missions, MissionsPartner, Reconciliation, Recurring, Transaction, TxnLine } from "./types";
 
 /**
  * A demo finance dataset for Mount Greylock Baptist Church (about 175 people), clearly labeled in the
- * app. It covers the twelve months up to today: Sunday offerings and online giving from the demo
- * congregation and some extra fictional households, payroll, missions support, utilities, ministry
+ * app. It covers the twelve months up to today: Sunday offerings and online giving as anonymous
+ * offering lines (no donor is made up), payroll, missions support, utilities, ministry
  * spending, a building project, and a bank reconciliation. Missions partners are fictional.
  * Everything is generated from a fixed seed, relative to today, so it never goes stale.
  */
@@ -25,28 +23,6 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-const EXTRA_HOUSEHOLDS = [
-  "Walt and Joan Bessette", "The Kowalczyk family", "Doris Lamoureux", "Frank and Ellen Pease", "The Ostrowski family", "Margaret Tierney",
-  "Ray and Linda Gagnon", "The Bouchard family", "Harold Whitcomb", "Gail and Pete Sorrell", "The Mancini family", "Bev Ashworth",
-  "Kyle and Amber Daigle", "The Fontaine family", "Lorraine Pelletier", "Dennis and Kim Royal", "The Haskins family", "June Albright",
-  "Josh and Kayla Merritt", "The Szymanski family", "Carol Benoit", "Greg and Tina Lutz", "The Cardoza family", "Norma Jenks",
-  "Tyler and Bri Coombs", "The Dufresne family", "Arlene Pratt", "Steve and Dawn Kimball", "The Rivard family", "Paul Lacasse",
-  "Matt and Jess Underhill", "The Picard family",
-];
-
-type Donor = {
-  personId?: string;
-  name: string;
-  /** Weekly-equivalent general giving in dollars. */
-  weekly: number;
-  frequency: "weekly" | "biweekly" | "monthly";
-  method: GiftMethod;
-  /** Chance they're in church (and give in person) on a given Sunday. */
-  attends: number;
-  missionsPledge: number;
-  building: number;
-};
 
 const PARTNERS: Omit<MissionsPartner, "id" | "updates" | "pledgeStart">[] = [
   { name: "Andrés and Lucía Moreno", kind: "missionary", field: "Cusco, Peru", type: "Church planting", supportLevel: "partial", monthly: $(600), active: true },
@@ -134,26 +110,12 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
   savings.openingBalance = opening.building - $(11_500);
   const acct = (n: string) => `acct_${n}`;
 
-  /* ---------- Donors ---------- */
-  const people = await churchData().listPeople();
-  const weeklies = [25, 35, 45, 55, 65, 80, 100, 110, 130, 160, 190, 220, 275, 325, 425];
-  const donors: Donor[] = [
-    // The church's real leaders are in the directory too; their giving is never made up.
-    ...people.filter((p) => !p.leadership).map((p) => ({ personId: p.id, name: p.name })),
-    ...EXTRA_HOUSEHOLDS.map((name) => ({ personId: undefined, name })),
-  ].map((d) => {
-    const method: GiftMethod = pick(["check", "check", "check", "online", "online", "ach", "cash"]);
-    return {
-      ...d,
-      weekly: pick(weeklies),
-      frequency: method === "ach" || method === "online" ? pick(["weekly", "biweekly", "monthly"] as const) : pick(["weekly", "weekly", "biweekly", "monthly"] as const),
-      method,
-      attends: 0.62 + r() * 0.33,
-      missionsPledge: r() < 0.5 ? pick([600, 900, 1200, 1500, 1800, 2400, 3000]) : 0,
-      building: r() < 0.2 ? pick([25, 50, 100]) : 0,
-    };
-  });
-
+  /*
+   * ---------- Giving ----------
+   * No donor is made up: each Sunday's giving is recorded as anonymous offering lines with no person
+   * attached (the plate offering, the weekly online payout, missions, building and benevolence), so the
+   * totals, funds and trends are real-looking while the donor lists start empty.
+   */
   const gifts: Gift[] = [];
   const txns: Transaction[] = [];
   const recurring: Recurring[] = [];
@@ -163,7 +125,8 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
     if (date > asOf || date < start) return;
     const kept = lines.filter((l) => l.amount > 0);
     if (!kept.length) return;
-    txns.push({ id: id("txn"), date, description, bankAccountId: checking.id, direction, lines: kept, cleared: false, source: "manual", createdAt: created, createdBy: by, ...extra });
+    txns.push({ id: id("txn"), date, description, bankAccountId: checking.id, direction, lines: kept, cleared: false, source: "manual", createdAt: created, createdBy: by });
+    Object.assign(txns[txns.length - 1], extra);
   };
 
   const fundAccount = Object.fromEntries(chart.funds.map((f) => [f.id, f.incomeAccountId]));
@@ -175,7 +138,7 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
     const txnId = id("txn");
     const perFund = new Map<string, number>();
     for (const g of batchGifts) {
-      gifts.push({ ...g, id: id("gift"), batchId, txnId, createdAt: created, createdBy: by });
+      gifts.push({ ...g, anonymous: true, id: id("gift"), batchId, txnId, createdAt: created, createdBy: by });
       perFund.set(g.fundId, (perFund.get(g.fundId) ?? 0) + g.amount);
     }
     txns.push({
@@ -193,78 +156,32 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
     });
   }
 
-  // Online and ACH givers give on a schedule; record them as recurring gifts.
-  const recurringFor = new Map<Donor, Recurring>();
-  for (const d of donors) {
-    if (d.method !== "online" && d.method !== "ach") continue;
-    const per = d.frequency === "weekly" ? d.weekly : d.frequency === "biweekly" ? d.weekly * 2 : Math.round((d.weekly * 52) / 12);
-    const rec: Recurring = {
-      id: id("rec"),
-      personId: d.personId,
-      donorName: d.name,
-      amount: $(per),
-      fundId: "general",
-      method: d.method,
-      frequency: d.frequency,
-      startDate: d.frequency === "monthly" ? dayOf(start, 1 + Math.floor(r() * 27)) : addDays(sundays[0], -Math.floor(r() * 7)),
-      active: true,
-    };
-    recurringFor.set(d, rec);
-    recurring.push(rec);
-  }
-
-  const due = new Map<Recurring, string[]>();
-  for (const rec of recurring) due.set(rec, dueOccurrences(rec, asOf));
-
+  type Line = Omit<Gift, "id" | "batchId" | "txnId" | "createdAt" | "createdBy">;
   for (let i = 0; i < sundays.length; i++) {
     const sunday = sundays[i];
     const weekEnd = addDays(sunday, 6);
     const factor = season(sunday);
     const firstSunday = Number(sunday.slice(8, 10)) <= 7;
-    const inPerson: Omit<Gift, "id" | "batchId" | "txnId" | "createdAt" | "createdBy">[] = [];
-    const online: typeof inPerson = [];
-
-    for (const d of donors) {
-      const rec = recurringFor.get(d);
-      if (rec) {
-        for (const date of due.get(rec)!.filter((x) => x >= sunday && x <= weekEnd)) {
-          online.push({ date, personId: d.personId, donorName: d.name, amount: rec.amount, fundId: "general", method: rec.method, recurringId: rec.id });
-        }
-        continue;
-      }
-      if (r() > d.attends) continue;
-      const giveThisWeek = d.frequency === "weekly" || (d.frequency === "biweekly" && i % 2 === 0) || (d.frequency === "monthly" && firstSunday);
-      if (!giveThisWeek) continue;
-      const mult = d.frequency === "weekly" ? 1 : d.frequency === "biweekly" ? 2 : 4.33;
-      const amount = Math.round(d.weekly * mult * factor * (0.9 + r() * 0.2) / 5) * 5;
-      inPerson.push({ date: sunday, personId: d.personId, donorName: d.name, amount: $(amount), fundId: "general", method: d.method === "cash" ? "cash" : "check", checkNumber: d.method === "cash" ? undefined : String(1000 + Math.floor(r() * 8000)) });
-    }
-
+    const round5 = (n: number) => Math.round(n / 5) * 5;
+    const inPerson: Line[] = [
+      { date: sunday, donorName: "Sunday offering (checks)", amount: $(round5(3_900 * factor * (0.88 + r() * 0.24))), fundId: "general", method: "check" },
+      { date: sunday, donorName: "Sunday offering (cash)", amount: $(Math.round((520 + r() * 220) * factor)), fundId: "general", method: "cash" },
+    ];
+    const online: Line[] = [{ date: addDays(sunday, 1), donorName: "Online and ACH giving", amount: $(round5(2_350 * factor * (0.92 + r() * 0.16))), fundId: "general", method: "online" }];
     // Faith-promise giving to Missions, and building gifts, mostly on first Sundays.
-    for (const d of donors) {
-      if (d.missionsPledge && (firstSunday || r() < 0.04)) {
-        const amount = Math.round(d.missionsPledge / 12 / 5) * 5 * (r() < 0.12 ? 0 : 1);
-        if (amount) (recurringFor.has(d) ? online : inPerson).push({ date: sunday, personId: d.personId, donorName: d.name, amount: $(amount), fundId: "missions", method: recurringFor.has(d) ? recurringFor.get(d)!.method : "check" });
-      }
-      if (d.building && firstSunday) inPerson.push({ date: sunday, personId: d.personId, donorName: d.name, amount: $(d.building), fundId: "building", method: d.method === "cash" ? "cash" : "check" });
+    if (firstSunday) {
+      inPerson.push({ date: sunday, donorName: "Missions offering", amount: $(round5(2_400 + r() * 500)), fundId: "missions", method: "check" });
+      online.push({ date: addDays(sunday, 1), donorName: "Online missions giving", amount: $(round5(800 + r() * 200)), fundId: "missions", method: "online" });
+      inPerson.push({ date: sunday, donorName: "Building fund offering", amount: $(round5(280 + r() * 160)), fundId: "building", method: "check" });
+      inPerson.push({ date: sunday, donorName: "Benevolence offering (communion)", amount: $(Math.round(260 + r() * 220)), fundId: "benevolence", method: "cash" });
     }
-
-    // Year-end gifts on the last Sunday of December.
-    if (sunday.slice(5, 7) === "12" && Number(sunday.slice(8, 10)) > 24) {
-      for (const d of donors) if (r() < 0.3) inPerson.push({ date: sunday, personId: d.personId, donorName: d.name, amount: $(Math.round((d.weekly * (2 + r() * 3)) / 5) * 5), fundId: "general", method: "check", checkNumber: String(1000 + Math.floor(r() * 8000)) });
-    }
-    // The loose plate offering, counted as one cash gift; first Sundays take a benevolence offering.
-    inPerson.push({ date: sunday, donorName: "Loose plate offering", amount: $(Math.round((180 + r() * 140) * factor)), fundId: "general", method: "cash" });
+    // Year-end giving on the last Sunday of December.
+    if (sunday.slice(5, 7) === "12" && Number(sunday.slice(8, 10)) > 24) inPerson.push({ date: sunday, donorName: "Year-end offering", amount: $(round5(9_500 + r() * 2_000)), fundId: "general", method: "check" });
     if (sunday.slice(5, 7) === "03" && Number(sunday.slice(8, 10)) > 7 && Number(sunday.slice(8, 10)) <= 14)
       inPerson.push({ date: sunday, donorName: "Missions conference offering", amount: $(3_850), fundId: "missions", method: "cash" });
-    if (firstSunday) inPerson.push({ date: sunday, donorName: "Benevolence offering (communion)", amount: $(Math.round(260 + r() * 220)), fundId: "benevolence", method: "cash" });
 
     deposit(inPerson, addDays(sunday, 1), `Sunday offering deposit, ${sunday}`);
     deposit(online, addDays(weekEnd, 2), "Online and ACH giving payout");
-  }
-  for (const rec of recurring) {
-    const recorded = gifts.filter((g) => g.recurringId === rec.id).map((g) => g.date).sort();
-    rec.lastRecorded = recorded[recorded.length - 1];
   }
 
   /* ---------- Spending ---------- */
@@ -412,9 +329,8 @@ export async function seedDemoBooks(asOf: string = today()): Promise<Books> {
   const missions: Missions = {
     partners,
     campaigns: [campaign],
-    pledges: donors
-      .filter((d) => d.missionsPledge)
-      .map((d) => ({ id: id("pledge"), personId: d.personId, donorName: d.name, amount: $(d.missionsPledge), campaignId: campaign.id, createdAt: created })),
+    // Pledges are made by people, so none are seeded; the campaign keeps its goal.
+    pledges: [],
   };
 
   return {

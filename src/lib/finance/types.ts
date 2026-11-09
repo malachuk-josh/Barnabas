@@ -93,6 +93,8 @@ export type Gift = {
   txnId: string;
   recurringId?: string;
   pledgeId?: string;
+  /** An offering line with no donor (the plate, a special offering): counted in totals, never listed as a donor. */
+  anonymous?: boolean;
   createdAt: number;
   createdBy: string;
 };

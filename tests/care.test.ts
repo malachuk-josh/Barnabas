@@ -17,7 +17,7 @@ import { executeTool, type ToolContext } from "@/lib/engine/tools";
 import { initialTasks, pickAssignee, rotationPool, TASK_WINDOWS, visitTasks } from "@/lib/care/guests";
 import { careLoad, signalFor, teamSpread } from "@/lib/care/load";
 import { nextSteps, nextStepsFor } from "@/lib/care/pathway";
-import { absorbLegacyCare, addPrayer, assignCase, careActor, closeCase, logContact, openCase, recordGuest, recordVisit } from "@/lib/care/service";
+import { absorbLegacyCare, addPrayer, assignCase, careActor, closeCase, completeGuestTask, logContact, openCase, recordGuest, recordVisit, setPathwayStep } from "@/lib/care/service";
 import { loadCare } from "@/lib/care/store";
 import { leaderMemberId } from "@/lib/care/team";
 import type { CareCase, Pathway, TeamMember } from "@/lib/care/types";
@@ -25,6 +25,7 @@ import { canSeeCase, canSeePrayer, type Viewer } from "@/lib/care/visibility";
 import { caseRows, careFor, myCareLoad } from "@/lib/care/views";
 import { createWelcomeLink, RATE_LIMITS, resolveToken, revokeWelcomeLink } from "@/lib/care/welcome";
 import { recordSignIn, setLeaderRole } from "@/lib/team";
+import { useFixtureChurch } from "./fixtures";
 import { freshStore } from "./helpers";
 
 const pastor: Leader = { churchId: "demo", leaderId: "cccc0001", name: "Pastor Dana", email: "dana@example.org", role: "Associate pastor" };
@@ -34,6 +35,8 @@ const leaderRole: Leader = { churchId: "demo", leaderId: "cccc0004", name: "Lee 
 
 async function setupTeam() {
   freshStore();
+  // Care subjects come from the test-only fixture congregation; the demo church has none.
+  useFixtureChurch();
   for (const l of [pastor, deacon, staff, leaderRole]) await recordSignIn(l);
   await setLeaderRole("demo", pastor.leaderId, "pastor", "test");
   await setLeaderRole("demo", deacon.leaderId, "deacon", "test");
@@ -246,8 +249,18 @@ describe("discipleship next steps", () => {
     expect(nextStepsFor(p({ first_visit: "2025-01-01", baptism: "2025-02-01", membership_class: "2025-03-01", membership: "2025-04-01", group: "2025-05-01", serving: "2025-06-01" }), asOf)).toEqual([]);
   });
 
-  it("answers who's ready for the membership class from the demo data", async () => {
+  it("answers who's ready for the membership class from recorded pathways", async () => {
     await setupTeam();
+    const a = await careActor(pastor);
+    // Fixture people: two baptized and not yet members (ready), one already a member (not ready).
+    for (const [key, steps] of [
+      ["p03", { first_visit: "2025-09-01", baptism: "2026-06-01" }],
+      ["p14", { first_visit: "2025-12-01", baptism: "2026-09-01" }],
+      ["p10", { first_visit: "2026-07-01", baptism: "2026-08-01" }],
+      ["p01", { first_visit: "2018-01-01", baptism: "2018-03-01", membership_class: "2018-04-01", membership: "2018-05-01" }],
+    ] as const) {
+      for (const [step, date] of Object.entries(steps)) await setPathwayStep(a, { key, step: step as never, date });
+    }
     const c = await ctx(pastor, "Who's ready for the membership class?", 0);
     const r = await executeTool("discipleship_next_steps", { step: "membership_class" }, c);
     expect(r.isError).toBe(false);
@@ -293,31 +306,25 @@ describe("guest follow-up", () => {
     expect(picks).toEqual(["Aaron Malachuk", "Cal Najimy", "Travis Willette", "Aaron Malachuk", "Cal Najimy", "Aaron Malachuk"]);
   });
 
-  it("uses the real leadership as the demo's actors, and only in their roles", async () => {
-    await setupTeam();
+  it("seeds no one receiving care, and shows the real leadership only teaching, in their roles", async () => {
+    freshStore();
+    const { useDemoChurch } = await import("./fixtures");
+    useDemoChurch();
+    for (const l of [pastor, deacon]) await recordSignIn(l);
+    await setLeaderRole("demo", pastor.leaderId, "pastor", "test");
+    await setLeaderRole("demo", deacon.leaderId, "deacon", "test");
     const book = await loadCare("demo");
-    const members = (await careActor(pastor)).members;
-    const name = (id?: string) => members.find((m) => m.id === id)?.name;
-    const leaders = ["Ethan Malachuk", "Eric Malachuk", "Aaron Malachuk", "Travis Willette", "Cal Najimy", "Micah Hayre"];
-    // Never the subject of a case, a prayer request, a pathway or a guest card.
-    for (const n of leaders) {
-      expect(book.cases.some((c) => c.subject.name === n), n).toBe(false);
-      expect(book.prayers.some((p) => p.name === n), n).toBe(false);
-      expect(book.pathways.some((p) => p.name === n), n).toBe(false);
-      expect(book.guests.some((g) => g.name === n), n).toBe(false);
-    }
-    expect(book.cases.filter((c) => c.type === "crisis").map((c) => name(c.assigneeId))).toEqual(["Ethan Malachuk", "Ethan Malachuk"]);
-    expect(book.cases.filter((c) => c.type === "grief").every((c) => name(c.assigneeId) === "Eric Malachuk")).toBe(true);
+    expect(book.meta.demo).toBe(true);
+    // No fictional congregation: cases, prayer requests, pathways and guests start empty.
+    expect(book.cases).toEqual([]);
+    expect(book.prayers).toEqual([]);
+    expect(book.pathways).toEqual([]);
+    expect(book.guests).toEqual([]);
+    // Classes are taught by the pastors in their real roles, with no one enrolled.
     expect(book.classes.find((c) => c.kind === "discover_faith")!.teacherName).toBe("Eric Malachuk");
     expect(book.classes.filter((c) => c.kind === "membership").every((c) => c.teacherName === "Ethan Malachuk")).toBe(true);
-    // The deacons are the prayer team.
-    expect(book.prayers.filter((p) => !p.guestId && p.shareable).every((p) => ["Travis Willette", "Cal Najimy", "Micah Hayre"].includes(p.createdByName))).toBe(true);
-    // Guests go to Aaron and the deacons (Travis signed in here); Travis and Micah get fewer than Aaron.
-    const guestHolders = book.guests.map((g) => name(g.assigneeId));
-    expect(guestHolders.every((n) => ["Aaron Malachuk", "Travis Willette", "Cal Najimy", "Micah Hayre"].includes(n!))).toBe(true);
-    const count = (n: string) => book.cases.filter((c) => c.status !== "closed" && name(c.assigneeId) === n).length;
-    expect(count("Travis Willette")).toBeLessThan(count("Eric Malachuk"));
-    // No demo days off are seeded for a real leader: their dashboard is computed only from their cases.
+    expect(book.classes.every((c) => c.enrollees.length === 0)).toBe(true);
+    // No demo days off are seeded for a real leader.
     const { actor: travisActor, book: b2 } = await careFor(deacon);
     const travisLoad = await myCareLoad(deacon, b2, travisActor);
     expect(travisLoad.logged).toHaveLength(0);
@@ -486,8 +493,13 @@ describe("Barnabas care tools", () => {
     const recorded = await executeTool("record_guest", { name: "Morgan Ellis", email: "morgan@example.org" }, c);
     expect(recorded.isError).toBe(false);
     const guests = JSON.parse((await executeTool("recent_guests", {}, c)).content).guests.map((g: { name: string }) => g.name);
-    expect(guests).toEqual(expect.arrayContaining(["Morgan Ellis", "Kelsey Doucette"]));
-    expect(guests).not.toContain("Ellie Brandt");
+    // The demo church starts with no guest cards: only the one just recorded is waiting.
+    expect(guests).toEqual(["Morgan Ellis"]);
+    const card = (await loadCare("demo")).guests.find((g) => g.name === "Morgan Ellis")!;
+    // A pastor can mark it done (care.assign), even when someone else holds the card.
+    await completeGuestTask(await careActor(pastor), card.id, card.tasks.find((t) => t.kind === "call")!.id);
+    const after = JSON.parse((await executeTool("recent_guests", {}, c)).content).guests.map((g: { name: string }) => g.name);
+    expect(after).not.toContain("Morgan Ellis");
   });
 });
 

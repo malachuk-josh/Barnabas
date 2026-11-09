@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { dollars, parseMoney, percent, wholeDollars } from "@/lib/finance/money";
@@ -270,6 +271,11 @@ function Pledges({
         <h2>Pledges</h2>
         <span className="small muted">Confidential: pastor and treasurer only</span>
       </div>
+      {sorted.length === 0 ? (
+        <EmptyState compact title="No pledges recorded yet">
+          When people make a faith-promise pledge, add it below. Giving to the Missions fund already counts toward the campaign goal.
+        </EmptyState>
+      ) : (
       <div className="fin-table-wrap">
         <table className="fin-table">
           <thead>
@@ -294,6 +300,7 @@ function Pledges({
           </tbody>
         </table>
       </div>
+      )}
       {sorted.length > limit && (
         <button className="btn" type="button" onClick={() => setLimit((l) => l + 50)}>
           Show all {sorted.length} pledges

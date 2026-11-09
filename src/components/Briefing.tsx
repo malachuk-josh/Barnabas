@@ -49,7 +49,7 @@ export function Briefing() {
         <h2>Volunteers to check on</h2>
         {!data && !failed && <p className="muted">Loading…</p>}
         {failed && <p className="muted">Couldn&apos;t load the briefing.</p>}
-        {data && data.radar.length === 0 && <p className="muted">No one is showing signs of burnout this week.</p>}
+        {data && data.radar.length === 0 && <p className="muted">Everyone on the rosters is serving at a healthy pace this week.</p>}
         {data && data.radar.length > 0 && (
           <ul className="list">
             {data.radar.slice(0, 5).map((r) => (
@@ -107,7 +107,8 @@ export function Briefing() {
               <li key={`${e.date}-${e.title}`}>
                 <strong>{e.title}</strong>
                 <span className="small muted">
-                  {day(e.date)}, {e.time}
+                  {day(e.date)}
+                  {e.time ? `, ${e.time}` : ""}
                 </span>
               </li>
             ))}

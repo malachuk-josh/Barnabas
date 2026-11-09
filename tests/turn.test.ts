@@ -3,6 +3,7 @@ import { createConversation, getMessages, type ConversationMeta } from "@/lib/da
 import { getDraft } from "@/lib/data/records";
 import { historyContent, setClaude, turnParams, type ClaudeClient } from "@/lib/engine/claude";
 import { runTurn, type TurnEvent } from "@/lib/engine/turn";
+import { useFixtureChurch } from "./fixtures";
 import { freshStore, leader } from "./helpers";
 
 type Step = (params: { messages: unknown[] }) => { content: unknown[]; stop_reason: string };
@@ -67,7 +68,11 @@ async function newMeta(): Promise<ConversationMeta> {
 }
 
 describe("turn loop", () => {
-  beforeEach(() => freshStore());
+  beforeEach(() => {
+    freshStore();
+    // Volunteers and recipients come from the test-only fixture congregation.
+    useFixtureChurch();
+  });
 
   it("streams text, runs tools, and keeps history append-only", async () => {
     const meta = await newMeta();

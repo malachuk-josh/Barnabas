@@ -589,3 +589,12 @@ input[type="tel"]:where(:not(.word-root *)) { width: 100%; padding: 11px 14px; b
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ptr-spin svg { animation-duration: 2s; } }
 @media (max-width: 860px) and (pointer: coarse) { html:where(:not(.word-root *)) { overscroll-behavior-y: contain; } }
+/* ---------- Empty states ---------- */
+.empty-state { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: start; padding: 18px; border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius: var(--radius); background: color-mix(in srgb, var(--sea-glass) 14%, var(--surface)); }
+.empty-state.compact { padding: 12px 14px; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; }
+.empty-mark { width: 40px; height: 40px; padding: 8px; border-radius: 50%; background: var(--surface); color: var(--highlight); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.empty-state.compact .empty-mark { width: 28px; height: 28px; padding: 5px; }
+.empty-body { display: grid; gap: 8px; min-width: 0; }
+.empty-body strong { font-size: 1rem; }
+.empty-body p { overflow-wrap: anywhere; }
+.empty-body .btn:where(:not(.word-root *)) { padding: 7px 14px; font-size: 0.9rem; }

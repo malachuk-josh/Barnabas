@@ -12,7 +12,7 @@ import { can, ROLES, type Permission } from "@/lib/auth/roles";
 import { budgetVsActual, copyBudget, elapsedFraction, health } from "@/lib/finance/budget";
 import { defaultChart } from "@/lib/finance/chart";
 import { bankRows, detectColumns, findDuplicate, normalizeDate, parseCsv, suggestAccount } from "@/lib/finance/csv";
-import { contributionStatement, donorKey, dueOccurrences, givingTotals } from "@/lib/finance/giving";
+import { contributionStatement, donorKey, donorSummaries, dueOccurrences, givingTotals } from "@/lib/finance/giving";
 import { accountActivity, accountBalance, fundBalances } from "@/lib/finance/ledger";
 import { parseMoney } from "@/lib/finance/money";
 import { reconcileState, finishReconciliation } from "@/lib/finance/reconcile";
@@ -24,7 +24,9 @@ import { createConversation, type ConversationMeta } from "@/lib/data/conversati
 import { listAudit } from "@/lib/data/records";
 import { executeTool, type ToolContext } from "@/lib/engine/tools";
 import { accessFor, recordSignIn, setLeaderRole } from "@/lib/team";
+import { useFixtureChurch } from "./fixtures";
 import { freshStore } from "./helpers";
+import { today } from "@/lib/dates";
 
 let seq = 0;
 function txn(date: string, direction: "in" | "out", lines: [string, string, number][], extra: Partial<Transaction> = {}): Transaction {
@@ -290,6 +292,8 @@ const member: Leader = { churchId: "demo", leaderId: "aaaa0003", name: "Kim", em
 
 async function setupTeam() {
   freshStore();
+  // Donors in these tests come from the test-only fixture congregation; the demo books have none.
+  useFixtureChurch();
   for (const l of [pastor, deacon, member]) await recordSignIn(l);
   await setLeaderRole("demo", pastor.leaderId, "pastor", "test");
   await setLeaderRole("demo", deacon.leaderId, "deacon", "test");
@@ -309,7 +313,7 @@ describe("demo finance data", () => {
     const books = await loadBooks("demo");
     expect(books.meta.demo).toBe(true);
     expect(books.budgets).toHaveLength(1);
-    expect(books.gifts.length).toBeGreaterThan(500);
+    expect(books.gifts.length).toBeGreaterThan(150);
     expect(books.missions.partners.length).toBeGreaterThanOrEqual(6);
     const again = await loadBooks("demo");
     expect(again.transactions.length).toBe(books.transactions.length);
@@ -319,7 +323,17 @@ describe("demo finance data", () => {
     // Gift records and their deposits agree.
     const deposits = books.transactions.filter((t) => t.giftBatchId).reduce((a, t) => a + t.lines.reduce((x, l) => x + l.amount, 0), 0);
     expect(deposits).toBe(books.gifts.reduce((a, g) => a + g.amount, 0));
-    // The real leaders in the directory never appear as donors.
+    // No donor is made up: every demo gift is an anonymous offering line, with no person, recurring gift or pledge.
+    expect(books.gifts.every((g) => !g.personId && g.anonymous)).toBe(true);
+    expect(donorSummaries(books.gifts, new Date().getUTCFullYear())).toEqual([]);
+    expect(new Set(books.gifts.map((g) => g.donorName)).size).toBeLessThanOrEqual(10);
+    expect(books.gifts.every((g) => /offering|giving/i.test(g.donorName))).toBe(true);
+    expect(books.recurring).toEqual([]);
+    expect(books.missions.pledges).toEqual([]);
+    // Aggregate giving still roughly matches the budget for a church of about 175.
+    const year = new Date().getUTCFullYear();
+    const general = books.gifts.filter((g) => g.fundId === "general" && g.date.startsWith(`${year}-`)).reduce((a, g) => a + g.amount, 0);
+    expect(general).toBeGreaterThan(0);
     for (const name of ["Aaron Malachuk", "Travis Willette", "Micah Hayre"]) expect(books.gifts.some((g) => g.donorName === name), name).toBe(false);
     // Another church gets empty books.
     expect((await loadBooks("other")).transactions).toHaveLength(0);
@@ -350,6 +364,12 @@ describe("finance API", () => {
   }
 
   it("gives a deacon giving totals without donor names", async () => {
+    await loadBooks("demo");
+    // Two named gifts from fixture people, so there are donor names to keep out.
+    await recordGifts(pastor, { depositDate: today(), gifts: [
+      { date: today(), personId: "p01", amount: 75_00, fundId: "general", method: "check" },
+      { date: today(), personId: "p02", amount: 40_00, fundId: "missions", method: "cash" },
+    ] }, { source: "giving" });
     const books = await loadBooks("demo");
     const res = await get("giving", deacon);
     expect(res.status).toBe(200);
@@ -361,7 +381,8 @@ describe("finance API", () => {
     for (const name of new Set(books.gifts.map((g) => g.donorName))) expect(text).not.toContain(name);
 
     const pastorJson = await (await get("giving", pastor)).json();
-    expect(pastorJson.giving.donors.length).toBeGreaterThan(10);
+    expect(text).not.toContain("Sarah Kim");
+    expect(pastorJson.giving.donors.map((d: { name: string }) => d.name)).toEqual(expect.arrayContaining(["Sarah Kim", "Marcus Bell"]));
 
     const missions = await (await get("missions", deacon)).text();
     expect(JSON.parse(missions).missions.pledges).toBeUndefined();
@@ -429,6 +450,7 @@ describe("Barnabas finance tools", () => {
 
   it("gives the pastor one donor's totals, not their ledger", async () => {
     await loadBooks("demo");
+    await recordGifts(pastor, { depositDate: "2026-11-02", gifts: [{ date: "2026-11-01", personId: "p01", amount: 120_00, fundId: "general", method: "check" }] }, { source: "giving" });
     const r = await executeTool("giving_summary", { donor: "Sarah Kim" }, await ctx(pastor, "How much has Sarah Kim given this year?", 0));
     expect(r.isError).toBe(false);
     const json = JSON.parse(r.content);

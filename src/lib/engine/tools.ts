@@ -94,14 +94,14 @@ const findPerson = tool({
     eager_input_streaming: true,
     input_schema: {
       type: "object",
-      properties: { name: { type: "string", description: "Full or partial name, e.g. 'Sarah' or 'Sarah Kim'" } },
+      properties: { name: { type: "string", description: "Full or partial name, e.g. 'Jamie' or 'Jamie Rivera'" } },
       required: ["name"],
     },
   },
   schema: z.object({ name: z.string().min(1).max(100) }),
   async run({ name }) {
     const matches = await churchData().findPeople(name);
-    if (!matches.length) return ok({ matches: [], note: `No one named "${name}" is in the directory.` });
+    if (!matches.length) return ok({ matches: [], note: `No one named "${name}" is in the directory. Say so, and don't guess at someone else. The leader can add them, or import the church's list.` });
     return ok({ matches: matches.slice(0, 6).map(personCard) });
   },
 });
@@ -253,7 +253,7 @@ const saveMemory = tool({
     input_schema: {
       type: "object",
       properties: {
-        note: { type: "string", description: "One sentence, e.g. 'Prefers texts over calls before 9am' or 'Check on Grace after her recovery, by Friday'" },
+        note: { type: "string", description: "One sentence, e.g. 'Prefers texts over calls before 9am' or 'Check on Jamie after the move, by Friday'" },
         about_person_id: { type: "string", description: "Set when the note is about a congregant" },
       },
       required: ["note"],

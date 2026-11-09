@@ -63,6 +63,7 @@ export type DonorSummary = { key: string; personId?: string; name: string; total
 export function donorSummaries(gifts: Gift[], year: number): DonorSummary[] {
   const map = new Map<string, DonorSummary>();
   for (const g of gifts) {
+    if (g.anonymous) continue;
     const y = Number(g.date.slice(0, 4));
     if (y !== year && y !== year - 1) continue;
     const key = donorKey(g);
@@ -88,7 +89,7 @@ export type Statement = {
 
 /** A year-end contribution statement for one donor. */
 export function contributionStatement(gifts: Gift[], funds: Fund[], key: string, year: number): Statement | null {
-  const mine = gifts.filter((g) => donorKey(g) === key && g.date.startsWith(`${year}-`)).sort((a, b) => a.date.localeCompare(b.date));
+  const mine = gifts.filter((g) => !g.anonymous && donorKey(g) === key && g.date.startsWith(`${year}-`)).sort((a, b) => a.date.localeCompare(b.date));
   if (!mine.length) return null;
   const byFund = funds
     .map((fund) => ({ fund, total: sum(mine.filter((g) => g.fundId === fund.id).map((g) => g.amount)) }))

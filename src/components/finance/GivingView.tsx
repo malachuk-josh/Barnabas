@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -100,7 +101,7 @@ function GiftEntry({ today, people, funds, banks }: Props) {
   return (
     <form className="fin-card fin-form" onSubmit={save}>
       <div className="fin-card-head">
-        <h2>Record gifts</h2>
+        <h2 id="batch">Record gifts</h2>
         <span className="small muted">One gift, or a whole Sunday&apos;s offering as a batch</span>
       </div>
       <div className="fin-form-row">
@@ -244,6 +245,13 @@ function DonorList({ donors, year, funds }: Props) {
         </div>
       </div>
       <p className="small muted">Confidential. Totals for {year} with {year - 1} for comparison. Open a donor for their gift history.</p>
+      {donors.length === 0 && (
+        <EmptyState compact title="No named donors yet" actions={[{ label: "Enter a Sunday batch", href: "#batch" }]}>
+          Offering lines with no name (the plate, the online payout) count in the totals but aren&apos;t donors. As you record gifts from people, they&apos;ll show here with year-end statements.
+        </EmptyState>
+      )}
+      {donors.length > 0 && (
+        <>
       <input type="text" aria-label="Find a donor" placeholder="Find a donor" value={query} onChange={(e) => setQuery(e.target.value)} style={{ maxWidth: 320 }} />
       <div className="fin-table-wrap">
         <table className="fin-table">
@@ -302,6 +310,8 @@ function DonorList({ donors, year, funds }: Props) {
           </tbody>
         </table>
       </div>
+        </>
+      )}
       {shown.length > limit && (
         <button className="btn" type="button" onClick={() => setLimit((l) => l + 50)}>
           Show more donors ({shown.length - limit})
@@ -372,7 +382,7 @@ function RecurringList({ recurring, canEdit, funds, people, today, dueCount }: P
             {recurring.length === 0 && (
               <tr>
                 <td colSpan={7} className="muted">
-                  No recurring givers yet.
+                  No recurring givers yet. When someone sets up a weekly or monthly gift, add it here and Barnabas will remind you when one comes due.
                 </td>
               </tr>
             )}
