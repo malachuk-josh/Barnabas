@@ -16,7 +16,11 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Church data | The demo church's real leadership, teams, weekly schedule and events, with no made-up congregation: lists start empty with a first step to take | Planning Center adapter is the next step |
 | Calendar | Month and agenda views, create, edit and delete; Barnabas adds and changes events when asked and must ask before deleting; Google and Outlook events and church events shown alongside | Google and Outlook two-way sync need a one-time app registration (below); Apple Calendar and any other app can subscribe to a private link |
 | Finance | Overview, budget and plans, fund accounting (chart of accounts, funds, split transactions, bank reconciliation, CSV import), giving (batches, recurring givers, donor history, year-end statements), missions (partners, pledges, faith-promise campaigns) and printable reports; Barnabas answers budget, giving and missions questions and records gifts and expenses after a yes | See [Finance](#finance) below. The demo church starts with labeled demo books |
-| Care | Pastoral care cases with a contact timeline, prayer requests, guest follow-up with a public guest card, the discipleship pathway and classes, and a private care-load tracker; Barnabas opens cases, logs contacts and records guests when asked, and asks before reassigning or closing | See [Care](#care) below. The demo church starts with labeled demo care records |
+| Care | Pastoral care cases with a contact timeline, prayer requests, guest follow-up with a public guest card, the discipleship pathway and classes, and a private care-load tracker; Barnabas opens cases, logs contacts and records guests when asked, and asks before reassigning or closing | See [Care](#care) below. The demo church starts with example classes only; no one's care records are made up |
+| Serve | Rosters per team per gathering (Sunday 8:30 and 10:45, 9:45 Growth Groups, Wednesday 6:00), sign-ups, swap requests, away dates, monthly limits, auto-fill and reminder drafts; the burnout radar reads real rosters | See [Operations](#operations-serve-services-events-and-kids). Reminders are drafts only |
+| Services | Sermon series, the preaching rotation and orders of service with scripture linked into The Word | |
+| Events | Registration forms, capacity and waitlist, a public sign-up link, attendee lists with CSV export, event-day check-in, and registration status on the Calendar | Online payment (Stripe) isn't built: paid events are settled at the door |
+| Kids | Check-in station, 4" × 2" child labels with matching parent pickup tags, checkout by pickup code, room counts and ratio warnings, families with allergies and authorized pickups | Restricted to `kids.checkin` and `kids.admin`; Barnabas sees counts only |
 | Roles | Pastor, treasurer, deacon, staff and leader, set by an admin in **Settings → Team**; checked in code on every finance request and tool call | Admins are bootstrapped with `BARNABAS_ADMIN_EMAILS` |
 | Settings | Profile (name, what Barnabas calls you, role, ministries, about you), time zone, reply language, voice language and speed, calendar connections, team roles (admins), delete all data | Barnabas reads the profile at the start of each conversation |
 
@@ -104,9 +108,14 @@ Every leader has a role, kept on their leader record (`leader:{church}:{leaderId
 | See individual giving: donor names, gifts, pledges, statements (`giving.donors`) | Yes | Yes | No | No | No |
 | See every care case, including confidential ones (`care.view_all`) | Yes | No | No | No | No |
 | Assign care cases to someone else; keep the pathway and classes; make guest-card links (`care.assign`) | Yes | No | Yes | Yes | No |
+| Schedule any team's roster, positions and volunteers (`ops.schedule`); a team's lead can always schedule their own team | Yes | No | No | Yes | No |
+| Plan series, the preaching rotation and orders of service (`services.plan`) | Yes | No | No | Yes | No |
+| Create events, see registrants, export and check people in (`events.manage`) | Yes | No | Yes | Yes | No |
+| Run kids check-in: find families, check in and out, labels, room counts (`kids.checkin`) | Yes | No | No | Yes | No |
+| Add and edit families and children, medical notes and pickups (`kids.admin`) | Yes | No | No | Yes | No |
 | Set roles (`team.manage`) | Admins only (`BARNABAS_ADMIN_EMAILS`), whatever their role |
 
-The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's finance tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`.
+The check is `can(access, permission)` in `src/lib/auth/roles.ts`. API routes use `requirePermission()`; Barnabas's tools call the same check. The Finance navigation entry is hidden from roles without `finance.view`, and Kids from roles without `kids.checkin`. Everyone signed in can read rosters, the preaching rotation, orders of service and event counts, and sign up to serve. A check-in volunteer who isn't on staff needs the staff role for the station.
 
 Care cases follow their own visibility rules (`src/lib/care/visibility.ts`), checked on every page, API call and Barnabas tool:
 
@@ -158,6 +167,53 @@ Prayer requests marked shareable are visible to the whole team; private ones to 
 
 **Storage**: `pcare:{church}:*` keys in Redis (cases, prayers, pathways, classes, guests, links, rotation), each leader's private day-off log at `pcare:{church}:rest:{leaderId}`, and public link lookups at `welcome:{sha256(token)}`. Code: `src/lib/care/`.
 
+## Operations: Serve, Services, Events and Kids
+
+Four areas after Care in the navigation (under More on phones). The weekly gatherings they share are Sunday 8:30 and 10:45 worship, Sunday 9:45 Growth Groups, and Wednesday 6:00 Kids Club and Teen Group (`src/lib/ops/gatherings.ts`).
+
+### Serve (volunteer scheduling)
+
+- **Rosters** (`/serve`): pick a Sunday or Wednesday; each gathering shows every team that serves at it, each position and its slots, filled or open. Anyone signed in can **sign up** for an open slot (they join the team), say they **can't make it**, or **ask a teammate to cover**; the teammate accepts or declines, and on accept the roster updates. Schedulers and team leads **assign** from a list of who's free (best first: fewest Sundays in the last eight weeks), **fill open slots** automatically, and **remove** people.
+- **Rules, enforced on every change**: no one serves two places at the same gathering; no one is scheduled on their **away dates** (blackouts); a volunteer with a **monthly limit** is never scheduled on more distinct dates in a month than that, by hand, by auto-fill or by a swap. Availability is checked again when a swap is accepted.
+- **Reminders**: "Draft reminders" writes one draft per date with a personal line for each volunteer (their positions and times) into the **Drafts** review queue. Nothing is sent: delivery (Twilio and Resend) comes in Phase 4.
+- **My serving** (`/serve/mine`): your upcoming slots, swap requests waiting on you, and your away dates. **Teams and availability** (`/serve/teams`): positions (team leads edit their own team), volunteers with their limits and away dates, and new teams (schedulers).
+- **Burnout radar**: the radar on Talk now reads these rosters. Teams with roster data in the last eleven weeks use it; teams without any fall back to the church database's serving history. The church's own leaders are never flagged as burning out: a long run reads as "watch", with a thank-you and a Sunday off.
+- **Who edits**: `ops.schedule` (pastors, staff) edits every team; a team's lead (by the name the church published, for example Travis Willette for Greeters) edits that team.
+
+### Services (sermon and service planning)
+
+- **Rotation and series** (`/services`): the next twelve Sundays with who preaches, the series, passage and sermon title, and whether each service has an order yet. Sermon series have a title, a passage range and dates; Sundays in a series pick it up.
+- **Order of service** (`/services/plan`): for each worship service, items (welcome, songs, scripture reading, prayer, sermon, communion, offering, announcements, baptism, benediction, other) with minutes, who leads and scripture, reordered with up and down buttons, and the running total. "Start from the usual order" fills in the preacher and passage from the rotation and the worship leader from the roster, with communion on first Sundays; one service can be copied to the other.
+- **The Word**: every scripture reference is parsed (`src/lib/services/scripture.ts`, using The Word's book list read-only) and links to `/word?b={book}&c={chapter}&v={verse}`, the same deep link The Word's share button makes. Nothing in The Word changed.
+- **Who edits**: `services.plan` (pastors, staff). Everyone can read.
+
+### Events and registrations
+
+- **Events** (`/events`): each event with registration shows how it's filling. Create one from scratch or from the church calendar, with capacity (counting party size), a waitlist, up to how many people per registration, a cost (display only) and a form of your own questions: short answer, choice, number, yes/no, each optional or required.
+- **Public registration page** (`/register/{token}`): no sign-in. Like the guest card, the token is 32 random bytes looked up by its hash, a new link turns the old one off, and submissions are rate-limited (5 per address per 10 minutes, 200 per link per hour) with a honeypot. It never shows who else registered. When an event is full, new registrations join the waitlist (if it has one) and move up, in order, when someone cancels.
+- **Attendees** (`/events/{id}`): registered, waitlist and cancelled lists, event-day **check-in**, cancel, move up from the waitlist, add someone by hand, and **CSV export** (cells starting with `=`, `+`, `-` or `@` are escaped so a spreadsheet won't run them; every export is audited).
+- **Payments: Stripe plugs in here.** Online payment isn't built. A paid event marks each registration's `payment` as `due` with the amount, and a leader marks it paid at the door. A Stripe Checkout session and webhook would set `payment.status` and `payment.providerRef` (`src/lib/events/types.ts`); nothing else needs to change.
+- **Calendar**: events with registration appear on the Calendar with their status ("Registration open · 12 of 40 registered") and a link to their registrations.
+- **Who manages**: `events.manage` (pastors, deacons, staff). Everyone signed in sees events and counts.
+
+### Kids check-in
+
+- **Check-in station** (`/kids`): pick the gathering, search a family by last name or the last four digits of a parent's phone, tick the children, pick each room, and check in. Children checked in together share one random **pickup code**. **Labels** (`/kids/labels`) print at 4" × 2" (`@page { size: 4in 2in }`): a label per child (name, room, allergy, code) and a matching **parent pickup tag**. **Checkout** needs the code from the parent's tag; a wrong code, or a person who isn't a guardian or authorized pickup, is refused and logged. Dragging down on the station doesn't reload the page.
+- **Rooms** (`/kids/rooms`): live counts per room (refreshing every 15 seconds), adults per room, and **ratio warnings** (fewer than two adults, or more children than the room's ratio allows). **Families** (`/kids/families`): guardians, children (grade, usual room, allergies, medical notes) and authorized pickups.
+- **Children's data is protected in code**: the station and room views need `kids.checkin`; adding and editing families, and seeing medical notes or full phone numbers, need `kids.admin`. Medical notes are never on labels or the station. Every check-in, check-out and refused checkout is in the church's kids log and the leader's audit log. Barnabas gets only counts and ratio warnings, and first names only when asked (`kids_checkin_counts`); the memory policy always rejects children's pickup codes, allergies, medical, custody and check-in details, even when a church allows sensitive memory.
+
+### Barnabas tools
+
+`whos_serving`, `find_coverage`, `preaching_rotation`, `plan_service`, `event_registrations` and `kids_checkin_counts` look things up. `draft_serving_reminders` drafts reminders into the review queue and `outline_service` starts an order of service. `schedule_volunteer` (putting someone in a slot) and `set_preacher` (when it replaces someone) propose first and run only after a yes on a later turn. Barnabas never suggests a volunteer the tools didn't list.
+
+### Demo data
+
+The demo church has no made-up congregation. Rosters hold only Mount Greylock's real leaders in their real roles: Aaron Malachuk leads worship at both services every week, and Travis Willette (Greeters) and Micah Hayre (Parking) serve about twice a month, capped at two. The preaching rotation has Ethan Malachuk most Sundays and Eric Malachuk sometimes; no series, passages or orders of service are made up. Three real MGBC events take registration (Reverb All-Nighter, $67; the Thanksgiving Communion Service; the Teens Christmas Party) with no one registered. Kids check-in has its rooms and no families. Every list starts with a warm empty state and a first step, and each area's banner lets a scheduler, planner or manager clear the demo data.
+
+### Storage
+
+`ops:{church}:*` (teams, volunteers, assignments, swaps), `svc:{church}:*` (series, rotation, plans), `evt:{church}:*` (events, registrations) with public link lookups at `evtlink:{sha256(token)}`, and `kids:{church}:*` (rooms, households, check-ins, staffing, log). Code: `src/lib/serve/`, `src/lib/services/`, `src/lib/events/`, `src/lib/kids/`, `src/lib/ops/`, with a shared per-church store in `src/lib/store/book.ts`.
+
 ## Before real congregants' data goes in
 
 - **Sign-in** is a shared church access code plus email, enough for a pilot. Move to per-person accounts (for example Clerk or Auth.js with email links) before a wider rollout.
@@ -165,11 +221,14 @@ Prayer requests marked shareable are visible to the whole team; private ones to 
 - **Church policy**: set `BARNABAS_ALLOW_SENSITIVE_MEMORY` to match your written policy (default `false`).
 - **Messaging** is not connected; Barnabas says so when it queues something.
 - **Care**: clear the demo care records, set roles in Settings → Team, and turn off any guest-card links you aren't using. Care notes follow `BARNABAS_ALLOW_SENSITIVE_MEMORY`.
+- **Operations**: clear the demo rosters, rotation and events from their banners; add teams' volunteers, families and children; and give check-in volunteers the staff role (the station shows children's names and allergies). Stripe payments for events and SMS and email delivery of reminders are not built yet.
 - **Finance**: clear the demo books, set roles in Settings → Team, and have your accountant review the chart of accounts and opening balances. Fund transfers between funds, multiple fiscal-year start months and Stripe are not built yet.
 
 ## Next steps
 
 1. Planning Center adapter (People, Services, Check-Ins) behind the `ChurchData` interface in `src/lib/chms/types.ts`.
 2. Hands-free voice with a streaming speech service (for example Deepgram or AssemblyAI) and a higher-quality voice (for example ElevenLabs or Cartesia), keeping the same `/api/chat` stream.
-3. SMS and email delivery (for example Twilio and Resend) from the outbox.
-4. An evaluation set of scripted conversations (latency, tool accuracy, memory precision, gate integrity, crisis handling) run before every prompt or model change.
+3. SMS and email delivery (for example Twilio and Resend) from the outbox, including serving reminders (Phase 4).
+4. Stripe Checkout for paid event registrations, at the `payment` seam on registrations.
+5. Importing families, volunteers and teams from ChurchTrac or Planning Center (CSV first, then the adapter).
+6. An evaluation set of scripted conversations (latency, tool accuracy, memory precision, gate integrity, crisis handling) run before every prompt or model change.
