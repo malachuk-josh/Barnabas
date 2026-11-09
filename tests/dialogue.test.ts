@@ -57,7 +57,7 @@ describe("synthesizeDialogue", () => {
     env();
     const r = await synthesizeDialogue({ text: SAMPLE, mode: "whole", lang: "en" });
     const conn = last();
-    expect(conn.messages[0]).toEqual({ voices: ["barnabasvoice01"], voice_settings: { stability: 0.42 }, xi_api_key: "test-key-123" });
+    expect(conn.messages[0]).toEqual({ voices: ["barnabasvoice01"], voice_settings: { stability: 0.35 }, xi_api_key: "test-key-123" });
     expect(conn.messages.slice(1)).toEqual([{ inputs: [{ text: SAMPLE, voice_id: "barnabasvoice01" }] }, { flush: true }, { close_socket: true }]);
     expect(r.chunks).toBeGreaterThan(1);
     expect(r.audio.length).toBeGreaterThan(0);

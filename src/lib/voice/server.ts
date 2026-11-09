@@ -31,9 +31,9 @@ export function deliverySettings() {
     return Number.isFinite(n) && n >= 0 && n <= 1 ? n : d;
   };
   return {
-    stability: num(process.env.ELEVENLABS_STABILITY, 0.42),
+    stability: num(process.env.ELEVENLABS_STABILITY, 0.35),
     similarity_boost: 0.8,
-    style: num(process.env.ELEVENLABS_STYLE, 0.3),
+    style: num(process.env.ELEVENLABS_STYLE, 0.45),
     use_speaker_boost: true,
   };
 }
