@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isResponse, requireLeader } from "@/lib/auth/require";
-import { deliverySettings, elevenLabs, supportsLanguageCode, VOICE_ID } from "@/lib/voice/server";
+import { voiceDelivery } from "@/lib/ai/settings";
+import { elevenLabs, supportsLanguageCode, VOICE_ID } from "@/lib/voice/server";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       text: parsed.data.text,
       model_id: model,
-      voice_settings: deliverySettings(),
+      voice_settings: await voiceDelivery(leader.churchId),
       ...(parsed.data.lang && supportsLanguageCode(model) ? { language_code: parsed.data.lang } : {}),
     }),
     signal: AbortSignal.timeout(20000),

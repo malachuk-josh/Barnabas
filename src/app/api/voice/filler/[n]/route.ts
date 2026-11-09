@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { isResponse, requireLeader } from "@/lib/auth/require";
 import { getJSON, setJSON } from "@/lib/store";
 import { FILLERS } from "@/lib/voice/fillers";
-import { deliverySettings, elevenLabs, supportsLanguageCode, VOICE_ID } from "@/lib/voice/server";
+import { voiceDelivery } from "@/lib/ai/settings";
+import { elevenLabs, supportsLanguageCode, VOICE_ID } from "@/lib/voice/server";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ n: s
   if (!Number.isInteger(n) || n < 0 || n >= list.length) return NextResponse.json({ error: "No such sound." }, { status: 404 });
   const text = list[n]!;
   const model = elevenLabs.model();
-  const settings = deliverySettings();
+  const settings = await voiceDelivery(leader.churchId);
   const hash = createHash("sha256").update(JSON.stringify([voice, model, settings, lang, text])).digest("hex").slice(0, 24);
   const key = `filler:${hash}`;
 

@@ -1342,3 +1342,6 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 }
 /* Nothing to save: the bar rests at the end of the form instead of floating over it */
 .save-bar:not(.is-dirty) { position: static; background: transparent; box-shadow: none; padding-left: 4px; }
+
+/* Sliders in the brand colour */
+input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }

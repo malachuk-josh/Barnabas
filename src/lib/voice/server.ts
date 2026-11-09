@@ -25,15 +25,16 @@ export const VOICE_ID = /^[A-Za-z0-9]{8,40}$/;
  * (more expressive); style adds a little of the speaker's natural warmth. Override with
  * ELEVENLABS_STABILITY / ELEVENLABS_STYLE (0 to 1) if a particular voice sounds off.
  */
-export function deliverySettings() {
-  const num = (v: string | undefined, d: number) => {
+export function deliverySettings(overrides: { stability?: number; style?: number } = {}) {
+  const num = (v: string | number | undefined, d: number) => {
     const n = Number(v);
-    return Number.isFinite(n) && n >= 0 && n <= 1 ? n : d;
+    return v !== undefined && v !== "" && Number.isFinite(n) && n >= 0 && n <= 1 ? n : d;
   };
   return {
-    stability: num(process.env.ELEVENLABS_STABILITY, 0.42),
+    // An admin's choice in Settings -> Barnabas AI wins, then Vercel's ELEVENLABS_* values, then these.
+    stability: num(overrides.stability, num(process.env.ELEVENLABS_STABILITY, 0.6)),
     similarity_boost: 0.8,
-    style: num(process.env.ELEVENLABS_STYLE, 0.3),
+    style: num(overrides.style, num(process.env.ELEVENLABS_STYLE, 0.6)),
     use_speaker_boost: true,
   };
 }
