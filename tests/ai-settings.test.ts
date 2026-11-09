@@ -44,7 +44,7 @@ describe("Settings → Barnabas AI", () => {
     const r = await put({ textModel: "claude-sonnet-5-5", voiceModel: "claude-opus-5-5", textEffort: "high", voiceEffort: "medium" });
     expect(r.status).toBe(200);
     const ai = await resolvedAi("demo");
-    expect(ai).toEqual({ textModel: "claude-sonnet-5-5", voiceModel: "claude-opus-5-5", textEffort: "high", voiceEffort: "medium" });
+    expect(ai).toEqual({ textModel: "claude-sonnet-5-5", voiceModel: "claude-opus-5-5", textEffort: "high", voiceEffort: "medium", webSearch: false, webDomains: [] });
 
     const meta = { id: "c1", context: "ctx", mode: "text" } as never;
     const typed = turnParams(meta, [{ role: "user", content: "hi" }], "text", ai);
@@ -56,7 +56,7 @@ describe("Settings → Barnabas AI", () => {
     expect(modelFor("voice", { ...ai, voiceModel: "claude-sonnet-5-5", voiceEffort: "high" })).toMatchObject({ thinking: { type: "between_tools" }, effort: "high" });
 
     await put({ textModel: null, voiceModel: null, textEffort: null, voiceEffort: null });
-    expect(await resolvedAi("demo")).toEqual({ textModel: "claude-opus-5-5", voiceModel: "claude-sonnet-5-5", textEffort: "low", voiceEffort: "low" });
+    expect(await resolvedAi("demo")).toEqual({ textModel: "claude-opus-5-5", voiceModel: "claude-sonnet-5-5", textEffort: "low", voiceEffort: "low", webSearch: false, webDomains: [] });
   });
 
   it("only accepts models and levels from the list", async () => {
@@ -112,5 +112,25 @@ describe("voice stability and style sliders", () => {
     expect((await put({ textModel: null, voiceModel: null, textEffort: null, voiceStyle: 0.4 })).status).toBe(403);
     session.current = admin;
     expect((await put({ textModel: null, voiceModel: null, textEffort: null, voiceStyle: 1.4 })).status).toBe(400);
+  });
+});
+
+describe("web search switch", () => {
+  beforeEach(async () => {
+    freshStore();
+    vi.stubEnv("BARNABAS_ADMIN_EMAILS", "admin@example.org");
+    await recordSignIn(admin);
+    await recordSignIn(plain);
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is off by default, admin-only, and checks the site list", async () => {
+    session.current = admin;
+    expect((await (await GET()).json()).webSearch).toBe(false);
+    const ok = await put({ textModel: null, voiceModel: null, textEffort: null, webSearch: true, webDomains: ["BibleGateway.com", "ccli.com"] });
+    expect(await ok.json()).toMatchObject({ webSearch: true, webDomains: ["biblegateway.com", "ccli.com"] });
+    expect((await put({ textModel: null, voiceModel: null, textEffort: null, webSearch: true, webDomains: ["https://x.com/page"] })).status).toBe(400);
+    session.current = plain;
+    expect((await put({ textModel: null, voiceModel: null, textEffort: null, webSearch: true })).status).toBe(403);
   });
 });

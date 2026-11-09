@@ -50,6 +50,20 @@ export function modelFor(mode: TurnMode, ai: ResolvedAi = defaultAi()): { model:
   return { model: ai.textModel, thinking: { type: "adaptive" }, effort: ai.textEffort as Effort };
 }
 
+/**
+ * Claude's own web search and web fetch, when an admin has turned them on (Settings -> Barnabas AI).
+ * Newer models get the versions with dynamic filtering; Haiku gets the basic ones.
+ */
+export function webTools(model: string, ai?: ResolvedAi): Anthropic.Beta.BetaToolUnion[] {
+  if (!ai?.webSearch) return [];
+  const domains = ai.webDomains?.length ? { allowed_domains: ai.webDomains } : {};
+  const modern = !model.startsWith("claude-haiku");
+  return [
+    { type: modern ? "web_search_20260209" : "web_search_20250305", name: "web_search", max_uses: 5, ...domains },
+    { type: modern ? "web_fetch_20260209" : "web_fetch_20250910", name: "web_fetch", max_uses: 3, max_content_tokens: 8000, citations: { enabled: true }, ...domains },
+  ] as Anthropic.Beta.BetaToolUnion[];
+}
+
 export function turnParams(meta: ConversationMeta, messages: Message[], mode: TurnMode = "text", ai?: ResolvedAi): Anthropic.Beta.MessageCreateParamsStreaming {
   const { model, thinking, effort } = modelFor(mode, ai);
   const fallbacks = supportsFallbacks(model);
@@ -62,7 +76,7 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
     output_config: { effort },
     // Automatic caching for the growing conversation, after the two system breakpoints.
     cache_control: { type: "ephemeral" },
-    tools: TOOL_DEFS,
+    tools: [...TOOL_DEFS, ...webTools(model, ai)],
     system: system(meta),
     messages,
     ...(fallbacks ? { fallbacks: "default" as const, betas: [config.fallbackBeta] } : {}),
@@ -76,13 +90,14 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
 export async function warmCache(meta: ConversationMeta, churchId?: string) {
   // A conversation started by voice is warmed for the voice model (caches are per model).
   const mode: TurnMode = meta.mode === "voice" ? "voice" : "text";
-  const { model, thinking, effort } = modelFor(mode, churchId ? await resolvedAi(churchId) : undefined);
+  const ai = churchId ? await resolvedAi(churchId) : undefined;
+  const { model, thinking, effort } = modelFor(mode, ai);
   await claude().beta.messages.create({
     model,
     max_tokens: 0,
     thinking,
     output_config: { effort },
-    tools: TOOL_DEFS,
+    tools: [...TOOL_DEFS, ...webTools(model, ai)],
     system: system(meta),
     messages: [{ role: "user", content: "warmup" }],
   });

@@ -24,8 +24,16 @@ export type AiSettingsView = {
   voiceEffort: string;
   voiceStability: number;
   voiceStyle: number;
+  /** Barnabas may search the web and read pages (off unless an admin turns it on). */
+  webSearch: boolean;
+  /** Optional: only these sites. */
+  webDomains: string[];
   chosen: { textModel: boolean; voiceModel: boolean; textEffort: boolean; voiceEffort: boolean; voiceStability: boolean; voiceStyle: boolean };
   defaults: { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string; voiceStability: number; voiceStyle: number };
   updatedBy?: string;
   updatedAt?: number;
 };
+
+/** A bare host name like "biblegateway.com" or "www.ccli.com" (no scheme, path or port). */
+export const HOST_RE = /^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+export const MAX_WEB_DOMAINS = 20;

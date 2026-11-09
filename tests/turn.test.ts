@@ -232,3 +232,39 @@ describe("voice turns", () => {
     expect(text.thinking).toEqual({ type: "adaptive" });
   });
 });
+
+describe("web search", () => {
+  beforeEach(() => freshStore());
+
+  it("is off by default: no web tools in the request", async () => {
+    const calls = scripted([() => ({ content: [{ type: "text", text: "Hello." }], stop_reason: "end_turn" })]);
+    await collect(runTurn({ leader, meta: await newMeta(), text: "hi" }));
+    expect((calls[0]!.tools as { name: string }[]).some((t) => t.name === "web_search")).toBe(false);
+  });
+
+  it("when an admin turns it on, says it's looking, and a paused turn resumes without an extra message", async () => {
+    const { saveAiSettings } = await import("@/lib/ai/settings");
+    await saveAiSettings("demo", "Admin", { textModel: null, voiceModel: null, textEffort: null, webSearch: true, webDomains: ["ccli.com"] });
+    const calls = scripted([
+      () => ({ content: [{ type: "server_tool_use", id: "srv1", name: "web_search", input: { query: "Be Thou My Vision CCLI" } }], stop_reason: "pause_turn" }),
+      () => ({ content: [{ type: "text", text: "It's CCLI 30639, per ccli.com." }], stop_reason: "end_turn" }),
+    ]);
+    const events = await collect(runTurn({ leader, meta: await newMeta(), text: "What's the CCLI number for Be Thou My Vision?" }));
+    const tools = calls[0]!.tools as { name: string; type?: string; allowed_domains?: string[] }[];
+    const search = tools.find((t) => t.name === "web_search")!;
+    expect(search.type).toBe("web_search_20260209");
+    expect(search.allowed_domains).toEqual(["ccli.com"]);
+    expect(events.find((e) => e.type === "tool")).toMatchObject({ name: "web_search", phrase: "Let me look that up." });
+    // The second request resumes from the paused assistant turn, with no "continue" user message added.
+    expect(calls).toHaveLength(2);
+    const last = calls[1]!.messages[calls[1]!.messages.length - 1] as { role: string };
+    expect(last.role).toBe("assistant");
+    expect(events.filter((e) => e.type === "text").map((e) => (e as { text: string }).text).join("")).toMatch(/30639/);
+  });
+
+  it("Haiku gets the basic web tool versions", async () => {
+    const { webTools } = await import("@/lib/engine/claude");
+    const t = webTools("claude-haiku-5-5", { textModel: "", voiceModel: "", textEffort: "low", voiceEffort: "low", webSearch: true }) as { type: string }[];
+    expect(t.map((x) => x.type)).toEqual(["web_search_20250305", "web_fetch_20250910"]);
+  });
+});

@@ -12,6 +12,7 @@ export function AiSettings() {
   const [form, setForm] = useState({ textModel: "", voiceModel: "", textEffort: "", voiceEffort: "" });
   // null = use the default (Vercel's value or the built-in one)
   const [voice, setVoice] = useState<{ stability: number | null; style: number | null }>({ stability: null, style: null });
+  const [web, setWeb] = useState({ on: false, domains: "" });
   const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -19,6 +20,7 @@ export function AiSettings() {
     setView(v);
     setForm({ textModel: v.chosen.textModel ? v.textModel : "", voiceModel: v.chosen.voiceModel ? v.voiceModel : "", textEffort: v.chosen.textEffort ? v.textEffort : "", voiceEffort: v.chosen.voiceEffort ? v.voiceEffort : "" });
     setVoice({ stability: v.chosen.voiceStability ? v.voiceStability : null, style: v.chosen.voiceStyle ? v.voiceStyle : null });
+    setWeb({ on: v.webSearch, domains: v.webDomains.join("\n") });
   };
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function AiSettings() {
     const res = await fetch("/api/admin/ai", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null, voiceStability: voice.stability, voiceStyle: voice.style }),
+      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null, voiceStability: voice.stability, voiceStyle: voice.style, webSearch: web.on, webDomains: web.domains.split(/[\s,]+/).map((d) => d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "")).filter(Boolean) }),
     });
     setSaving(false);
     if (res.ok) {
@@ -150,6 +152,23 @@ export function AiSettings() {
             </span>
           </div>
           <PreviewVoice />
+          <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0, gap: 8 }}>
+            <legend className="label" style={{ fontWeight: 700 }}>The web</legend>
+            <label className="check">
+              <input id="ai-web" type="checkbox" checked={web.on} onChange={(e) => setWeb({ ...web, on: e.target.checked })} />
+              Let Barnabas search the web and read web pages
+            </label>
+            <span className="small muted">
+              For current or outside information: a resource, a song&apos;s details, a local organization. He names his sources, never puts anyone&apos;s name or private details into a search, and always quotes scripture from the Bible, not websites. Searches cost about $10 per 1,000.
+            </span>
+            {web.on && (
+              <div className="field">
+                <label htmlFor="ai-web-domains">Only these sites (optional)</label>
+                <textarea id="ai-web-domains" rows={3} value={web.domains} onChange={(e) => setWeb({ ...web, domains: e.target.value })} placeholder={"mountgreylockbaptist.com\nbiblegateway.com\nccli.com"} />
+                <span className="small muted">One per line. Leave empty to allow any site.</span>
+              </div>
+            )}
+          </fieldset>
           {state && (
             <p className={`notice small ${state.ok ? "success" : "notice-danger"}`} role="status">
               {state.text}
