@@ -175,46 +175,14 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
     <>
       <div className="page-head">
         <div>
-          <span className="eyebrow">Time zone: {timezone.replace(/_/g, " ")}</span>
+          <span className="eyebrow">Your schedule</span>
           <h1>Calendar</h1>
-          <p className="muted">Your Barnabas calendar, with your connected calendars and church events alongside. Barnabas can add and change events when you ask.</p>
+          <p className="muted cal-intro">Your Barnabas events, your connected calendars and the church&apos;s events together. Barnabas adds and changes events when you ask.</p>
         </div>
         <button className="btn btn-primary" type="button" onClick={() => { setFormError(null); setConfirmDelete(false); setEditing(emptyDraft(selected)); }}>
           New event
         </button>
       </div>
-
-      {suggestions.length > 0 && (
-        <section className="card care-suggest" aria-label="Suggestions from Shepherding" style={{ marginBottom: 16 }}>
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: "1.1rem" }}>Suggestions from Shepherding</h2>
-            <span className="small muted">Not on your calendar unless you add them</span>
-          </div>
-          <ul className="care-suggest-list">
-            {suggestions.map((s) => (
-              <li key={s.id} className={`src-${s.kind === "rest" ? "church" : "barnabas"}`}>
-                <span>
-                  <strong>{s.title}</strong>
-                  <small className="muted">
-                    {longDate(s.date)} · {s.reason} · <Link href={s.href}>{s.kind === "rest" ? "Your care load" : "Open the need"}</Link>
-                  </small>
-                </span>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => {
-                    setFormError(null);
-                    setConfirmDelete(false);
-                    setEditing({ ...emptyDraft(s.date), title: s.title, kind: s.kind, allDay: s.kind === "rest" });
-                  }}
-                >
-                  Add
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {data && data.problems.length > 0 && (
         <div className="notice" role="status" style={{ marginBottom: 16 }}>
@@ -232,7 +200,7 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
           <div className="cal-toolbar">
             <h2>{view === "month" ? monthTitle(month) : "Upcoming"}</h2>
             {view === "month" && (
-              <>
+              <span className="cal-nav">
                 <button className="icon-btn" type="button" aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))}>
                   <ChevronLeft />
                 </button>
@@ -242,8 +210,11 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
                 <button className="icon-btn" type="button" aria-label="Next month" onClick={() => setMonth(shiftMonth(month, 1))}>
                   <ChevronRight />
                 </button>
-              </>
+              </span>
             )}
+            <Link className="cal-tz small" href="/settings#barnabas" title="Change your time zone in Settings">
+              Times in {timezone.replace(/_/g, " ")}
+            </Link>
             <div className="seg" role="group" aria-label="View">
               <button type="button" aria-pressed={view === "month"} onClick={() => setView("month")}>
                 Month
@@ -313,6 +284,7 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
           </div>
         </div>
 
+        <div className="cal-side">
         {view === "month" && (
           <aside ref={dayPanel} className="card stack cal-day-panel" aria-label={`Events on ${longDate(selected)}`}>
             <div className="row" style={{ justifyContent: "space-between" }}>
@@ -330,6 +302,39 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
             </div>
           </aside>
         )}
+        {suggestions.length > 0 && (
+          <section className="card care-suggest cal-suggest" aria-label="Suggestions from Shepherding">
+            <div className="cal-suggest-head">
+              <h2>Suggested by Shepherding</h2>
+              <span className="small muted">Not on your calendar unless you add them</span>
+            </div>
+            <ul className="care-suggest-list">
+              {suggestions.map((s) => (
+                <li key={s.id} className={`src-${s.kind === "rest" ? "church" : "barnabas"}`}>
+                  <span>
+                    <strong>{s.title}</strong>
+                    <small className="muted">
+                      {longDate(s.date)} · {s.reason} · <Link href={s.href}>{s.kind === "rest" ? "Your care load" : "Open the need"}</Link>
+                    </small>
+                  </span>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => {
+                      setFormError(null);
+                      setConfirmDelete(false);
+                      setEditing({ ...emptyDraft(s.date), title: s.title, kind: s.kind, allDay: s.kind === "rest" });
+                    }}
+                  >
+                    Add
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        </div>
       </div>
 
       {editing && (
