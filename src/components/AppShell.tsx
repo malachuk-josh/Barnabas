@@ -7,7 +7,7 @@ import { getProfile, type Profile } from "@/lib/profile";
 import { accessFor } from "@/lib/team";
 import { Mark } from "./Mark";
 import { PullToRefresh } from "./PullToRefresh";
-import { SideNav, SignOutButton, TabBar } from "./NavLinks";
+import { SideFootLinks, SideNav, SignOutButton, TabBar, TalkButton } from "./NavLinks";
 
 function initials(name: string) {
   return name
@@ -52,8 +52,10 @@ export async function AppShell({
           <Mark light />
           Barnabas
         </Link>
+        {!checkinOnly && <TalkButton />}
         <SideNav showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
         <div className="side-foot">
+          <SideFootLinks showFinance={showFinance} showKids={showKids} showSite={showSite} checkinOnly={checkinOnly} />
           <Link href="/settings" className="me-card">
             <span className="avatar" aria-hidden="true">
               {initials(profile.name)}
