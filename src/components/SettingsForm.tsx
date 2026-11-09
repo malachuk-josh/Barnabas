@@ -42,7 +42,7 @@ export function SettingsForm({ initial }: { initial: Profile }) {
   const [copied, setCopied] = useState(false);
   const [deleteText, setDeleteText] = useState("");
   const zones = useMemo(timezones, []);
-  const [voices, setVoices] = useState<{ tts: boolean; stt: boolean; defaultVoice: string; voices: { id: string; name: string; category: string }[]; error?: string } | null>(null);
+  const [voices, setVoices] = useState<{ tts: boolean; stt: boolean; voiceReady: boolean; voiceName: string } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [word, setWord] = useState("");
   const [sayAs, setSayAs] = useState("");
@@ -62,7 +62,7 @@ export function SettingsForm({ initial }: { initial: Profile }) {
       const res = await fetch("/api/voice/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: `Good morning, ${p.preferredName}. Sarah has served nine Sundays in a row. Want me to draft her a thank-you?`, voiceId: p.voice.voiceId || undefined, lang: p.voice.language.slice(0, 2) }),
+        body: JSON.stringify({ text: `Good morning, ${p.preferredName}. Sarah has served nine Sundays in a row. Want me to draft her a thank-you?`, lang: p.voice.language.slice(0, 2) }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Preview didn't work.");
       const url = URL.createObjectURL(await res.blob());
@@ -287,26 +287,19 @@ export function SettingsForm({ initial }: { initial: Profile }) {
             {voices && !voices.stt && <span className="small muted">Hands-free needs the Deepgram listening service. Your administrator adds DEEPGRAM_API_KEY.</span>}
 
             <div className="field">
-              <label htmlFor="voiceId">Barnabas&apos;s voice</label>
-              {voices?.tts ? (
-                <div className="copy-row">
-                  <select id="voiceId" value={p.voice.voiceId ?? ""} onChange={(e) => setP({ ...p, voice: { ...p.voice, voiceId: e.target.value } })}>
-                    <option value="">Church default{voices.defaultVoice ? "" : " (not set: pick one)"}</option>
-                    {voices.voices.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name}
-                        {v.category && v.category !== "premade" ? ` (${v.category})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="btn" type="button" onClick={() => void preview()} disabled={previewing || (!p.voice.voiceId && !voices.defaultVoice)}>
+              <span className="label" style={{ textTransform: "none", letterSpacing: 0, fontSize: "0.92rem", color: "var(--fg)" }}>Barnabas&apos;s voice</span>
+              {voices?.voiceReady ? (
+                <div className="row">
+                  <span>{voices.voiceName || "Church voice"}</span>
+                  <button className="btn" type="button" onClick={() => void preview()} disabled={previewing}>
                     {previewing ? "Playing…" : "Preview"}
                   </button>
                 </div>
               ) : (
-                <span className="small muted">Using your device&apos;s built-in voice. For Barnabas&apos;s own natural voice, your administrator adds ELEVENLABS_API_KEY.</span>
+                <span className="small muted">
+                  Using your device&apos;s built-in voice until Barnabas&apos;s voice is set up (ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID).
+                </span>
               )}
-              {voices?.error && <span className="small error">{voices.error}</span>}
             </div>
 
             <div className="field">

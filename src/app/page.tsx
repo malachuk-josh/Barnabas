@@ -14,7 +14,7 @@ export default async function Home() {
           greetingName={profile.preferredName}
           voice={profile.voice}
           pronunciations={profile.pronunciations}
-          cloudVoice={elevenLabs.configured() && Boolean(profile.voice.voiceId || elevenLabs.defaultVoice())}
+          cloudVoice={elevenLabs.configured() && Boolean(elevenLabs.defaultVoice())}
           cloudListening={deepgram.configured()}
         />
         <Briefing />

@@ -1,28 +1,21 @@
 import { NextResponse } from "next/server";
 import { isResponse, requireLeader } from "@/lib/auth/require";
-import { deepgram, elevenLabs } from "@/lib/voice/server";
+import { deepgram, elevenLabs, VOICE_ID } from "@/lib/voice/server";
 
 export const runtime = "nodejs";
 
-/** Voice setup status and the voices available in the church's ElevenLabs account. */
+/** Voice setup status and the name of Barnabas's voice (the church's clone). */
 export async function GET() {
   const leader = await requireLeader();
   if (isResponse(leader)) return leader;
-  const status = { tts: elevenLabs.configured(), stt: deepgram.configured(), defaultVoice: elevenLabs.defaultVoice(), model: elevenLabs.model() };
-  if (!status.tts) return NextResponse.json({ ...status, voices: [] });
+  const id = elevenLabs.defaultVoice();
+  const status = { tts: elevenLabs.configured(), stt: deepgram.configured(), voiceReady: elevenLabs.configured() && VOICE_ID.test(id), voiceName: "" };
+  if (!status.voiceReady) return NextResponse.json(status);
   try {
-    const res = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": elevenLabs.key() }, signal: AbortSignal.timeout(8000) });
-    const body = await res.json();
-    type ElevenVoice = { voice_id: string; name: string; category?: string; labels?: { gender?: string } };
-    // Barnabas speaks with a male voice: female voices are left out of the picker.
-    // Cloned voices without a gender label are kept, so the church's own clone always shows.
-    const voices = ((body.voices ?? []) as ElevenVoice[])
-      .filter((v) => (v.labels?.gender ?? "").toLowerCase() !== "female")
-      .map((v) => ({ id: v.voice_id, name: v.name, category: v.category ?? "" }));
-    // Cloned and designed voices first: they're the church's own.
-    voices.sort((a, b) => Number(b.category !== "premade") - Number(a.category !== "premade") || a.name.localeCompare(b.name));
-    return NextResponse.json({ ...status, voices });
+    const res = await fetch(`https://api.elevenlabs.io/v1/voices/${id}`, { headers: { "xi-api-key": elevenLabs.key() }, signal: AbortSignal.timeout(8000) });
+    const body = res.ok ? await res.json() : null;
+    return NextResponse.json({ ...status, voiceName: body?.name ?? "" });
   } catch {
-    return NextResponse.json({ ...status, voices: [], error: "Couldn't load voices from ElevenLabs." });
+    return NextResponse.json(status);
   }
 }
