@@ -352,3 +352,22 @@ describe("journal words and links", () => {
     ]);
   });
 });
+
+describe("list previews", () => {
+  it("a setlist's card shows its song titles, not every field run together", async () => {
+    const { summarize } = await import("@/lib/journal/store");
+    const { SetlistSchema } = await import("@/lib/journal/types");
+    const setlist = SetlistSchema.parse({
+      serviceDate: "2026-11-22",
+      theme: "The Good Shepherd",
+      songs: [
+        { id: "s1", title: "The King of Love My Shepherd Is", artist: "Henry W. Baker", scripture: "Psalm 23", transition: "Keys hold the last chord" },
+        { id: "s2", title: "Be Thou My Vision", artist: "Irish hymn" },
+        { id: "s3", title: "Great Is Thy Faithfulness", artist: "Thomas Chisholm" },
+      ],
+    });
+    const now = Date.now();
+    const s = summarize({ id: "e1", ownerId: "l1", ownerName: "Aaron", kind: "setlist", title: "The Good Shepherd set", tags: [], pinned: false, body: "", createdAt: now, updatedAt: now, shared: false, setlist } as never);
+    expect(s.snippet).toBe("The King of Love My Shepherd Is · Be Thou My Vision · Great Is Thy Faithfulness");
+  });
+});
