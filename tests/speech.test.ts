@@ -39,3 +39,22 @@ describe("pronunciations", () => {
     expect(normalizeForSpeech("Nguyenville", list)).toBe("Nguyenville");
   });
 });
+
+describe("speaking the first phrase early", () => {
+  it("speaks the opening clause at a comma once it has a few words", async () => {
+    const { SentenceChunker } = await import("@/lib/speech/chunker");
+    const c = new SentenceChunker(true);
+    expect(c.push("That sounds like a full week,")).toEqual([]);
+    expect(c.push(" and I'm glad you")).toEqual(["That sounds like a full week,"]);
+    expect(c.push(" told me. Let's look")).toEqual(["and I'm glad you told me."]);
+    expect(c.flush()).toEqual(["Let's look"]);
+  });
+
+  it("doesn't split a short greeting, a verse reference or a number", async () => {
+    const { SentenceChunker } = await import("@/lib/speech/chunker");
+    const c = new SentenceChunker(true);
+    expect(c.push("Hi Josh, John 3:16 says 1,000 things ")).toEqual([]);
+    const d = new SentenceChunker(false);
+    expect(d.push("That sounds like a full week, and more ")).toEqual([]);
+  });
+});

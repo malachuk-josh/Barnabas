@@ -63,6 +63,20 @@ export function Talk({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Timing readout for tuning voice speed: visit /?timing=1 to turn it on, /?timing=0 to turn it off.
+  const [showTiming, setShowTiming] = useState(false);
+  const [lastTiming, setLastTiming] = useState<string | null>(null);
+  const timing = useRef<{ start: number; firstText?: number; firstVoice?: number; server?: string } | null>(null);
+  useEffect(() => {
+    try {
+      const flag = new URLSearchParams(window.location.search).get("timing");
+      if (flag === "1") localStorage.setItem("barnabas.timing", "1");
+      if (flag === "0") localStorage.removeItem("barnabas.timing");
+      setShowTiming(localStorage.getItem("barnabas.timing") === "1");
+    } catch {
+      // storage unavailable: leave the readout off
+    }
+  }, []);
   const [offRecord, setOffRecord] = useState(false);
   const [speak, setSpeak] = useState(voice.speakReplies);
   const [lang, setLang] = useState<Lang>(voice.language);
@@ -104,7 +118,11 @@ export function Talk({
       lang,
       rate: voice.rate,
       pronunciations,
-      onStart: () => setStatus("speaking"),
+      onStart: () => {
+        const t = timing.current;
+        if (t && t.firstVoice === undefined) t.firstVoice = performance.now();
+        setStatus("speaking");
+      },
       onIdle: () => settle(),
     };
     speaker.current = cloudVoice ? new CloudSpeaker({ ...opts, onError: () => setError("Barnabas's voice didn't load for one sentence. The text is on screen.") }) : new BrowserSpeaker(opts);
@@ -186,6 +204,7 @@ export function Talk({
   async function send(text: string, via: "voice" | "text") {
     const clean = text.trim();
     if (!clean) return;
+    timing.current = { start: performance.now() };
     setError(null);
     touch();
     let id: string;
@@ -205,8 +224,8 @@ export function Talk({
     pendingInterrupt.current = null;
 
     const update = (fn: (t: Turn) => Turn) => setTurns((all) => all.map((t) => (t.id === reply.id ? fn(t) : t)));
-    const chunker = new SentenceChunker();
     const voiced = via === "voice" && speak;
+    const chunker = new SentenceChunker(voiced);
     const say = (s: string) => {
       if (voiced && !ignoreReply.current) speaker.current?.speak(s);
     };
@@ -215,7 +234,7 @@ export function Talk({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: id, text: clean, interruptedAfter, localTime: localTime() }),
+        body: JSON.stringify({ conversationId: id, text: clean, interruptedAfter, localTime: localTime(), voice: via === "voice" }),
       });
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}));
@@ -241,8 +260,13 @@ export function Talk({
             | { type: "text"; text: string }
             | { type: "tool"; name: string; phrase?: string }
             | { type: "notice"; text: string }
+            | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null }
             | { type: "done" }
             | { type: "error"; message: string };
+          if (event.type === "text" && timing.current && timing.current.firstText === undefined) timing.current.firstText = performance.now();
+          if (event.type === "timing" && timing.current) {
+            timing.current.server = `${event.model.replace(/^claude-/, "")}, server setup ${event.setupMs}ms, model ${event.firstTextMs ?? "-"}ms`;
+          }
           if (event.type === "text") {
             if (ignoreReply.current) update((t) => ({ ...t, unheard: t.unheard + event.text }));
             else {
@@ -260,6 +284,18 @@ export function Talk({
         }
       }
       chunker.flush().forEach(say);
+      const t = timing.current;
+      if (t) {
+        const s = (v?: number) => (v === undefined ? "-" : `${((v - t.start) / 1000).toFixed(1)}s`);
+        const line = `First words ${s(t.firstText)} · voice ${s(t.firstVoice)} (${t.server ?? "no server timing"})`;
+        setLastTiming(line);
+        // Voice may start after the stream ends; refresh the line once it does.
+        if (voiced && t.firstVoice === undefined) {
+          setTimeout(() => {
+            if (timing.current === t) setLastTiming(`First words ${s(t.firstText)} · voice ${s(t.firstVoice)} (${t.server ?? "no server timing"})`);
+          }, 4000);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Barnabas couldn't answer just now.");
     } finally {
@@ -394,6 +430,7 @@ export function Talk({
         </p>
       </div>
 
+      {showTiming && lastTiming && <p className="small muted" aria-live="off">{lastTiming}</p>}
       {notice && (
         <div className="notice notice-danger" role="alert">
           {notice}

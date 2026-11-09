@@ -15,6 +15,8 @@ export const isProduction = process.env.NODE_ENV === "production";
 export const config = {
   model: process.env.BARNABAS_MODEL || "claude-opus-5-5",
   effort: effortFrom(process.env.BARNABAS_EFFORT, "low"),
+  /** Spoken turns use a faster model so Barnabas starts talking sooner; typed turns use `model`. */
+  voiceModel: process.env.BARNABAS_VOICE_MODEL || "claude-sonnet-5-5",
   memoryEffort: effortFrom(process.env.BARNABAS_MEMORY_EFFORT, "medium"),
   churchName: process.env.BARNABAS_CHURCH_NAME || "Mount Greylock Baptist Church (demo)",
   churchId: "demo",

@@ -4,6 +4,13 @@
  */
 export class SentenceChunker {
   private buffer = "";
+  private emitted = false;
+
+  /**
+   * @param earlyFirst speak the opening phrase as soon as it reaches a comma, semicolon, colon or
+   * dash (after at least four words), instead of waiting for the whole first sentence.
+   */
+  constructor(private readonly earlyFirst = false) {}
 
   /** Add streamed text; returns any sentences that are now complete. */
   push(text: string): string[] {
@@ -24,6 +31,14 @@ export class SentenceChunker {
       consumed = end;
     }
     this.buffer = this.buffer.slice(consumed);
+    if (this.earlyFirst && !this.emitted && !out.length) {
+      const clause = /^\s*((?:\S+\s+){3,}?\S*?[,;:—–])\s/.exec(this.buffer);
+      if (clause) {
+        out.push(clause[1].trim());
+        this.buffer = this.buffer.slice(clause[0].length);
+      }
+    }
+    if (out.length) this.emitted = true;
     return out;
   }
 

@@ -32,14 +32,32 @@ function system(meta: ConversationMeta): Anthropic.Beta.BetaTextBlockParam[] {
   ];
 }
 
-export function turnParams(meta: ConversationMeta, messages: Message[]): Anthropic.Beta.MessageCreateParamsStreaming {
-  const fallbacks = supportsFallbacks(config.model);
+export type TurnMode = "voice" | "text";
+
+/**
+ * Model and thinking for a turn. Spoken turns go to the voice model with the least thinking it
+ * allows (Claude Sonnet 5.5: `between_tools`, no extended thinking) so the first words come fast;
+ * typed turns keep the main model with adaptive thinking. Switching models inside one conversation
+ * is fine: thinking blocks are passed back unchanged and the API drops any the model can't read.
+ */
+export function modelFor(mode: TurnMode): { model: string; thinking: Anthropic.Beta.BetaThinkingConfigParam } {
+  if (mode === "voice") {
+    const model = config.voiceModel;
+    return { model, thinking: model.startsWith("claude-sonnet-5-5") ? { type: "between_tools" } : { type: "adaptive" } };
+  }
+  return { model: config.model, thinking: { type: "adaptive" } };
+}
+
+export function turnParams(meta: ConversationMeta, messages: Message[], mode: TurnMode = "text"): Anthropic.Beta.MessageCreateParamsStreaming {
+  const { model, thinking } = modelFor(mode);
+  const fallbacks = supportsFallbacks(model);
   return {
-    model: config.model,
+    model,
     max_tokens: 16000,
     stream: true,
-    thinking: { type: "adaptive" },
-    output_config: { effort: config.effort },
+    thinking,
+    // `between_tools` is accepted only at effort high or below; voice runs at low.
+    output_config: { effort: mode === "voice" ? "low" : config.effort },
     // Automatic caching for the growing conversation, after the two system breakpoints.
     cache_control: { type: "ephemeral" },
     tools: TOOL_DEFS,
@@ -54,11 +72,14 @@ export function turnParams(meta: ConversationMeta, messages: Message[]): Anthrop
  * as real turns, with the breakpoint on the last shared block (not on the placeholder message).
  */
 export async function warmCache(meta: ConversationMeta) {
+  // A conversation started by voice is warmed for the voice model (caches are per model).
+  const mode: TurnMode = meta.mode === "voice" ? "voice" : "text";
+  const { model, thinking } = modelFor(mode);
   await claude().beta.messages.create({
-    model: config.model,
+    model,
     max_tokens: 0,
-    thinking: { type: "adaptive" },
-    output_config: { effort: config.effort },
+    thinking,
+    output_config: { effort: mode === "voice" ? "low" : config.effort },
     tools: TOOL_DEFS,
     system: system(meta),
     messages: [{ role: "user", content: "warmup" }],

@@ -10,13 +10,14 @@ import {
 } from "../data/conversations";
 import { CRISIS_REMINDER, detectCrisis } from "../policy/crisis";
 import { withLock } from "../store";
-import { claude, historyContent, turnParams } from "./claude";
+import { claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
 import { executeTool, holdingPhrase, type ToolContext } from "./tools";
 
 export type TurnEvent =
   | { type: "text"; text: string }
   | { type: "tool"; name: string; phrase?: string }
   | { type: "notice"; kind: "crisis"; text: string }
+  | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null; totalMs: number }
   | { type: "done"; stopReason: string | null }
   | { type: "error"; message: string };
 
@@ -28,6 +29,8 @@ export type TurnInput = {
   interruptedAfter?: string;
   /** The leader's local time, e.g. "Sunday 9:42 AM". */
   localTime?: string;
+  /** The leader spoke this turn (rather than typed it): use the faster voice model. */
+  voice?: boolean;
 };
 
 const MAX_STEPS = 8;
@@ -98,18 +101,22 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   const note = operatorNote(input, crisis);
   if (note) added.push(note);
   let messages = await appendMessages(leader, meta, ...added);
+  let mode: TurnMode = input.voice ? "voice" : "text";
+  const setupMs = Date.now() - turnStartedAt;
+  let firstTextMs: number | null = null;
 
   const ctx: ToolContext = { leader, meta, turnStartedAt, lastUserText: input.text };
   let stopReason: string | null = null;
   let parseRetries = 0;
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    const stream = claude().beta.messages.stream(turnParams(meta, messages));
+    const stream = claude().beta.messages.stream(turnParams(meta, messages, mode));
     let announced = false;
     let message: Anthropic.Beta.BetaMessage;
     try {
       for await (const event of stream) {
         if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          if (firstTextMs === null) firstTextMs = Date.now() - turnStartedAt;
           emit({ type: "text", text: event.delta.text });
         } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
           const phrase = announced ? undefined : holdingPhrase(event.content_block.name);
@@ -122,6 +129,12 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
     } catch (err) {
       // With eager input streaming, a tool input that isn't parseable JSON rejects the stream.
       // Re-issue that step; API errors are rethrown.
+      // If the voice model rejects the request before saying anything, answer with the main model instead.
+      if (mode === "voice" && firstTextMs === null && err instanceof Anthropic.BadRequestError) {
+        console.warn("[barnabas] voice model request rejected; using the main model", err.message);
+        mode = "text";
+        continue;
+      }
       if (err instanceof Anthropic.APIError || parseRetries++ >= 2) throw err;
       continue;
     }
@@ -168,6 +181,9 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   meta.updatedAt = Date.now();
   if (meta.turns === 1 || meta.title === "New conversation") meta.title = titleFrom(input.text);
   await saveConversation(leader, meta);
+  const timing = { model: modelFor(mode).model, setupMs, firstTextMs, totalMs: Date.now() - turnStartedAt };
+  console.log(`[barnabas] turn ${mode} model=${timing.model} setup=${setupMs}ms firstText=${firstTextMs ?? "-"}ms total=${timing.totalMs}ms`);
+  emit({ type: "timing", ...timing });
   emit({ type: "done", stopReason });
 }
 

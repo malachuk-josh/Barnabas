@@ -58,7 +58,7 @@ npm run build
    - `SESSION_SECRET`: a random string of at least 32 characters (for example from `openssl rand -base64 48`)
    - `BARNABAS_ACCESS_CODE`: the code your leaders will enter to sign in
    - `BARNABAS_ADMIN_EMAILS`: comma-separated emails of the people who manage roles (for example the senior pastor). They start as pastor
-   - Optional: `BARNABAS_CHURCH_NAME`, `BARNABAS_MODEL`, `BARNABAS_EFFORT`, `BARNABAS_ALLOW_SENSITIVE_MEMORY` (see `.env.example`)
+   - Optional: `BARNABAS_CHURCH_NAME`, `BARNABAS_MODEL`, `BARNABAS_EFFORT`, `BARNABAS_VOICE_MODEL` (spoken turns; default `claude-sonnet-5-5`), `BARNABAS_ALLOW_SENSITIVE_MEMORY` (see `.env.example`)
 4. Redeploy. The app refuses to start sign-in without `SESSION_SECRET` and `BARNABAS_ACCESS_CODE`, and refuses to run without Redis in production, so a missing setting fails closed instead of exposing data.
 
 The streaming chat route runs up to 60 seconds per turn and memory consolidation up to 120 seconds (`maxDuration` in each route). Leave Fluid compute on (the Vercel default).

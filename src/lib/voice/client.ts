@@ -248,8 +248,9 @@ export class DeepgramListener implements Listener {
       language: this.lang.startsWith("en") ? "en" : "multi",
       smart_format: "true",
       interim_results: "true",
-      endpointing: "500",
-      utterance_end_ms: "1500",
+      // How long a pause ends your turn: short enough to feel quick, long enough not to cut off a breath.
+      endpointing: "300",
+      utterance_end_ms: "1000",
       vad_events: "true",
       // Raw 16-bit PCM works the same on every browser, including iPhone home-screen apps.
       encoding: "linear16",

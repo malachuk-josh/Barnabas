@@ -210,3 +210,18 @@ describe("request shape", () => {
     expect(kept).toEqual(["text", "fallback", "thinking", "text"]);
   });
 });
+
+describe("voice turns", () => {
+  it("use the voice model with between_tools thinking at low effort; typed turns keep the main model", async () => {
+    const { turnParams } = await import("@/lib/engine/claude");
+    const { config } = await import("@/lib/config");
+    const meta = { id: "c1", context: "ctx", mode: "voice" } as unknown as Parameters<typeof turnParams>[0];
+    const voice = turnParams(meta, [{ role: "user", content: "hi" }], "voice");
+    expect(voice.model).toBe(config.voiceModel);
+    expect(voice.thinking).toEqual({ type: "between_tools" });
+    expect(voice.output_config?.effort).toBe("low");
+    const text = turnParams(meta, [{ role: "user", content: "hi" }], "text");
+    expect(text.model).toBe(config.model);
+    expect(text.thinking).toEqual({ type: "adaptive" });
+  });
+});

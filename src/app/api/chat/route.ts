@@ -13,6 +13,7 @@ const Body = z.object({
   text: z.string().trim().min(1).max(4000),
   interruptedAfter: z.string().max(600).optional(),
   localTime: z.string().max(80).optional(),
+  voice: z.boolean().optional(),
 });
 
 /** One leader turn, streamed back as newline-delimited JSON events. */
