@@ -219,11 +219,11 @@ pre.file:where(:not(.word-root *)) { white-space: pre-wrap; overflow-wrap: anywh
   .sidebar { display: none; }
   .mobile-top {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    /* The header reaches up behind the status bar (home-screen app), so the page starts below both. */
+    position: sticky; top: 0; z-index: 20;
     background: var(--talk-bg); color: var(--talk-fg);
-    padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+    padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
   }
-  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--talk-bg); }
   .mobile-top .brand { color: var(--talk-fg); }
   .mobile-top .avatar { width: 32px; height: 32px; font-size: 0.9rem; text-decoration: none; }
   .main-area main { padding-block: 20px calc(96px + env(safe-area-inset-bottom)); }
