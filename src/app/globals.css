@@ -574,3 +574,18 @@ input[type="tel"]:where(:not(.word-root *)) { width: 100%; padding: 11px 14px; b
 .care-suggest-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; border-left: 4px solid var(--chip-color); background: color-mix(in srgb, var(--chip-color) 8%, var(--surface)); }
 .care-suggest-list li > span { display: grid; gap: 2px; min-width: 0; }
 .care-suggest-list strong { overflow-wrap: anywhere; }
+
+/* Pull to refresh (phones and the home-screen app) */
+.ptr {
+  position: fixed; left: 50%; top: env(safe-area-inset-top); z-index: 60;
+  width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(15, 36, 35, 0.18); opacity: 0; pointer-events: none;
+}
+.ptr-on { opacity: 1; }
+.ptr-settle { transition: transform 0.2s ease, opacity 0.2s ease; }
+.ptr svg { transition: transform 0.15s ease; }
+.ptr-spin svg { animation: ptr-spin 0.8s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ptr-spin svg { animation-duration: 2s; } }
+@media (max-width: 860px) and (pointer: coarse) { html:where(:not(.word-root *)) { overscroll-behavior-y: contain; } }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { accessCode, config } from "@/lib/config";
 import { SESSION_COOKIE, leaderIdFor, sessionCookieOptions, signSession } from "@/lib/auth/session";
-import { ensureProfile } from "@/lib/profile";
+import { ensureProfile, handsFreeOnSignIn } from "@/lib/profile";
 import { recordSignIn } from "@/lib/team";
 
 const Body = z.object({
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const { name, email, role } = parsed.data;
   const leaderId = await leaderIdFor(config.churchId, email);
   const leader = { churchId: config.churchId, leaderId, name, email: email.toLowerCase(), role };
-  const profile = await ensureProfile(leader, parsed.data.timezone);
+  const profile = await handsFreeOnSignIn(leader, await ensureProfile(leader, parsed.data.timezone));
   // A returning leader keeps the name and role they set in Settings.
   leader.name = profile.name;
   leader.role = profile.role;

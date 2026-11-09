@@ -52,7 +52,7 @@ export function defaultProfile(leader: Leader): Profile {
     ministries: [],
     timezone: DEFAULT_TIMEZONE,
     replyLanguage: "en",
-    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: false },
+    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true },
     pronunciations: [],
     about: "",
     updatedAt: Date.now(),
@@ -78,6 +78,14 @@ export async function ensureProfile(leader: Leader, timezone?: string) {
   if (timezone && isValidTimezone(timezone)) profile.timezone = timezone;
   await saveProfile(leader, profile);
   return profile;
+}
+
+/** Every sign-in starts hands-free; a leader can still turn it off in Settings or on the Talk screen. */
+export async function handsFreeOnSignIn(leader: Leader, profile: Profile): Promise<Profile> {
+  if (profile.voice?.handsFree) return profile;
+  const next = { ...profile, voice: { ...defaultProfile(leader).voice, ...(profile.voice ?? {}), handsFree: true } };
+  await saveProfile(leader, next);
+  return next;
 }
 
 export function profileKey(leader: Pick<Leader, "churchId" | "leaderId">) {

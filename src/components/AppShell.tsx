@@ -5,6 +5,7 @@ import { can } from "@/lib/auth/roles";
 import { getProfile, type Profile } from "@/lib/profile";
 import { accessFor } from "@/lib/team";
 import { Mark } from "./Mark";
+import { PullToRefresh } from "./PullToRefresh";
 import { SideNav, SignOutButton, TabBar } from "./NavLinks";
 
 function initials(name: string) {
@@ -76,6 +77,7 @@ export async function AppShell({
         )}
       </div>
       <TabBar showFinance={showFinance} />
+      <PullToRefresh />
     </div>
   );
 }
