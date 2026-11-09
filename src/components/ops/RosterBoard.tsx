@@ -21,7 +21,7 @@ export function RosterBoard({ date, gatherings, myVolunteerId, scheduler }: { da
             className="btn"
             type="button"
             disabled={ops.busy}
-            onClick={() => void ops.act<{ recipients: number }>({ action: "remind", date }, (o) => (o.recipients ? `Drafted reminders for ${o.recipients} volunteer${o.recipients === 1 ? "" : "s"}. They're in Drafts for review; nothing was sent.` : "No one is scheduled yet, so there's nothing to remind."))}
+            onClick={() => void ops.act<{ recipients: number }>({ action: "remind", date }, (o) => (o.recipients ? `Drafted reminders for ${o.recipients} ${o.recipients === 1 ? "co-laborer" : "co-laborers"}. They're in Drafts for review; nothing was sent.` : "No one is scheduled yet, so there's nothing to remind."))}
           >
             Draft reminders for {scheduler ? "everyone" : "your team"}
           </button>

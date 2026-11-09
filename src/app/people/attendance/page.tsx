@@ -15,7 +15,7 @@ export default async function AttendancePage() {
   const since = addDays(today(), -120);
   const entries = book.attendance.filter((a) => a.date >= since).map(({ personId, date, kind, gathering, groupId }) => ({ personId, date, kind, gathering, groupId }));
   return (
-    <PeopleFrame profile={profile} edit={actor.edit} title="Attendance" intro="Who was at each gathering and group. It feeds Reports and the weariness radar.">
+    <PeopleFrame profile={profile} edit={actor.edit} title="Attendance" intro="Who was at each gathering and group. It feeds Reports and the weariness watch.">
       <AttendanceTaker people={people} groups={book.groups.filter((g) => !g.archivedAt).map((g) => ({ id: g.id, name: g.name, memberIds: g.memberIds }))} entries={entries} canTake={actor.edit || can(actor.access, "care.assign")} defaultDate={lastSunday(today())} />
     </PeopleFrame>
   );

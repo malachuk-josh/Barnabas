@@ -95,14 +95,14 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const last = v.weekly[v.weekly.length - 1];
       const busiest = v.teams[0];
       return {
-        id, title: "Co-laborer health", allowed: true,
-        empty: any ? undefined : { title: "No serving recorded yet", text: "Once people are on the Serve rosters , this shows how the load is shared and who could use encouragement and a Sunday off, week by week.", actions: [{ label: "Open Serve", href: "/serve" }] },
+        id, title: "Co-laborer health", verse: "weariness", allowed: true,
+        empty: any ? undefined : { title: "No serving recorded yet", text: "Once people are on the Serve rosters, this shows how the load is shared and who could use encouragement and a Sunday off, week by week.", actions: [{ label: "Open Serve", href: "/serve" }] },
         summary: any ? `${n(last.active)} people served in the last eight weeks. This week ${n(last.high)} ${last.high === 1 ? "co-laborer shows" : "co-laborers show"} strong signs of weariness and could use encouragement, and ${n(last.watch)} ${last.watch === 1 ? "is" : "are"} worth watching.${busiest ? ` ${busiest.team} asks the most of each co-laborer: ${busiest.perVolunteer} slots each.` : ""}` : "No serving yet.",
         stats: any ? [{ label: "Serving (8 weeks)", value: n(last.active) }, { label: "Encourage", value: n(last.high), tone: last.high ? "danger" : "ok" }, { label: "Watch", value: n(last.watch), tone: last.watch ? "watch" : "ok" }] : [],
-        chart: any ? { kind: "lines", title: "Weariness radar over eight weeks", x: v.weekly.map((w) => shortDay(w.date)), series: [{ name: "Encourage", values: v.weekly.map((w) => w.high), role: "primary" }, { name: "Watch", values: v.weekly.map((w) => w.watch), role: "reference" }], unit: "count" } : undefined,
+        chart: any ? { kind: "lines", title: "Weariness watch over eight weeks", x: v.weekly.map((w) => shortDay(w.date)), series: [{ name: "Encourage", values: v.weekly.map((w) => w.high), role: "primary" }, { name: "Watch", values: v.weekly.map((w) => w.watch), role: "reference" }], unit: "count" } : undefined,
         extra: any ? { kind: "bars", title: "Serving load: slots per co-laborer, by team (8 weeks)", x: v.teams.map((t) => t.team), series: [{ name: "Slots per co-laborer", values: v.teams.map((t) => t.perVolunteer), role: "primary" }], unit: "count" } : undefined,
         table: { header: ["Team", "Slots served (8 weeks)", "Co-laborers", "Slots per co-laborer", "Declined"], rows: v.teams.map((t) => [t.team, t.slots, t.volunteers, t.perVolunteer, t.declined]) },
-        source: "Serve rosters, with the church database's serving history for teams without rosters. Counts only; the radar's own reasons are on Talk.",
+        source: "Serve rosters, with the church database's serving history for teams without rosters. Counts only; the weariness watch's own reasons are on Talk.",
       };
     }
     case "care": {
@@ -113,7 +113,7 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const any = book.cases.length > 0;
       return {
         id, title: "Shepherding pipeline", allowed: true,
-        empty: any ? undefined : { title: "No shepherding cases yet", text: "When someone opens a case (a hospital visit, a new baby, a hard season), the pipeline shows how many are open, how fast someone reaches out, and how many close each month.", actions: [{ label: "Open Shepherding", href: "/care" }] },
+        empty: any ? undefined : { title: "No shepherding cases yet", text: "When someone opens a case (a hospital visit, a new baby, a hard season), the pipeline shows how many are open, how fast someone reaches out, and how many close each month.", actions: [{ label: "Open Shepherding", href: "/shepherding" }] },
         summary: any ? `${n(c.open)} cases are open and ${n(c.closed)} closed.${c.medianDaysToFirstContact !== null ? ` Someone reaches out a median of ${c.medianDaysToFirstContact < 1 ? "less than a day" : `${Math.round(c.medianDaysToFirstContact * 10) / 10} days`} after a case opens.` : ""}${c.noContactYet ? ` ${n(c.noContactYet)} open ${c.noContactYet === 1 ? "case has" : "cases have"} no contact yet.` : ""}` : "No cases yet.",
         stats: any ? [{ label: "Open", value: n(c.open) }, { label: "Closed", value: n(c.closed) }, { label: "Median days to first contact", value: c.medianDaysToFirstContact === null ? "–" : String(Math.round(c.medianDaysToFirstContact * 10) / 10) }, { label: "Open, no contact yet", value: n(c.noContactYet), tone: c.noContactYet ? "watch" : "ok" }] : [],
         chart: any ? { kind: "bars", title: "Open cases by status", x: c.byStatus.map((s) => s.status), series: [{ name: "Open cases", values: c.byStatus.map((s) => s.count), role: "primary" }], unit: "count" } : undefined,
@@ -132,7 +132,7 @@ export async function sectionFor(id: SectionId, leader: Leader, access: Access, 
       const any = g.total > 0;
       return {
         id, title: "Guest follow-up", allowed: true,
-        empty: any ? undefined : { title: "No guest cards yet", text: "Each guest card starts a thank-you, a welcome call and an invitation. This shows how many guests heard from someone within two days, came back, and took a next step.", actions: [{ label: "Add a guest", href: "/care/guests" }] },
+        empty: any ? undefined : { title: "No guest cards yet", text: "Each guest card starts a thank-you, a welcome call and an invitation. This shows how many guests heard from someone within two days, came back, and took a next step.", actions: [{ label: "Add a guest", href: "/shepherding/guests" }] },
         summary: any ? `${n(g.total)} guests: ${pctText(g.rates.contacted48)} heard from someone within 48 hours, ${pctText(g.rates.returned)} came back, and ${pctText(g.rates.nextStep)} took a next step.` : "No guests yet.",
         stats: any ? [{ label: "Guests", value: n(g.total) }, { label: "Reached within 48 h", value: pctText(g.rates.contacted48) }, { label: "Came back", value: pctText(g.rates.returned) }, { label: "Took a next step", value: pctText(g.rates.nextStep) }] : [],
         chart: any ? { kind: "bars", title: "New guests by month", x: g.monthly.map((m) => monthLabel(m.month)), series: [{ name: "New guests", values: g.monthly.map((m) => m.guests), role: "primary" }], unit: "count" } : undefined,
@@ -190,7 +190,7 @@ export function monthlyNarrative(sections: Section[], monthName: string, church:
     if (!s.allowed) continue;
     lines.push(`${s.title}: ${s.empty ? s.empty.title + "." : s.summary}`);
   }
-  lines.push("", "Numbers are totals from Barnabas; individual giving, care notes and children's details are never included.");
+  lines.push("", "Numbers are totals from Barnabas; individual giving, shepherding notes and children's details are never included.");
   return lines.join("\n");
 }
 

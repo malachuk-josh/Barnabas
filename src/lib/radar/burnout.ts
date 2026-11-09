@@ -2,8 +2,8 @@ import { addDays, daysBetween } from "../dates";
 import type { AttendanceRecord, Person, ServingRecord, Team } from "../chms/types";
 
 /**
- * Volunteer burnout radar. Combines overload signals (load across ministries, consecutive weeks,
- * declines) with withdrawal signals (the volunteer's own worship and small-group attendance)
+ * The weariness watch (Galatians 6:9), once the burnout radar, for co-laborers. Combines overload signals (load across ministries, consecutive weeks,
+ * declines) with withdrawal signals (the co-laborer's own worship and small-group attendance)
  * and appreciation recency. Rules of thumb, not science: every score comes with its reasons.
  */
 
@@ -144,7 +144,7 @@ function suggestionFor(person: Person, band: RadarBand, drivers: string[]): stri
   const withdrawing = drivers.some((d) => d.includes("worship") || d.includes("small-group"));
   const unthanked = drivers.some((d) => d.includes("thank"));
   if (band === "high" && withdrawing) {
-    return `Call ${first} this week to check in personally, and offer a Sunday off without asking them to find a replacement.`;
+    return `Call ${first} this week to encourage them personally, and offer a Sunday off without asking them to find a replacement.`;
   }
   if (band === "high") return `Thank ${first} and offer a week off from at least one team.`;
   if (unthanked) return `Send ${first} a specific thank-you note this week.`;

@@ -413,13 +413,14 @@ describe("public guest form", () => {
     expect((await loadCare("demo")).guests.some((g) => g.name === "Bot")).toBe(false);
   });
 
-  it("is on the middleware's public list, and nothing else in Care is", async () => {
+  it("is on the middleware's public list, and nothing else in Shepherding (or the old /care paths) is", async () => {
     const { middleware } = await import("@/middleware");
     const { NextRequest } = await import("next/server");
     const status = async (path: string) => (await middleware(new NextRequest(`http://test${path}`))).status;
     expect(await status("/welcome/abc")).toBe(200);
     expect(await status("/api/welcome/abc")).toBe(200);
     expect(await status("/care")).toBe(307);
+    expect(await status("/shepherding")).toBe(307);
     expect(await status("/api/care/cases")).toBe(401);
   });
 });

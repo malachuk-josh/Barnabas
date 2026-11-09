@@ -110,7 +110,7 @@ export function DraftsQueue() {
             <div className="row" style={{ justifyContent: "space-between" }}>
               <strong>
                 {d.channel === "sms" ? "Text" : "Email"} to {n} {n === 1 ? "person" : "people"}
-                {d.kind === "care" && <span className="badge" style={{ marginLeft: 8 }}>Care follow-up</span>}
+                {d.kind === "care" && <span className="badge" style={{ marginLeft: 8 }}>Shepherding follow-up</span>}
                 {d.kind === "report" && <span className="badge" style={{ marginLeft: 8 }}>Report</span>}
                 {d.status === "failed" && <span className="badge badge-warn" style={{ marginLeft: 8 }}>Not sent yet</span>}
               </strong>

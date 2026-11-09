@@ -8,7 +8,7 @@ export const displayName = (p: Pick<PersonRecord, "firstName" | "lastName" | "ni
 
 export const isActive = (p: PersonRecord) => !p.archivedAt && !p.mergedInto;
 
-/** Follows merges, so a care case or a gift that pointed at a duplicate finds the person it was merged into. */
+/** Follows merges, so a shepherding case or a gift that pointed at a duplicate finds the person it was merged into. */
 export function resolvePerson(book: PeopleBook, id: string): PersonRecord | null {
   let p = book.people.find((x) => x.id === id) ?? null;
   for (let i = 0; p?.mergedInto && i < 10; i++) p = book.people.find((x) => x.id === p!.mergedInto) ?? p;

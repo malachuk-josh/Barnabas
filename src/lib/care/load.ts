@@ -145,7 +145,7 @@ export function careLoad(input: LoadInput): CareLoad {
     factors,
     reasons,
     sources: [
-      "Open cases assigned to you in Care, weighted: crisis 3, grief, hospital and counseling referral 2, illness 1.5, new baby, homebound and other 1, prayer 0.5.",
+      "Open cases assigned to you in Shepherding, weighted: crisis 3, grief, hospital and counseling referral 2, illness 1.5, new baby, homebound and other 1, prayer 0.5.",
       "Contacts you logged on any case in the last 7 days, today included.",
       "Days off: \"Rest / sabbath\" events on your Barnabas calendar and days you logged with \"I took a day off\".",
     ],

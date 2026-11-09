@@ -21,7 +21,7 @@ const howAreWeDoing = tool({
   def: {
     name: "how_are_we_doing",
     description:
-      "Totals for 'how are we doing on X' questions: attendance, giving vs budget, co-laborer health (the weariness radar over time, serving load per team), the shepherding pipeline, guest follow-up, events, kids check-in, or all. Aggregates only (no names); areas the leader's role doesn't include say so.",
+      "Totals for 'how are we doing on X' questions: attendance, giving vs budget, co-laborer health (the weariness watch over time, serving load per team), the shepherding pipeline, guest follow-up, events, kids check-in, or all. Aggregates only (no names); areas the leader's role doesn't include say so.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { area: { type: "string", enum: [...SECTION_IDS, "all"] } }, required: ["area"] },
   },

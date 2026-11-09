@@ -44,7 +44,7 @@ const UPDATES: Record<string, { daysAgo: number; text: string }[]> = {
   "Jonah and Mei Akers": [{ daysAgo: 20, text: "English café outreach doubled this fall. Two students asked for Bible study." }],
   "Sam and Priscilla Feld": [{ daysAgo: 45, text: "Fall retreat had 64 students. Pray for follow-up conversations and for French-speaking leaders." }],
   "Living Springs Water Project": [{ daysAgo: 60, text: "Two wells completed in October; a third is waiting on parts." }],
-  "Hilltop Pregnancy Resource Center": [{ daysAgo: 25, text: "They're looking for volunteers for the Thursday parenting class." }],
+  "Hilltop Pregnancy Resource Center": [{ daysAgo: 25, text: "They're looking for co-laborers for the Thursday parenting class." }],
 };
 
 function sundaysBetween(from: string, to: string): string[] {

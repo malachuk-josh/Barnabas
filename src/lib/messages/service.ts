@@ -50,7 +50,7 @@ export async function sendApprovedDraft(leader: Leader, draftId: string, opts: {
   if (!found) throw new MessagingError("Draft not found.", "not_found");
   if (!canSendDraft(access, found)) {
     throw new MessagingError(
-      access.role === "deacon" ? "Deacons can send care follow-ups. Ask a pastor or staff member to send this one." : "Your role can draft messages but not send them. Ask a pastor or staff member to send it.",
+      access.role === "deacon" ? "Deacons can send shepherding follow-ups. Ask a pastor or staff member to send this one." : "Your role can draft messages but not send them. Ask a pastor or staff member to send it.",
       "forbidden",
     );
   }

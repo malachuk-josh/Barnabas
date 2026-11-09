@@ -1,3 +1,5 @@
+import type { VerseKey } from "../language";
+
 /** A report section: headline numbers, a chart, a plain-language summary and the table behind it (the CSV). */
 
 export type Unit = "count" | "usd" | "pct" | "days";
@@ -13,6 +15,8 @@ export type SectionId = "attendance" | "giving" | "volunteers" | "care" | "guest
 export type Section = {
   id: SectionId;
   title: string;
+  /** A KJV verse under the title, where the section's title uses a biblical term. */
+  verse?: VerseKey;
   /** False when the leader's role doesn't include it; `locked` says why. */
   allowed: boolean;
   locked?: string;

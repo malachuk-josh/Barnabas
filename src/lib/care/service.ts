@@ -44,7 +44,7 @@ const Note = z.string().trim().max(400);
 
 export type CareActor = { leader: Leader; viewer: Viewer; members: TeamMember[]; self: TeamMember };
 
-/** The signed-in leader as a care team member, with what they may see. */
+/** The signed-in leader as a shepherding team member, with what they may see. */
 export async function careActor(leader: Leader): Promise<CareActor> {
   const { viewer, members } = await viewerFor(leader);
   const self =
@@ -72,13 +72,13 @@ async function log(leader: Leader, action: string, detail: string, conversationI
 
 function findCase(book: CareBook, id: string) {
   const c = book.cases.find((x) => x.id === id);
-  if (!c) throw new CareError("That care case doesn't exist anymore.");
+  if (!c) throw new CareError("That shepherding case doesn't exist anymore.");
   return c;
 }
 
 function member(actor: CareActor, id: string) {
   const m = actor.members.find((x) => x.id === id);
-  if (!m) throw new CareError("Pick someone from the care team.");
+  if (!m) throw new CareError("Pick someone from the shepherding team.");
   return m;
 }
 
@@ -216,7 +216,7 @@ export async function assignCase(actor: CareActor, caseId: string, assigneeId: s
     if (!canSeeCase(actor.viewer, c)) fail("That case isn't one you can see.");
     if (c.status === "closed") fail("That case is closed.");
     const toSelf = assigneeId !== null && isMine(actor.viewer, assigneeId);
-    if (!toSelf && !canAssignCase(actor.viewer, c)) fail("Your role can't assign care cases to someone else. A pastor or deacon can.");
+    if (!toSelf && !canAssignCase(actor.viewer, c)) fail("Your role can't assign shepherding cases to someone else. A pastor or deacon can.");
     if (assigneeId) {
       const m = member(actor, assigneeId);
       if (!canHoldCase(m, c)) fail("A confidential case can only be assigned to a pastor.");
@@ -571,7 +571,7 @@ export async function recordGuest(
   const visit = v.visitDate ?? today();
   const book = await loadCare(churchId);
   const { member: assignee, next } = pickAssignee(members, book.rotation);
-  if (!assignee) fail("There's no one on the care team to follow up yet.");
+  if (!assignee) fail("There's no one on the shepherding team to follow up yet.");
 
   // The thank-you draft goes to whoever follows up, if they've signed in; otherwise to the leader recording it,
   // otherwise to a signed-in pastor.

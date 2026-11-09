@@ -1,6 +1,7 @@
 import { EmptyState } from "@/components/EmptyState";
 import type { Section } from "@/lib/reports/types";
 import { ReportChart } from "./ReportChart";
+import { VerseNote } from "@/components/VerseNote";
 
 /** One report card: headline numbers, the chart, its plain-language summary, the table view and a CSV download. */
 export function ReportSection({ section }: { section: Section }) {
@@ -22,6 +23,7 @@ export function ReportSection({ section }: { section: Section }) {
           </a>
         )}
       </div>
+      {section.verse && <VerseNote verse={section.verse} />}
       {section.empty ? (
         <EmptyState compact title={section.empty.title} actions={section.empty.actions.map((a, i) => ({ ...a, primary: i === 0 }))}>
           {section.empty.text}

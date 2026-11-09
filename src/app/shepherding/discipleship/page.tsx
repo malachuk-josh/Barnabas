@@ -10,7 +10,7 @@ import { today as todayIso } from "@/lib/dates";
 import { shortDate } from "@/components/care/client";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Next steps · Care · Barnabas" };
+export const metadata: Metadata = { title: "Next steps · Shepherding · Barnabas" };
 
 const SHORT: Record<PathwayStep, string> = {
   first_visit: "Visit",
@@ -49,11 +49,11 @@ export default async function DiscipleshipPage({ searchParams }: { searchParams:
             <span className="muted small">{all.length} people</span>
           </div>
           <div className="care-chips" role="group" aria-label="Filter by step">
-            <Link className="care-chip" href="/care/discipleship" aria-current={!step ? "page" : undefined}>
+            <Link className="care-chip" href="/shepherding/discipleship" aria-current={!step ? "page" : undefined}>
               All
             </Link>
             {PATHWAY_STEPS.filter((s) => counts.get(s)).map((s) => (
-              <Link key={s} className="care-chip" href={`/care/discipleship?step=${s}`} aria-current={step === s ? "page" : undefined}>
+              <Link key={s} className="care-chip" href={`/shepherding/discipleship?step=${s}`} aria-current={step === s ? "page" : undefined}>
                 {PATHWAY_LABELS[s]} <span className="care-count">{counts.get(s)}</span>
               </Link>
             ))}

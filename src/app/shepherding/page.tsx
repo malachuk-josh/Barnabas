@@ -11,7 +11,7 @@ import { caseRows, recentGuests, teamView } from "@/lib/care/views";
 import { today as todayIso } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Care · Barnabas" };
+export const metadata: Metadata = { title: "Shepherding · Barnabas" };
 
 type Search = { scope?: string; type?: string; overdue?: string; view?: string; opened?: string };
 
@@ -33,7 +33,9 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
   return (
     <CareFrame
       ctx={ctx}
-      title="Pastoral care"
+      title="Shepherding cases"
+      verse="shepherding"
+      verseShort
       intro={`Who needs care, who's caring for them, and what's next. You see ${sees}.`}
       actions={<NewCase people={people} members={members} selfId={ctx.actor.self.id} canAssign={ctx.canAssign} isPastor={ctx.isPastor} />}
     >
@@ -55,14 +57,14 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
           <span className="muted small">
             open cases, {team.unassigned} waiting in the pastors&apos; queue
           </span>
-          <p className="fin-source">Every open case, counted without names. <Link href="/care/load#team">How they&apos;re spread</Link></p>
+          <p className="fin-source">Every open case, counted without names. <Link href="/shepherding/load#team">How they&apos;re spread</Link></p>
         </section>
         <section className="fin-card">
           <span className="label">Guests not reached yet</span>
           <div className="fin-stat">{waiting.length}</div>
           <span className="muted small">{waiting.filter((g) => g.mine).length} of them are yours to follow up</span>
           <p className="fin-source">
-            Guest cards from the last three weeks with no thank-you or call marked done. <Link href="/care/guests">Guests</Link>
+            Guest cards from the last three weeks with no thank-you or call marked done. <Link href="/shepherding/guests">Guests</Link>
           </p>
         </section>
       </div>
@@ -73,7 +75,7 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
 
       {rows.length === 0 ? (
         team.totalOpen === 0 ? (
-          <EmptyState title="No one is on the care list yet" actions={[{ label: "Record a guest", href: "/care/guests" }, { label: "Add a prayer request", href: "/care/prayer#add-prayer" }]}>
+          <EmptyState title="No one is on the shepherding list yet" actions={[{ label: "Record a guest", href: "/shepherding/guests" }, { label: "Add a prayer request", href: "/shepherding/prayer#add-prayer" }]}>
             When someone needs a visit, a call or a meal, tap Open a case above, or just tell Barnabas (&ldquo;I visited Jamie in the hospital today&rdquo;). Cases are private to the people caring for them.
           </EmptyState>
         ) : (
@@ -106,7 +108,7 @@ export default async function CarePage({ searchParams }: { searchParams: Promise
         </div>
       )}
       <p className="fin-source" style={{ marginTop: 14 }}>
-        Care cases in Barnabas, sorted with overdue next steps first. Closed cases stay on each case&apos;s page.
+        Shepherding cases in Barnabas, sorted with overdue next steps first. Closed cases stay on each case&apos;s page.
       </p>
     </CareFrame>
   );

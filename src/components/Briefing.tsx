@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { TERMS } from "@/lib/language";
+import { VerseNote } from "./VerseNote";
 
 type RadarEntry = { personId: string; name: string; band: "high" | "watch" | "ok"; drivers: string[]; suggestion: string };
 type FollowUp = { id: string; name: string; reason: string; due?: string; overdue?: boolean; href?: string };
@@ -46,20 +48,18 @@ export function Briefing() {
       )}
 
       <div className="card stack">
-        <h2>Co-laborers to encourage</h2>
-        <p className="term-verse">
-          &ldquo;Wherefore comfort yourselves together, and edify one another, even as also ye do.&rdquo; <cite>1 Thessalonians 5:11</cite>
-        </p>
+        <h2>{TERMS.colaborer.Many} to {TERMS.encourage.one}</h2>
+        <VerseNote verse="encourage" />
         {!data && !failed && <p className="muted">Loading…</p>}
         {failed && <p className="muted">Couldn&apos;t load the briefing.</p>}
-        {data && data.radar.length === 0 && <p className="muted">Every co-laborer on the rosters is serving at a healthy pace this week.</p>}
+        {data && data.radar.length === 0 && <p className="muted">Every {TERMS.colaborer.one} on the rosters is serving at a healthy pace this week.</p>}
         {data && data.radar.length > 0 && (
           <ul className="list">
             {data.radar.slice(0, 5).map((r) => (
               <li key={r.personId}>
                 <div className="row">
                   <strong>{r.name}</strong>
-                  <span className={`pill pill-${r.band}`}>{r.band === "high" ? "Check in" : "Watch"}</span>
+                  <span className={`pill pill-${r.band}`}>{r.band === "high" ? TERMS.encourage.One : "Watch"}</span>
                 </div>
                 <span className="small muted">{r.drivers.join(" · ")}</span>
                 <span className="small">{r.suggestion}</span>
@@ -95,8 +95,8 @@ export function Briefing() {
           </ul>
         )}
         {data && data.followUps.length > 6 && (
-          <Link href="/care" className="small">
-            {data.followUps.length - 6} more in Care
+          <Link href="/shepherding" className="small">
+            {data.followUps.length - 6} more in {TERMS.shepherding.One}
           </Link>
         )}
       </div>

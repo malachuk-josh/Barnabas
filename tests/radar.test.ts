@@ -7,7 +7,7 @@ import { briefing, radarNow } from "@/lib/engine/briefing";
 import { fixtureChurch } from "./fixtures";
 import { freshStore, leader } from "./helpers";
 
-describe("burnout radar on the demo church", () => {
+describe("weariness watch (once the burnout radar) on the demo church", () => {
   it("flags overloaded and withdrawing volunteers with reasons (fixture congregation)", async () => {
     const today = "2026-11-10";
     const church = fixtureChurch(() => today);

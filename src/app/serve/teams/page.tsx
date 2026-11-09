@@ -34,7 +34,7 @@ export default async function TeamsPage() {
       profile={profile}
       eyebrow="Serve"
       title="Teams and availability"
-      intro="Each team's positions and volunteers, how often they serve and when they're away. Team leads edit their own team; schedulers edit every team."
+      intro="Each team's positions and co-laborers, how often they serve and when they're away. Team leads edit their own team; schedulers edit every team."
       tabs={SERVE_TABS}
     >
       <div className="fin-stack">

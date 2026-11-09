@@ -23,7 +23,7 @@ export function AttendanceTaker({ people, groups, entries, canTake, defaultDate 
   const shown = pool.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()));
   const [msg, setMsg] = useState<string | null>(null);
 
-  if (!people.length) return <EmptyState title="No one to take attendance for yet" actions={[{ label: "Move your church to Barnabas", href: "/people/import", primary: true }]}>Once people are in the directory, tick who was at each service or group here. Attendance feeds the reports and the weariness radar.</EmptyState>;
+  if (!people.length) return <EmptyState title="No one to take attendance for yet" actions={[{ label: "Move your church to Barnabas", href: "/people/import", primary: true }]}>Once people are in the directory, tick who was at each service or group here. Attendance feeds the reports and the weariness watch.</EmptyState>;
 
   async function save() {
     setMsg(null);

@@ -39,9 +39,10 @@ export default async function ServePage({ searchParams }: { searchParams: Promis
       profile={profile}
       eyebrow="Serve"
       title="Serving rosters"
-      intro={actor.scheduler ? "Every team's roster. You can schedule anyone, fill open slots and draft reminders." : leads.length ? `You lead ${leads.join(" and ")}: you can schedule that team. Anyone can sign up for an open slot.` : "Who's serving when. Sign up for an open slot, or ask a teammate to cover yours."}
+      verse="colaborers"
+      intro={actor.scheduler ? "Every team's roster of co-laborers. You can schedule anyone, fill open slots and draft reminders." : leads.length ? `You lead ${leads.join(" and ")}: you can schedule that team. Anyone can sign up for an open slot.` : "Which co-laborers are serving when. Sign up for an open slot, or ask a teammate to cover yours."}
       tabs={SERVE_TABS}
-      demo={book.meta.demo ? { text: <>Only MGBC&apos;s real leaders are on these rosters, in their real roles: Aaron leads worship, Travis greets and Micah parks. <strong>Every other slot is open</strong>; no volunteer is made up.</>, clear: actor.scheduler ? { path: "/api/serve/demo", label: "Clear the demo rosters" } : undefined } : undefined}
+      demo={book.meta.demo ? { text: <>Only MGBC&apos;s real leaders are on these rosters, in their real roles: Aaron leads worship, Travis greets and Micah parks. <strong>Every other slot is open</strong>; no co-laborer is made up.</>, clear: actor.scheduler ? { path: "/api/serve/demo", label: "Clear the demo rosters" } : undefined } : undefined}
     >
       <nav className="care-chips ops-dates" aria-label="Date">
         {dates.map((d) => (
@@ -71,7 +72,7 @@ export default async function ServePage({ searchParams }: { searchParams: Promis
         <RosterBoard date={date} gatherings={gatherings} myVolunteerId={me?.id ?? null} scheduler={actor.scheduler} />
       )}
       <p className="fin-source" style={{ marginTop: 14 }}>
-        Rosters, away dates and monthly limits in Barnabas. The burnout radar on Talk reads these rosters.
+        Rosters, away dates and monthly limits in Barnabas. The weariness watch on Talk reads these rosters.
       </p>
     </OpsFrame>
   );

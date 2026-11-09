@@ -176,9 +176,9 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
       </div>
 
       {suggestions.length > 0 && (
-        <section className="card care-suggest" aria-label="Suggestions from Care" style={{ marginBottom: 16 }}>
+        <section className="card care-suggest" aria-label="Suggestions from Shepherding" style={{ marginBottom: 16 }}>
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: "1.1rem" }}>Suggestions from Care</h2>
+            <h2 style={{ fontSize: "1.1rem" }}>Suggestions from Shepherding</h2>
             <span className="small muted">Not on your calendar unless you add them</span>
           </div>
           <ul className="care-suggest-list">

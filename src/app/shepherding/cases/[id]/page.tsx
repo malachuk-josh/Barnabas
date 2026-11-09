@@ -10,7 +10,7 @@ import { can } from "@/lib/auth/roles";
 import { today as todayIso, friendlyDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Care case · Barnabas" };
+export const metadata: Metadata = { title: "Shepherding case · Barnabas" };
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,7 +26,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   return (
     <CareFrame ctx={ctx} eyebrow={`${CASE_TYPE_LABELS[c.type]} · ${CASE_STATUS_LABELS[c.status]}`} title={c.subject.name} intro={c.summary}>
       <p className="small" style={{ marginBottom: 14 }}>
-        <Link href="/care">← All cases</Link>
+        <Link href="/shepherding">← All cases</Link>
       </p>
       <div className="fin-grid-2">
         <div className="fin-stack">
@@ -56,7 +56,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
                 {c.nextStep ? `${c.nextStep.text}${c.nextStep.due ? `, by ${friendlyDate(c.nextStep.due)}` : ""}` : "None set"}
               </span>
             </div>
-            <p className="fin-source">This case&apos;s record in Barnabas. {c.source === "legacy" ? "It was made from an earlier care log." : c.source === "barnabas" ? "Barnabas opened it when you asked." : ""}</p>
+            <p className="fin-source">This case&apos;s record in Barnabas. {c.source === "legacy" ? "It was made from an earlier shepherding log." : c.source === "barnabas" ? "Barnabas opened it when you asked." : ""}</p>
           </section>
 
           <section className="fin-card">

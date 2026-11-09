@@ -5,7 +5,7 @@ import type { CareBook, CareMeta, RestDay } from "./types";
 /**
  * Redis layout, per church:
  *   pcare:{church}:meta         CareMeta (demo flag)
- *   pcare:{church}:cases        care cases with their contact timelines
+ *   pcare:{church}:cases        shepherding cases with their contact timelines
  *   pcare:{church}:prayers      prayer requests
  *   pcare:{church}:pathways     discipleship pathway per person or guest
  *   pcare:{church}:classes      Discover Faith and membership classes

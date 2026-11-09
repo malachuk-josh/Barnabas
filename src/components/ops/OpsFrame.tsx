@@ -6,6 +6,8 @@ import { accessFor } from "@/lib/team";
 import type { Profile } from "@/lib/profile";
 import { OpsDemoBanner, type DemoClear } from "./OpsDemoBanner";
 import { OpsTabs, type Tab } from "./OpsTabs";
+import type { VerseKey } from "@/lib/language";
+import { VerseNote } from "@/components/VerseNote";
 
 export const SERVE_TABS: Tab[] = [
   { href: "/serve", label: "Rosters", exact: true },
@@ -30,6 +32,7 @@ export async function OpsFrame({
   profile,
   eyebrow,
   title,
+  verse,
   intro,
   actions,
   tabs,
@@ -40,6 +43,8 @@ export async function OpsFrame({
   profile: Profile;
   eyebrow: string;
   title: string;
+  /** A KJV verse under the heading, the first time a biblical term appears on the page. */
+  verse?: VerseKey;
   intro?: React.ReactNode;
   actions?: React.ReactNode;
   tabs?: Tab[];
@@ -47,7 +52,7 @@ export async function OpsFrame({
   demo?: { text: React.ReactNode; clear?: DemoClear };
   children: React.ReactNode;
 }) {
-  // A kids check-in volunteer sees only the tabs they can open.
+  // A kids check-in co-laborer sees only the tabs they can open.
   const leader = await currentLeader();
   if (tabs && leader && isCheckinOnly(await accessFor(leader))) tabs = tabs.filter((t) => checkinMayUse(t.href));
   const connected = (await churchSource()) !== "demo";
@@ -57,6 +62,7 @@ export async function OpsFrame({
         <div>
           <span className="eyebrow">{eyebrow}</span>
           <h1>{title}</h1>
+          {verse && <VerseNote verse={verse} />}
           {intro && <p className="muted">{intro}</p>}
         </div>
         {actions}

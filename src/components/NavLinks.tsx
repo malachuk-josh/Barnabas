@@ -11,7 +11,7 @@ export const NAV = [
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon },
   { href: "/finance", label: "Finance", Icon: FinanceIcon, finance: true },
   { href: "/people", label: "People", Icon: PeopleIcon },
-  { href: "/care", label: "Care", Icon: HeartIcon },
+  { href: "/shepherding", label: "Shepherding", Icon: HeartIcon },
   { href: "/serve", label: "Serve", Icon: ServeIcon },
   { href: "/services", label: "Services", Icon: ServicesIcon },
   { href: "/events", label: "Events", Icon: EventsIcon },

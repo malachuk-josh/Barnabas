@@ -25,12 +25,12 @@ export function CareDemoBanner({ canClear }: { canClear: boolean }) {
     <div className="fin-demo" role="note">
       <span className="fin-badge-demo">Demo data</span>
       <span>
-        Only the example classes are seeded, taught by MGBC&apos;s pastors. <strong>No one&apos;s care records are made up</strong>: cases, prayer requests and guests start empty.
+        Only the example classes are seeded, taught by MGBC&apos;s pastors. <strong>No one&apos;s shepherding records are made up</strong>: cases, prayer requests and guests start empty.
       </span>
       {canClear &&
         (asking ? (
           <span className="row" style={{ marginLeft: "auto" }}>
-            <span>Remove all demo care records and start empty?</span>
+            <span>Remove all demo shepherding records and start empty?</span>
             <button className="btn btn-danger" type="button" disabled={busy} onClick={() => void clear()}>
               {busy ? "Clearing…" : "Yes, clear it"}
             </button>

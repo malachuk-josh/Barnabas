@@ -6,7 +6,7 @@ import { rotationPool } from "@/lib/care/guests";
 import { guestRows } from "@/lib/care/views";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Guests · Care · Barnabas" };
+export const metadata: Metadata = { title: "Guests · Shepherding · Barnabas" };
 
 export default async function GuestsPage() {
   const ctx = await carePage();
@@ -32,7 +32,7 @@ export default async function GuestsPage() {
                 {pool.filter((m) => m.lighterLoad).length === 1 ? "is" : "are"} in a busy season, so they take about half as many.
               </p>
             )}
-            <p className="fin-source">The deacons and connections staff on the care team, in a fixed order. A pastor, deacon or staff member can hand a guest to someone else.</p>
+            <p className="fin-source">The deacons and connections staff on the shepherding team, in a fixed order. A pastor, deacon or staff member can hand a guest to someone else.</p>
           </section>
         </div>
       </div>

@@ -206,7 +206,7 @@ function TeamPanel({ team, directory }: { team: TeamRow; directory: { id: string
       ) : (
         <p className="small">{team.positions.map((p) => `${p.name}${p.needed > 1 ? ` ×${p.needed}` : ""}`).join(" · ")}</p>
       )}
-      <h3>Volunteers</h3>
+      <h3>Co-laborers</h3>
       {team.volunteers.length ? (
         <ul className="care-tasks">
           {team.volunteers.map((v) => (
@@ -234,12 +234,12 @@ function TeamPanel({ team, directory }: { team: TeamRow; directory: { id: string
         </ul>
       ) : (
         <EmptyState compact title={`No one on ${team.name} yet`}>
-          {team.canEdit ? "Add your first volunteer below. Anyone can also join by signing up for an open slot." : "Sign up for an open slot on the Rosters page to join."}
+          {team.canEdit ? "Add your first co-laborer below. Anyone can also join by signing up for an open slot." : "Sign up for an open slot on the Rosters page to join."}
         </EmptyState>
       )}
       {team.canEdit && (
         <details className="fin-details">
-          <summary>Add a volunteer</summary>
+          <summary>Add a co-laborer</summary>
           <form
             className="fin-form"
             onSubmit={(e) => {

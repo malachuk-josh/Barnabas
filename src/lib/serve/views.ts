@@ -28,7 +28,7 @@ export type GatheringRoster = { key: GatheringKey; label: string; time: string; 
 /** The roster for one date: each gathering, each team that serves at it, each position's slots (filled and open). */
 export function rosterFor(book: ServeBook, actor: ServeActor, date: string): GatheringRoster[] {
   const me = selfVolunteer(book, actor.leader);
-  const name = (id: string) => book.volunteers.find((v) => v.id === id)?.name ?? "A former volunteer";
+  const name = (id: string) => book.volunteers.find((v) => v.id === id)?.name ?? "A former co-laborer";
   return gatheringsOn(date)
     .filter((g) => book.teams.some((t) => t.gatherings.includes(g.key)))
     .map((g) => ({
@@ -77,7 +77,7 @@ export function myServing(book: ServeBook, actor: ServeActor, from = today()) {
   if (!me) return { volunteer: null, upcoming: [], swapsForMe: [], swapsFromMe: [] };
   const teamName = (id: string) => book.teams.find((t) => t.id === id)?.name ?? id;
   const posName = (a: Assignment) => book.teams.find((t) => t.id === a.teamId)?.positions.find((p) => p.id === a.positionId)?.name ?? a.positionId;
-  const nameOf = (id: string) => book.volunteers.find((v) => v.id === id)?.name ?? "A former volunteer";
+  const nameOf = (id: string) => book.volunteers.find((v) => v.id === id)?.name ?? "A former co-laborer";
   const upcoming = book.assignments
     .filter((a) => a.volunteerId === me.id && a.date >= from && a.status !== "declined")
     .sort((a, b) => (a.date + a.gathering).localeCompare(b.date + b.gathering))
@@ -96,7 +96,7 @@ export function myServing(book: ServeBook, actor: ServeActor, from = today()) {
 
 /** Every pending swap a scheduler or lead can answer. */
 export function pendingSwaps(book: ServeBook, actor: ServeActor) {
-  const nameOf = (id: string) => book.volunteers.find((v) => v.id === id)?.name ?? "A former volunteer";
+  const nameOf = (id: string) => book.volunteers.find((v) => v.id === id)?.name ?? "A former co-laborer";
   return book.swaps
     .filter((s) => s.status === "pending")
     .map((s) => {
@@ -108,7 +108,7 @@ export function pendingSwaps(book: ServeBook, actor: ServeActor) {
 }
 
 /**
- * Roster data for the burnout radar: past assignments as serving records (declined ones as declines),
+ * Roster data for the weariness watch: past assignments as serving records (declined ones as declines),
  * the teams that have any roster data in the window, and people for volunteers not in the directory.
  */
 export function rosterServing(book: ServeBook, sinceISO: string, throughISO: string) {

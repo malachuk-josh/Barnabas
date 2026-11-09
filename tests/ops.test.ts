@@ -627,6 +627,6 @@ describe("kids check-in role", () => {
     expect(can(access, "kids.checkin")).toBe(true);
     for (const p of ["kids.admin", "finance.view", "care.assign", "ops.schedule", "services.plan", "events.manage"] as const) expect(can(access, p), p).toBe(false);
     for (const ok of ["/kids", "/kids/rooms", "/kids/labels", "/settings", "/api/kids", "/api/profile", "/api/auth/signout", "/api/account"]) expect(checkinMayUse(ok), ok).toBe(true);
-    for (const no of ["/", "/kids/families", "/care", "/finance", "/word", "/api/chat", "/api/memory", "/api/kidsx", "/settingsx", "/api/conversations"]) expect(checkinMayUse(no), no).toBe(false);
+    for (const no of ["/", "/kids/families", "/care", "/shepherding", "/shepherding/cases/c1", "/finance", "/word", "/api/chat", "/api/memory", "/api/kidsx", "/settingsx", "/api/conversations"]) expect(checkinMayUse(no), no).toBe(false);
   });
 });

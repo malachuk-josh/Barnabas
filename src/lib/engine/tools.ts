@@ -117,7 +117,7 @@ const getPersonSummary = tool({
   phrase: "One moment, pulling that up.",
   def: {
     name: "get_person_summary",
-    description: "Serving history, worship and small-group attendance, upcoming assignments, burnout signals and open follow-ups for one person.",
+    description: "Serving history, worship and small-group attendance, upcoming assignments, weariness signals and open follow-ups for one person.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -167,7 +167,7 @@ const getVolunteerLoad = tool({
   phrase: "Let me check how the teams are doing.",
   def: {
     name: "get_volunteer_load",
-    description: "Burnout radar for volunteers: who is carrying too much or pulling back, with the reasons and a suggested next step. Optionally filter to one team.",
+    description: "Weariness watch for co-laborers: who is carrying too much or pulling back, with the reasons and a suggested next step. Optionally filter to one team.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -406,7 +406,7 @@ const logCareEvent = tool({
   def: {
     name: "log_care_event",
     description:
-      "Older way to record a pastoral contact (visit, call, hospital visit, prayer, text) with an optional minimal follow-up and due date. It lands on the person's open care case held by this leader, or opens one. Prefer log_care_contact. Keep it minimal, without sensitive details.",
+      "Older way to record a pastoral contact (visit, call, hospital visit, prayer, text) with an optional minimal follow-up and due date. It lands on the person's open shepherding case held by this leader, or opens one. Prefer log_care_contact. Keep it minimal, without sensitive details.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -432,7 +432,7 @@ const logCareEvent = tool({
       const actor = await careActor(ctx.leader);
       const c = await logCareEventCompat(actor, { personId: person.id, kind: input.kind, followUp: input.follow_up, due: input.due }, convId(ctx));
       await audit(ctx.leader, { conversationId: ctx.meta.id, action: "care.log", detail: `${input.kind} ${person.id} -> ${c.id}` });
-      return `Logged ${input.kind} with ${person.name} on care case ${c.id}${input.follow_up ? `, next step: ${input.follow_up}` : ""}.`;
+      return `Logged ${input.kind} with ${person.name} on shepherding case ${c.id}${input.follow_up ? `, next step: ${input.follow_up}` : ""}.`;
     });
   },
 });
@@ -464,11 +464,11 @@ function findMember(members: TeamMember[], q: string): TeamMember | TeamMember[]
 }
 
 const listCareCases = tool({
-  phrase: "Let me check the care list.",
+  phrase: "Let me check the shepherding list.",
   def: {
     name: "list_care_cases",
     description:
-      "Open pastoral care cases this leader can see: scope 'mine' (assigned to them, the default) or 'all'; optionally one type or only overdue next steps. Each case has its type, status, who holds it, the next step and when it's due, and the last contact.",
+      "Open shepherding cases this leader can see: scope 'mine' (assigned to them, the default) or 'all'; optionally one type or only overdue next steps. Each case has its type, status, who holds it, the next step and when it's due, and the last contact.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -508,7 +508,7 @@ const careCaseDetail = tool({
   phrase: "Let me pull up that case.",
   def: {
     name: "care_case_detail",
-    description: "One care case: who it's for, type, status, who holds it, the summary, the next step, and the timeline of contacts with their minimal notes.",
+    description: "One shepherding case: who it's for, type, status, who holds it, the summary, the next step, and the timeline of contacts with their minimal notes.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { case_id: { type: "string" } }, required: ["case_id"] },
   },
@@ -516,7 +516,7 @@ const careCaseDetail = tool({
   async run({ case_id }, ctx) {
     const { actor, book } = await careFor(ctx.leader);
     const c = caseDetail(book, actor, case_id);
-    if (!c) return fail("No care case with that id that this leader can see. Use list_care_cases.");
+    if (!c) return fail("No shepherding case with that id that this leader can see. Use list_care_cases.");
     return ok({
       case_id: c.id,
       for: c.subject.name,
@@ -615,7 +615,7 @@ const openCareCase = tool({
   def: {
     name: "open_care_case",
     description:
-      "Open a pastoral care case for a person or household when the leader asks. It's assigned to the leader unless they name someone else (pastors, deacons and staff can) or 'unassigned' for the pastors' queue. Optionally log the first contact and a next step. Notes stay minimal: no diagnoses or sensitive details.",
+      "Open a shepherding case for a person or household when the leader asks. It's assigned to the leader unless they name someone else (pastors, deacons and staff can) or 'unassigned' for the pastors' queue. Optionally log the first contact and a next step. Notes stay minimal: no diagnoses or sensitive details.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -654,7 +654,7 @@ const openCareCase = tool({
       let assignee = input.assignee?.trim() || "me";
       if (!["me", "unassigned"].includes(assignee)) {
         const m = findMember(actor.members, assignee);
-        if (!m) return fail(`No one on the care team is called "${assignee}".`);
+        if (!m) return fail(`No one on the shepherding team is called "${assignee}".`);
         if (Array.isArray(m)) return fail(`"${assignee}" could be ${m.map((x) => x.name).join(" or ")}. Ask which.`);
         assignee = m.id;
       }
@@ -688,7 +688,7 @@ const openCareCase = tool({
 const logCareContact = tool({
   def: {
     name: "log_care_contact",
-    description: "Log a contact on a care case (visit, call, text, card, meal) when the leader tells you about one, with an optional minimal note and the next step. Date defaults to today.",
+    description: "Log a contact on a shepherding case (visit, call, text, card, meal) when the leader tells you about one, with an optional minimal note and the next step. Date defaults to today.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
@@ -791,7 +791,7 @@ const assignCareCase = tool({
   def: {
     name: "assign_care_case",
     description:
-      "Give a care case to a team member, or 'me' to take it yourself, or 'unassigned' to hand it to the pastors' queue. Giving it to someone else is confirmed in code: the first call proposes it; tell the leader and ask; call again with the same details after they say yes.",
+      "Give a shepherding case to a team member, or 'me' to take it yourself, or 'unassigned' to hand it to the pastors' queue. Giving it to someone else is confirmed in code: the first call proposes it; tell the leader and ask; call again with the same details after they say yes.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { case_id: { type: "string" }, assignee: { type: "string", description: "'me', 'unassigned', or a team member's name" } }, required: ["case_id", "assignee"] },
   },
@@ -800,12 +800,12 @@ const assignCareCase = tool({
     return careWrite(async () => {
       const { actor, book } = await careFor(ctx.leader);
       const c = caseDetail(book, actor, input.case_id);
-      if (!c) return fail("No care case with that id that this leader can see.");
+      if (!c) return fail("No shepherding case with that id that this leader can see.");
       let target: TeamMember | null = null;
       if (input.assignee.trim().toLowerCase() === "me") target = actor.self;
       else if (input.assignee.trim().toLowerCase() !== "unassigned") {
         const m = findMember(actor.members, input.assignee);
-        if (!m) return fail(`No one on the care team is called "${input.assignee}".`);
+        if (!m) return fail(`No one on the shepherding team is called "${input.assignee}".`);
         if (Array.isArray(m)) return fail(`"${input.assignee}" could be ${m.map((x) => x.name).join(" or ")}. Ask which.`);
         target = m;
       }
@@ -823,7 +823,7 @@ const assignCareCase = tool({
 const closeCareCase = tool({
   def: {
     name: "close_care_case",
-    description: "Close a care case when care is complete. Confirmed in code: the first call proposes it; ask the leader; call again with the same case_id after they say yes.",
+    description: "Close a shepherding case when care is complete. Confirmed in code: the first call proposes it; ask the leader; call again with the same case_id after they say yes.",
     eager_input_streaming: true,
     input_schema: { type: "object", properties: { case_id: { type: "string" }, note: { type: "string", description: "Optional minimal closing note" } }, required: ["case_id"] },
   },
@@ -832,7 +832,7 @@ const closeCareCase = tool({
     return careWrite(async () => {
       const { actor, book } = await careFor(ctx.leader);
       const c = caseDetail(book, actor, input.case_id);
-      if (!c) return fail("No care case with that id that this leader can see.");
+      if (!c) return fail("No shepherding case with that id that this leader can see.");
       if (!c.canClose) return fail("Only whoever holds the case, or a pastor, deacon or staff member, can close it. Tell the leader kindly.");
       if (!gateConfirmed(ctx, "close_care_case", c.id)) return fail(`Not confirmed yet. Ask the leader: close ${c.subject.name}'s ${CASE_TYPE_LABELS[c.type].toLowerCase()} case? Call close_care_case again after they say yes.`);
       await closeCase(actor, c.id, input.note, convId(ctx));

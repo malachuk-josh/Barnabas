@@ -20,7 +20,7 @@ export type TeamMember = {
   leaderId?: string;
 };
 
-/* ---------- Pastoral care cases ---------- */
+/* ---------- Shepherding cases ---------- */
 
 export const CASE_TYPES = ["hospital", "grief", "illness", "crisis", "new_baby", "homebound", "prayer", "counseling_referral", "other"] as const;
 export type CaseType = (typeof CASE_TYPES)[number];

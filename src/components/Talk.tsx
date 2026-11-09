@@ -414,7 +414,7 @@ export function Talk({
       <div className="stack" style={{ gap: 6 }}>
         <h1>How can I encourage you today{greetingName ? `, ${greetingName}` : ""}?</h1>
         <p className="sub">
-          Ask who needs a call, get ready for a visit, check on your volunteers, or plan your week.
+          Ask who needs a call, get ready for a visit, encourage your co-laborers, or plan your week.
           {offRecord ? " This conversation is off the record: nothing will be saved." : ""}
         </p>
       </div>

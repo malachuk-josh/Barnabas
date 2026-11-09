@@ -167,13 +167,13 @@ export function careFollowUps(book: CareBook, actor: CareActor, asOf = today(), 
   const out: CareFollowUp[] = [];
   for (const c of book.cases) {
     if (c.status === "closed" || !c.nextStep || !isMine(actor.viewer, c.assigneeId) || !canSeeCase(actor.viewer, c)) continue;
-    out.push({ id: c.id, personId: c.subject.personId ?? c.id, name: c.subject.name, reason: c.nextStep.text, due: c.nextStep.due, overdue: isOverdue(c, asOf), source: "care", href: `/care/cases/${c.id}` });
+    out.push({ id: c.id, personId: c.subject.personId ?? c.id, name: c.subject.name, reason: c.nextStep.text, due: c.nextStep.due, overdue: isOverdue(c, asOf), source: "care", href: `/shepherding/cases/${c.id}` });
   }
   for (const g of book.guests) {
     for (const t of openTasks(g as GuestCard)) {
       if (!isMine(actor.viewer, t.assigneeId)) continue;
       const due = new Date(t.dueAt).toISOString().slice(0, 10);
-      out.push({ id: t.id, personId: g.id, name: g.name, reason: `${TASK_LABELS[t.kind]} (guest)`, due, overdue: t.dueAt < now, source: "guest", href: `/care/guests#${g.id}` });
+      out.push({ id: t.id, personId: g.id, name: g.name, reason: `${TASK_LABELS[t.kind]} (guest)`, due, overdue: t.dueAt < now, source: "guest", href: `/shepherding/guests#${g.id}` });
     }
   }
   return out.sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
@@ -200,7 +200,7 @@ export async function calendarSuggestions(leader: Leader, asOf = today()): Promi
       const prefer = [4, 5, 1, 2];
       const candidates = Array.from({ length: 7 }, (_, i) => addDays(asOf, i + 1));
       const day = prefer.map((dow) => candidates.find((d) => new Date(`${d}T12:00:00Z`).getUTCDay() === dow && !busy.has(d))).find(Boolean) ?? candidates[0];
-      out.unshift({ id: "rest", title: "Day off", date: day, kind: "rest", reason: `Your care load is ${load.signal}: ${load.reasons.slice(0, 2).join("; ")}`, href: "/care/load" });
+      out.unshift({ id: "rest", title: "Day off", date: day, kind: "rest", reason: `Your care load is ${load.signal}: ${load.reasons.slice(0, 2).join("; ")}`, href: "/shepherding/load" });
     }
   }
   return out;

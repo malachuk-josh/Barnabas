@@ -7,7 +7,7 @@ import { myCareLoad, teamView } from "@/lib/care/views";
 import { friendlyDate, today as todayIso } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "My care load · Care · Barnabas" };
+export const metadata: Metadata = { title: "My care load · Shepherding · Barnabas" };
 
 const LEVEL = ["Light", "Full", "Heavy"] as const;
 

@@ -11,7 +11,7 @@ export function TypePill({ type, label }: { type: string; label: string }) {
 
 export function CaseCard({ c, today, showStatus = false }: { c: CaseRow; today: string; showStatus?: boolean }) {
   return (
-    <Link href={`/care/cases/${c.id}`} className={`care-card${c.overdue ? " overdue" : ""}`}>
+    <Link href={`/shepherding/cases/${c.id}`} className={`care-card${c.overdue ? " overdue" : ""}`}>
       <span className="care-card-head">
         <strong>{c.name}</strong>
         <TypePill type={c.type} label={c.typeLabel} />

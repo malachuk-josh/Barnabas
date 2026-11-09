@@ -39,7 +39,7 @@ export function NewCase({ people, members, selfId, canAssign, isPastor }: { peop
         },
       });
       setOpen(false);
-      router.push(f.confidential && !isPastor ? "/care?opened=confidential" : `/care/cases/${c.id}`);
+      router.push(f.confidential && !isPastor ? "/shepherding?opened=confidential" : `/shepherding/cases/${c.id}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't work.");
@@ -57,7 +57,7 @@ export function NewCase({ people, members, selfId, canAssign, isPastor }: { peop
       {open && (
         <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="new-case-title" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <form className="sheet" onSubmit={submit}>
-            <h2 id="new-case-title">Open a care case</h2>
+            <h2 id="new-case-title">Open a shepherding case</h2>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="nc-person">Who</label>

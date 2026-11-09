@@ -6,6 +6,8 @@ import type { CareActor } from "@/lib/care/service";
 import type { CareBook } from "@/lib/care/types";
 import { careFor } from "@/lib/care/views";
 import type { Profile } from "@/lib/profile";
+import type { VerseKey } from "@/lib/language";
+import { VerseNote } from "@/components/VerseNote";
 import { CareDemoBanner } from "./CareDemoBanner";
 import { CareTabs } from "./CareTabs";
 
@@ -24,7 +26,7 @@ export async function directory() {
 }
 
 /** The demo banner goes away once the church's own people are in Barnabas (People, or the migration tool). */
-export async function CareFrame({ ctx, eyebrow = "Care", title, intro, actions, children }: { ctx: CarePageContext; eyebrow?: string; title: string; intro?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+export async function CareFrame({ ctx, eyebrow = "Shepherding", title, verse, verseShort = false, intro, actions, children }: { ctx: CarePageContext; eyebrow?: string; title: string; /** A KJV verse under the heading (once in the area, on its landing page). */ verse?: VerseKey; /** Quote only the verse's first clause, where space is tight. */ verseShort?: boolean; intro?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const connected = (await churchSource()) !== "demo";
   return (
     <AppShell profile={ctx.profile}>
@@ -32,6 +34,7 @@ export async function CareFrame({ ctx, eyebrow = "Care", title, intro, actions, 
         <div>
           <span className="eyebrow">{eyebrow}</span>
           <h1>{title}</h1>
+          {verse && <VerseNote verse={verse} short={verseShort} />}
           {intro && <p className="muted">{intro}</p>}
         </div>
         {actions}

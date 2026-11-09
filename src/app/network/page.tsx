@@ -9,7 +9,7 @@ export default async function NetworkPage() {
   const { leader, profile } = await requirePageLeader();
   const peers = await connectedPeers(leader.churchId);
   return (
-    <NetworkFrame profile={profile} title="Mesa" intro="Sermon series, service templates, volunteer training, event ideas and needs, shared by churches you've connected with. Never anything about people.">
+    <NetworkFrame profile={profile} title="Mesa" intro="Sermon series, service templates, co-laborer training, event ideas and needs, shared by churches you've connected with. Never anything about people.">
       <LibrarySearch peers={peers.length} />
     </NetworkFrame>
   );

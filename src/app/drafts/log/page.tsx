@@ -18,7 +18,7 @@ export default async function SendLogPage() {
         <div>
           <span className="eyebrow">Drafts</span>
           <h1>Send log</h1>
-          <p className="muted">{scope === "all" ? "Every text and email sent from Barnabas, who approved it, and what Twilio and Resend reported back." : "The care follow-ups you sent and what happened to each."}</p>
+          <p className="muted">{scope === "all" ? "Every text and email sent from Barnabas, who approved it, and what Twilio and Resend reported back." : "The shepherding follow-ups you sent and what happened to each."}</p>
         </div>
       </div>
       <OpsTabs tabs={DRAFT_TABS} label="Drafts" />

@@ -55,7 +55,7 @@ function team(book: ServeBook, id: string) {
   return book.teams.find((t) => t.id === id) ?? fail("That team doesn't exist.");
 }
 function volunteer(book: ServeBook, id: string) {
-  return book.volunteers.find((v) => v.id === id) ?? fail("That volunteer isn't on any team.");
+  return book.volunteers.find((v) => v.id === id) ?? fail("That co-laborer isn't on any team.");
 }
 function needEdit(actor: ServeActor, t: ServeTeam) {
   if (!canEditTeam(actor, t)) fail(`Only a scheduler or the ${t.name} lead can change this roster.`);
@@ -275,7 +275,7 @@ export async function addVolunteer(actor: ServeActor, input: z.input<typeof Volu
   if (v.personId && !(await churchData().getPerson(v.personId))) fail(`No one with id ${v.personId} is in the directory.`);
   const vol = await updateServe(actor.leader.churchId, ["volunteers"], (book) => {
     for (const id of v.teamIds) needEdit(actor, team(book, id));
-    if (book.volunteers.some((x) => (v.personId && x.personId === v.personId) || sameName(x.name, v.name))) fail(`${v.name} is already a volunteer. Add them to the team from their row instead.`);
+    if (book.volunteers.some((x) => (v.personId && x.personId === v.personId) || sameName(x.name, v.name))) fail(`${v.name} is already a co-laborer. Add them to the team from their row instead.`);
     const vol: Volunteer = { id: newId("vol"), name: v.name, personId: v.personId, teamIds: v.teamIds, email: v.email || undefined, phone: v.phone || undefined, maxPerMonth: v.maxPerMonth, blackouts: [], createdAt: Date.now() };
     book.volunteers.push(vol);
     return vol;
@@ -375,7 +375,7 @@ export async function addTeam(actor: ServeActor, input: z.input<typeof TeamInput
   const v = TeamInput.parse(input);
   const t = await updateServe(actor.leader.churchId, ["teams"], (book) => {
     if (book.teams.some((x) => sameName(x.name, v.name))) fail(`There's already a team called ${v.name}.`);
-    const t: ServeTeam = { id: newId("team"), name: v.name, lead: v.lead || undefined, gatherings: v.gatherings, positions: [{ id: "volunteer", name: "Volunteer", needed: 2 }] };
+    const t: ServeTeam = { id: newId("team"), name: v.name, lead: v.lead || undefined, gatherings: v.gatherings, positions: [{ id: "volunteer", name: "Co-laborer", needed: 2 }] };
     book.teams.push(t);
     return t;
   });

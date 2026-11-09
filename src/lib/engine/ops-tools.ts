@@ -142,7 +142,7 @@ const scheduleVolunteer = tool({
         gathering: { type: "string", description: GATHERING_HELP },
         team: { type: "string" },
         position: { type: "string", description: "e.g. 'Door greeter'" },
-        volunteer: { type: "string", description: "The volunteer's name or volunteer_id from find_coverage" },
+        volunteer: { type: "string", description: "The co-laborer's name or volunteer_id from find_coverage" },
       },
       required: ["date", "gathering", "team", "position", "volunteer"],
     },
@@ -156,7 +156,7 @@ const scheduleVolunteer = tool({
       const p = findTeam(t.positions, input.position);
       if (!p || Array.isArray(p)) return fail(`${t.name} positions: ${t.positions.map((x) => x.name).join(", ")}.`);
       const v = book.volunteers.find((x) => x.id === input.volunteer) ?? book.volunteers.find((x) => sameName(x.name, input.volunteer));
-      if (!v) return fail(`No volunteer called "${input.volunteer}" is on any team. Don't guess; ask the leader to add them on the Serve page.`);
+      if (!v) return fail(`No co-laborer called "${input.volunteer}" is on any team. Don't guess; ask the leader to add them on the Serve page.`);
       const key = JSON.stringify([input.date, input.gathering, t.id, p.id, v.id]);
       const summary = `${v.name} as ${p.name} with ${t.name} at the ${gathering(input.gathering)?.label}, ${friendlyDate(input.date)}`;
       if (!gateConfirmed(ctx, "schedule_volunteer", key)) return fail(`Not confirmed yet. Ask the leader: schedule ${summary}? Call schedule_volunteer again with the same details after they say yes.`);

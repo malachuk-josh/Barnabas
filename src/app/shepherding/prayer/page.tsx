@@ -4,7 +4,7 @@ import { PrayerView } from "@/components/care/PrayerView";
 import { prayerRows } from "@/lib/care/views";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Prayer · Care · Barnabas" };
+export const metadata: Metadata = { title: "Prayer · Shepherding · Barnabas" };
 
 export default async function PrayerPage() {
   const ctx = await carePage();
