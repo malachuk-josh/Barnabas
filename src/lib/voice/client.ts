@@ -20,6 +20,8 @@ export interface Speaker {
   lastHeard: string;
   /** Call from a tap so phones allow audio. */
   unlock(): void;
+  /** A short sound while the reply is being written ("Mm.", "Let me think."). */
+  filler?(index: number, text: string): void;
 }
 
 /** A tenth of a second of silence as a WAV data URI, played on the first tap to unlock audio on phones. */
@@ -49,7 +51,7 @@ export class CloudSpeaker implements Speaker {
   private audio: HTMLAudioElement | null = null;
   private ctx: AudioContext | null = null;
   private current: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
-  private queue: { text: string; spoken: string; data: Promise<ArrayBuffer | null> | null; abort: AbortController }[] = [];
+  private queue: { text: string; spoken: string; data: Promise<ArrayBuffer | null> | null; abort: AbortController; filler?: boolean }[] = [];
   private playing = false;
   private generation = 0;
   lastHeard = "";
@@ -88,6 +90,36 @@ export class CloudSpeaker implements Speaker {
     const a = this.el();
     a.src = silentWav();
     a.play().catch(() => {});
+  }
+
+  /** Filler clips, fetched once per page and replayed from memory. */
+  private fillerCache = new Map<string, Promise<ArrayBuffer | null>>();
+
+  filler(index: number, text: string) {
+    const lang = this.opts.lang.slice(0, 2);
+    const key = `${lang}:${index}`;
+    let clip = this.fillerCache.get(key);
+    if (!clip) {
+      clip = fetch(`/api/voice/filler/${index}?lang=${lang}`).then((r) => (r.ok ? r.arrayBuffer() : null), () => null);
+      this.fillerCache.set(key, clip);
+    }
+    // Copy per play: decoding detaches the buffer.
+    const data = clip.then((b) => (b ? b.slice(0) : null));
+    this.queue.unshift({ text, spoken: text, data, abort: new AbortController(), filler: true });
+    if (!this.playing) void this.next(this.generation);
+  }
+
+  /** Fetch the filler clips ahead of time, one at a time (ElevenLabs allows only a few requests at once). */
+  warmFillers(count: number) {
+    const lang = this.opts.lang.slice(0, 2);
+    let chain: Promise<unknown> = Promise.resolve();
+    for (let i = 0; i < count; i++) {
+      const key = `${lang}:${i}`;
+      if (this.fillerCache.has(key)) continue;
+      const clip = chain.then(() => fetch(`/api/voice/filler/${i}?lang=${lang}`).then((r) => (r.ok ? r.arrayBuffer() : null), () => null));
+      this.fillerCache.set(key, clip);
+      chain = clip;
+    }
   }
 
   speak(sentence: string) {
@@ -137,7 +169,7 @@ export class CloudSpeaker implements Speaker {
     const data = await (item.data ?? (item.data = this.fetchAudio(item.spoken, item.abort.signal)));
     if (gen !== this.generation) return;
     if (!data) {
-      this.opts.onError();
+      if (!item.filler) this.opts.onError();
       void this.next(gen);
       return;
     }
@@ -146,17 +178,17 @@ export class CloudSpeaker implements Speaker {
     };
     if (this.useWebAudio()) {
       try {
-        await this.playBuffer(data, gen, item.text, done);
+        await this.playBuffer(data, gen, item.filler ? null : item.text, done);
         return;
       } catch {
         // decoding failed in this browser: fall back to the <audio> element for this sentence
       }
       if (gen !== this.generation) return;
     }
-    this.playElement(data, item.text, done, gen);
+    this.playElement(data, item.filler ? null : item.text, done, gen);
   }
 
-  private async playBuffer(data: ArrayBuffer, gen: number, text: string, done: () => void) {
+  private async playBuffer(data: ArrayBuffer, gen: number, text: string | null, done: () => void) {
     const ctx = this.context();
     if (ctx.state === "suspended") await ctx.resume().catch(() => {});
     const buffer = await ctx.decodeAudioData(data.slice(0));
@@ -179,12 +211,13 @@ export class CloudSpeaker implements Speaker {
       done();
     };
     this.current = { src, gain };
-    this.lastHeard = text;
+    // Fillers ("Mm.") aren't something the leader "heard" of the reply.
+    if (text !== null) this.lastHeard = text;
     this.opts.onStart();
     src.start(t);
   }
 
-  private playElement(data: ArrayBuffer, text: string, done: () => void, gen: number) {
+  private playElement(data: ArrayBuffer, text: string | null, done: () => void, gen: number) {
     const url = URL.createObjectURL(new Blob([data], { type: "audio/mpeg" }));
     const a = this.el();
     a.src = url;
@@ -193,7 +226,7 @@ export class CloudSpeaker implements Speaker {
       URL.revokeObjectURL(url);
       done();
     };
-    this.lastHeard = text;
+    if (text !== null) this.lastHeard = text;
     this.opts.onStart();
     a.play().catch(() => {
       if (gen === this.generation) done();
