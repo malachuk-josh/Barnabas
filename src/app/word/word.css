@@ -1,0 +1,4599 @@
+/*
+ * The Word — ported from Communion's app/globals.css and scoped under
+ * .word-root by scripts/extract-word-css.mjs. Generated: edit the script's
+ * output with care, or re-run it against Communion's stylesheet.
+ */
+.word-root {
+  --bg-0: #0b0d1a;
+  --bg-1: #141833;
+  --ink: #f2f0ea;
+  --ink-dim: rgba(242, 240, 234, 0.62);
+  --ink-faint: rgba(242, 240, 234, 0.4);
+  --glass: rgba(255, 255, 255, 0.055);
+  --glass-strong: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-bright: rgba(255, 255, 255, 0.22);
+  --gold: #e5b45b;
+  --gold-soft: rgba(229, 180, 91, 0.16);
+  --violet: #8b7ff0;
+  --wj: #f0857a;
+  /* What the two fixed bars are painted with. Opaque on purpose — see the
+     note above .bottom-nav — so it has to sit close to the ambient scene
+     behind it rather than borrow from it. */
+  --bar: rgb(19, 22, 45);
+  --radius: 20px;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Published by ViewportInsets (lib/viewport.tsx) once it has measured the
+     software keyboard. These fallbacks reproduce the layout without one. */
+  --kb: 0px;
+  --vv-top: 0px;
+  --vvh: 100dvh;
+}
+
+.word-root * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.word-root {
+  color-scheme: dark;
+  /* the very top strip (status bar, overscroll) reads from here */
+  background: #0b0d1a;
+  /* scrolling only — no pinch zoom (the reader has text-size controls) */
+  touch-action: pan-x pan-y;
+}
+
+.word-root[data-theme="light"] {
+  background: #f3e8cf;
+}
+
+.word-root[data-theme="grey"] {
+  background: #000;
+}
+
+/*
+ * ---- light mode: parchment ----
+ *
+ * It was called parchment and painted as a flat almond fill, with a violet
+ * glow left over from the dark theme in one corner. Parchment is a surface,
+ * not a colour: a fine tooth you can almost feel, a slow unevenness where it
+ * has aged, and edges a shade darker than the middle where it has been
+ * handled. All three are here, faint enough that a line of scripture on top
+ * of them reads exactly as crisply as it did on the flat fill.
+ *
+ * The tooth is generated noise, drawn live because it has to be sharp at the
+ * screen's own resolution and costs about a hundredth of a second. The
+ * mottling is the same kind of noise at a much larger scale; drawing that
+ * live cost a sixth of a second at iPhone resolution, and several times that
+ * on a modest Android phone, so it was drawn once into a small image
+ * (app/textures/parchment-mottle.png) that the browser simply enlarges — it
+ * is all soft gradient, and comes out of the enlargement unchanged.
+ */
+.word-root[data-theme="light"] {
+  --bg-0: #e9d9b8;
+  --bg-1: #f3e7cc;
+  --ink: #2e2316;
+  --ink-dim: rgba(46, 35, 22, 0.7);
+  --ink-faint: rgba(46, 35, 22, 0.54);
+  --glass: rgba(250, 243, 226, 0.58);
+  --glass-strong: rgba(250, 243, 226, 0.78);
+  --glass-border: rgba(110, 78, 34, 0.2);
+  --glass-border-bright: rgba(110, 78, 34, 0.36);
+  --gold: #80530d;
+  --gold-soft: rgba(128, 83, 13, 0.14);
+  --violet: #5d4fc0;
+  --wj: #9c2b1c;
+  --bar: rgb(243, 232, 207);
+  --paper-grain: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nMTgwJz48ZmlsdGVyIGlkPSdkJyB4PScwJyB5PScwJyB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9J3NSR0InPjxmZVR1cmJ1bGVuY2UgdHlwZT0nZnJhY3RhbE5vaXNlJyBiYXNlRnJlcXVlbmN5PScuOScgbnVtT2N0YXZlcz0nMycgc2VlZD0nNCcgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjxmZUNvbG9yTWF0cml4IHZhbHVlcz0nMCAwIDAgMCAuMjkgIDAgMCAwIDAgLjE5ICAwIDAgMCAwIC4wOCAgMC44MDAgMCAwIDAgLTAuNDQ4Jy8+PC9maWx0ZXI+PGZpbHRlciBpZD0nbCcgeD0nMCcgeT0nMCcgd2lkdGg9JzEwMCUnIGhlaWdodD0nMTAwJScgY29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzPSdzUkdCJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nLjknIG51bU9jdGF2ZXM9JzMnIHNlZWQ9JzknIHN0aXRjaFRpbGVzPSdzdGl0Y2gnLz48ZmVDb2xvck1hdHJpeCB2YWx1ZXM9JzAgMCAwIDAgMSAgMCAwIDAgMCAuOTggIDAgMCAwIDAgLjkyICAtMC43MjAgMCAwIDAgMC4zMDInLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWx0ZXI9J3VybCgjZCknLz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWx0ZXI9J3VybCgjbCknLz48L3N2Zz4=");
+}
+
+.word-root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* the page: edges darkened by handling, the tooth, the mottling of age, a
+   little more light where the eye rests, and the parchment under all of it */
+.word-root[data-theme="light"] .bg-scene {
+  background:
+    radial-gradient(135% 100% at 50% 40%, transparent 58%, rgba(120, 80, 32, 0.1) 82%, rgba(96, 62, 22, 0.2) 100%),
+    var(--paper-grain) 0 0 / 180px 180px,
+    url("./textures/parchment-mottle.png") 0 0 / 640px 640px,
+    radial-gradient(95% 65% at 50% 36%, rgba(255, 251, 240, 0.5), transparent 72%),
+    linear-gradient(175deg, var(--bg-1), var(--bg-0) 72%);
+}
+
+/*
+ * And the page has to be allowed to show. The scene sits at z-index -1, and
+ * <body> is filled with --bg-0; because <html> carries a colour of its own,
+ * the body's fill is not handed up to the canvas but drawn in the body's own
+ * box — above everything at z-index -1. So whatever was painted on the scene
+ * was never seen, in any theme: this one's parchment arrived as a flat colour
+ * until the body stood aside. Only here, for now — the other two themes look
+ * the way their readers know them, and showing their scenes would change that.
+ */
+.word-root[data-theme="light"] {
+  background: transparent;
+}
+
+/*
+ * The header and the bottom bar are opaque on purpose (see .nav), so the page
+ * cannot show through them — they get the same tooth laid over their own
+ * colour instead, a little fainter, as a strip of the same sheet. Drawn
+ * underneath their contents rather than as part of their background, so
+ * nothing here touches the backgrounds those rules were careful about. The
+ * chapter arrows beside the bar are painted like it, and take its grain too.
+ */
+.word-root[data-theme="light"] .nav::before,
+.word-root[data-theme="light"] .bottom-nav::before,
+.word-root[data-theme="light"] .chap-arrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--paper-grain) 0 0 / 180px 180px;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* installed app, light theme: the transparent status bar shows white text,
+   so paint a warm dark band exactly under it to keep the clock readable */
+@media (display-mode: standalone) {
+  .word-root[data-theme="light"] .nav {
+    background: linear-gradient(
+      180deg,
+      rgba(43, 33, 18, 0.88) 0,
+      rgba(43, 33, 18, 0.88) env(safe-area-inset-top, 0px),
+      rgba(247, 240, 224, 0.7) env(safe-area-inset-top, 0px)
+    );
+  }
+}
+
+/* a fresher leaf laid on the old one: the same tooth through it, softened by
+   the blur, and its own edges a shade darker than its middle */
+.word-root[data-theme="light"] .glass {
+  box-shadow:
+    0 12px 30px rgba(92, 64, 26, 0.14),
+    inset 0 0 22px rgba(150, 108, 48, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+/* A leaf held up off the page. Dialogs, the navigator and the sheets that
+   rise from the bottom were the same see-through glass as a card, and seen
+   through the scrim behind them that came out a muddy beige — on the very
+   surfaces where commentary and the devotional are read. Nearly opaque, and
+   the lightest parchment in the app. */
+.word-root[data-theme="light"] .glass.modal,
+.word-root[data-theme="light"] .glass.side-panel,
+.word-root[data-theme="light"] .glass.lex-sheet {
+  background: rgba(249, 242, 224, 0.9);
+}
+
+.word-root[data-theme="light"] input,
+.word-root[data-theme="light"] select,
+.word-root[data-theme="light"] textarea {
+  background: rgba(252, 247, 233, 0.7);
+}
+
+.word-root[data-theme="light"] select option {
+  background: var(--bg-1);
+}
+
+.word-root[data-theme="light"] .btn:hover {
+  background: rgba(255, 253, 246, 0.9);
+}
+
+.word-root[data-theme="light"] .modal-overlay {
+  background: rgba(74, 58, 30, 0.35);
+}
+
+.word-root[data-theme="light"] .error-text {
+  color: #a33d33;
+}
+
+/* ---- grey scale: quiet monochrome ---- */
+.word-root[data-theme="grey"] {
+  --bg-0: #101113;
+  --bg-1: #1b1c1f;
+  --ink: #ececec;
+  --ink-dim: rgba(236, 236, 236, 0.6);
+  --ink-faint: rgba(236, 236, 236, 0.38);
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-strong: rgba(255, 255, 255, 0.085);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-bright: rgba(255, 255, 255, 0.22);
+  --gold: #cfcfcf;
+  --gold-soft: rgba(207, 207, 207, 0.14);
+  --violet: #b5b5b5;
+  /* The one colour this theme keeps. Monochrome is the point of it, but a
+     reader who has switched red letters on has asked for exactly this, and
+     answering with grey would be answering a different question. */
+  --wj: #d4796d;
+  color-scheme: dark;
+}
+
+.word-root[data-theme="grey"] .bg-scene {
+  background:
+    linear-gradient(180deg, #000 0, rgba(0, 0, 0, 0) 170px),
+    radial-gradient(52rem 36rem at 82% -8%, rgba(255, 255, 255, 0.06), transparent 62%),
+    radial-gradient(44rem 30rem at -12% 32%, rgba(255, 255, 255, 0.045), transparent 60%),
+    radial-gradient(40rem 34rem at 55% 118%, rgba(255, 255, 255, 0.05), transparent 65%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-0) 55%);
+}
+
+/* Photographs are the only thing left in the app that arrives with a colour
+   of its own. Everything else — every icon, the wordmark, every chip — is
+   drawn in currentColor or in a gradient made of theme variables, and this
+   theme's variables are already grey; see components/Icon.tsx. The five class
+   names that used to be listed here date from when the icons were emoji, and
+   greying an already-grey stroke is not free: `filter` promotes an element to
+   its own compositing layer, and four of them sat inside position:fixed bars,
+   which is precisely what sends a fixed bar floating up the page (see the
+   note above .bottom-nav). */
+.word-root[data-theme="grey"] img {
+  filter: grayscale(1);
+}
+
+.word-root[data-theme="grey"] {
+  --bar: rgb(16, 17, 19);
+}
+
+/*
+ * The shell does not scroll. One element inside it does — see lib/scroller.
+ *
+ * Four goes at the bottom bar drifting up the page all worked the same way:
+ * find the paint work that was too slow to keep up with the scroll and take
+ * it away. By the fourth there was none left, and the bar still drifted. The
+ * premise was wrong. A fixed bar over a scrolling DOCUMENT on iOS is racing
+ * three separate things — a scroll thread that moves the page without the
+ * main thread, a URL bar that collapses and changes the viewport under it,
+ * and a rubber-band at both ends that carries fixed elements with it. No
+ * amount of making the bar cheap wins that race, because the bar was never
+ * the slow part.
+ *
+ * So the document stops scrolling. The header sits above the scroller and the
+ * bar below it, and neither is inside the thing that moves.
+ */
+.word-root,
+.word-root {
+  height: 100%;
+  overflow: hidden;
+}
+
+.word-root {
+  font-family: var(--sans);
+  background: var(--bg-0);
+  color: var(--ink);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  /* header, then the scroller taking the rest */
+  display: flex;
+  flex-direction: column;
+}
+
+.word-root .app-scroll {
+  flex: 1 1 auto;
+  /* a flex item will not shrink below its content without this, and the
+     scroller must be exactly the room left over or it scrolls the shell */
+  min-height: 0;
+  overflow-y: auto;
+  /* nothing here scrolls sideways; see the note on .mh-body */
+  overflow-x: hidden;
+  /* the bounce at either end stays inside this element rather than being
+     handed up to the document, which is what used to move the bar */
+  overscroll-behavior-y: contain;
+  /*
+   * And deliberately NOT -webkit-overflow-scrolling: touch.
+   *
+   * It was here when this became the scroller, copied from the smaller
+   * scrollers further down the sheet, and on iOS it does a second thing
+   * nobody wants: an element carrying it becomes the containing block for
+   * every position:fixed descendant. Everything the reader puts on top of the
+   * page is fixed and lives inside here — the navigator and its scrim, the
+   * verse sheet, the modals — so all of them were being laid out against this
+   * box instead of against the screen. The navigator opened BELOW the header
+   * with its own row of controls hidden behind it, and the scrim dimmed the
+   * page while leaving the header bright.
+   *
+   * It buys nothing either way: iOS has scrolled overflow containers with
+   * momentum by default since 13, and the property is deprecated.
+   */
+}
+
+/* ---- ambient scene behind the glass ---- */
+.word-root .bg-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(52rem 36rem at 82% -8%, rgba(139, 127, 240, 0.28), transparent 62%),
+    radial-gradient(44rem 30rem at -12% 32%, rgba(229, 180, 91, 0.16), transparent 60%),
+    radial-gradient(40rem 34rem at 55% 118%, rgba(64, 120, 200, 0.2), transparent 65%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-0) 55%);
+}
+
+.word-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.word-root .page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+/* The page arriving after a swipe, moving in from the side the finger came
+   from. Transform and opacity only, so it is composited and cannot cost a
+   layout; short, because it is covering a gap rather than performing. */
+@keyframes page-swipe-next {
+  from {
+    opacity: 0;
+    transform: translate3d(22px, 0, 0);
+  }
+}
+
+@keyframes page-swipe-prev {
+  from {
+    opacity: 0;
+    transform: translate3d(-22px, 0, 0);
+  }
+}
+
+.word-root .page-swipe-next {
+  animation: page-swipe-next 0.17s ease-out;
+}
+
+.word-root .page-swipe-prev {
+  animation: page-swipe-prev 0.17s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-root .page-swipe-next,
+  .word-root .page-swipe-prev {
+    animation: none;
+  }
+}
+
+/* ---- The Word only ---- */
+/* Reader.tsx marks the document while scripture is open. Nothing here should
+   reach any other screen. */
+.word-root .page {
+  padding-top: 0;
+}
+
+/* the scrollbar is not how anyone finds a passage — the chapter headings and
+   the navigator are — and on a phone it is a stripe over the text */
+.word-root .app-scroll {
+  scrollbar-width: none;
+}
+
+.word-root .app-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* ---- navigation ---- */
+.word-root .nav {
+  /* Not sticky any more, and it does not need to be: sticky at top:0 means
+     "never scrolls out of view", and a header outside the scroller never
+     could. Same result, one less thing tied to the document's scroll. */
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 20;
+  padding-top: env(safe-area-inset-top, 0px);
+  /* Opaque, and no blur at all — see the note over the bottom bar. In The Word
+     the scripture is full-bleed and runs edge to edge directly beneath this
+     bar, and at the old 0.55 the blurred lines came through as soft grey
+     smears beside each nav label, reading as a badly-aligned drop shadow.
+
+     0.97 was the first cure and not quite the whole one. Three percent sounds
+     like nothing, and is nothing for most pairs of colours — but this is
+     near-white type on near-black ground, which is the worst case there is:
+     the leak was faint and the letterforms were still perfectly legible
+     through the bar, and a header you can read a genealogy through is not a
+     header. Opaque means opaque. */
+  background: var(--bar);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* the theme toggle and the account badge finish the header, hard right */
+
+/* an inset ring rather than a border: a real border would make the active tab
+   2px taller and 2px wider than its neighbours, shifting its label off the
+   line the others sit on */
+
+/* the Discover switch is a page-level control, not a nav trinket */
+
+/*
+ * Three across a phone will not sit on one line.
+ *
+ * "Conversations" and "Notifications" are thirteen and fourteen characters,
+ * and in Spanish both are fourteen; three of those plus their icons want
+ * about 150px each and a 430px screen has 133 to give. What happened was not
+ * that they overflowed — it was that two of them wrapped their icon onto the
+ * line above and the short one did not, so the same control was set three
+ * different ways.
+ *
+ * So at three, the icon goes over the label rather than beside it, which is
+ * how the bar at the bottom of the screen sets the same pairing, and every
+ * segment is set the same way. Two segments have the room and keep the line.
+ */
+
+/* the chip is the only door to the reader's controls, so it carries a
+   caret and a tap target larger than the pill it draws */
+.word-root .nav-passage {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.word-root .nav-passage::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+
+.word-root .pn-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the chapter and caret never truncate — only the book name gives way */
+.word-root .pn-tail {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.word-root .pn-caret {
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--ink-faint);
+  transition: transform 0.2s;
+}
+
+.word-root .nav-passage.pn-open {
+  border-color: var(--gold);
+}
+
+/* in grey scale the gold border greys out, so the caret carries the state */
+.word-root .nav-passage.pn-open .pn-caret {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 639px) {
+  /* single-line header: the passage chip abbreviates and, at the extreme,
+     ellipsizes — nothing ever wraps controls onto a second row */
+  /* the signed-out "Sign in" button must not wrap to two lines */
+  .word-root .theme-toggle {
+    flex-shrink: 0;
+  }
+  /* The chip takes the room between the wordmark and the study star, which
+     sits at the far edge. With the theme and account buttons gone from The
+     Word there is enough of it that book names no longer need shortening —
+     .pn-name still ellipsizes if a long one ever meets a narrow phone.
+     The clipping lives there, not here: overflow:hidden on the chip would
+     cut off its own enlarged tap target. */
+  .word-root .nav-passage {
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+.word-root .theme-toggle {
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 1.09rem;
+  width: 39px;
+  height: 39px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.word-root .theme-toggle:hover {
+  background: var(--glass-strong);
+  border-color: var(--glass-border-bright);
+}
+
+/* study mode: the same ✦ the chapter heading wears while it is on. The
+   glyph is small inside its em box, so it needs the extra size to read as
+   a star rather than a dot. */
+.word-root .study-toggle {
+  line-height: 0;
+}
+
+/* a block-level child centres exactly — no font metrics involved */
+.word-root .study-toggle svg {
+  display: block;
+}
+
+.word-root .study-toggle.on {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---- pull to refresh ---- */
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- floating bottom nav (mobile) ---- */
+/*
+ * The bar floats up the page, part three — and this time nothing is left to
+ * move it.
+ *
+ * A fixed bar being composited is not by itself the problem — every iOS app
+ * with a fixed header is composited and none of them drift. The problem is a
+ * fixed bar whose APPEARANCE depends on what is behind it. iOS runs momentum
+ * scrolling on a separate thread, which can move a finished layer around but
+ * cannot repaint one; a layer that has to be redrawn every frame from a
+ * changing backdrop has to wait for the main thread, and the scroll does not
+ * wait with it. So it is left where the last repaint put it, halfway up the
+ * page, until the flick ends.
+ *
+ * backdrop-filter is exactly that dependency, and part two did not remove it:
+ * it moved the blur from the bar onto the bar's own ::before, which is inside
+ * the same subtree and reads the same backdrop. Nothing about the work
+ * changed. That is why the bar came back.
+ *
+ * There is no version of this that keeps a live blur, so the blur is gone.
+ *
+ * Everything that has been taken off the bar, and why:
+ *
+ *   the centring transform   gone (part one). The bar is centred with
+ *                            left/right/margin-inline instead, and that stays
+ *                            — a transform that MOVES the bar is a different
+ *                            thing from the one added in part four, which
+ *                            moves it nowhere.
+ *
+ *   backdrop-filter          gone, for the reason above. The bar is painted
+ *                            opaque in --bar instead, exactly as the header
+ *                            has been painted for months — where the same
+ *                            0.97 alpha turned out to be doing all the work
+ *                            and the blur under it was never really seen.
+ *
+ *   filter on the icons      gone. The grey theme greyed .bn-icon: four more
+ *                            layers inside the bar, for nothing. The icons are
+ *                            line drawings stroked in currentColor and that
+ *                            theme's colours are already grey. A static filter
+ *                            is not the drifting bug — it repaints once, not
+ *                            per frame — but there is no reason to keep dead
+ *                            work in the one element that must stay cheap.
+ *
+ * Part four, because it came back a third time.
+ *
+ * Three rounds of taking work away, and by the end there was none left to
+ * take: a flat gradient over an opaque colour, one static shadow, a border.
+ * Nothing on the bar or behind it is repainted while the page moves. So the
+ * premise was wrong — it is not that the layer cannot be repainted in time.
+ * It is that the bar never had a layer of its own to begin with, and an
+ * element painted into the scrolling contents is moved by the scroll whether
+ * or not CSS says it is fixed.
+ *
+ * So the bar is promoted, deliberately: translateZ(0) and will-change, which
+ * ask for a layer and move the bar nowhere. That is the opposite instinct
+ * from parts two and three, and it is the same one — the goal was always a
+ * layer the scrolling thread can carry on its own, and taking work away was
+ * only ever half of getting one.
+ *
+ * It no longer hides in The Word (see Nav.tsx), so nothing moves it at all.
+ */
+
+/* .glass is declared further down this file, and both of the things it gives
+   the bar have to be taken back: the blur, for the reason above, and the
+   near-transparent background that only made sense while there was a blur
+   behind it. What replaces it is the theme's own bar colour with the same
+   sheen laid over the top, so the bar keeps the lit top edge that told it
+   apart from the page. */
+
+/* The copyright line a borrowed translation is shown under. Quiet, but never
+   hidden — it is a condition of the text being there at all. */
+.word-root .scripture-notice {
+  margin: 28px auto 8px;
+  max-width: var(--measure, 42rem);
+  padding: 0 4px;
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.word-root .scripture-notice a {
+  color: inherit;
+}
+
+/*
+ * The header takes the width it is given.
+ *
+ * It was pinned to 880px to line its wordmark up with the column of the page
+ * below it, which is the right instinct and the wrong trade once the tabs
+ * stop fitting: on an iPad, and on any desktop at all, seven controls were
+ * being folded into a column two thirds the width of the screen while the
+ * rest of the bar sat empty on both sides. So above the phone the bar spreads
+ * into the room it actually has, and the tabs spread with it.
+ *
+ * Still bounded. A row of five tabs flung to the far corners of a 27-inch
+ * monitor is not "spread out", it is a scavenger hunt — 1280px is wide enough
+ * that nothing is crowded and near enough that the eye takes the row in at
+ * once.
+ */
+
+/*
+ * The tight band — iPad portrait up to a small laptop.
+ *
+ * There is enough room here for one line and not enough for a generous one,
+ * so the padding and the wordmark give way before the layout does. Measured
+ * rather than guessed: at 768px the bar was 148px tall, folded into four
+ * rows.
+ */
+
+@media (max-width: 639px) {
+  .word-root .page {
+    padding-bottom: 130px;
+  }
+}
+
+/* ---- offline downloads ---- */
+
+/* the bar replaces the button in place, so the row doesn't jump */
+
+/* ---- settings ---- */
+
+.word-root .pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+
+.word-root .pref-row > span {
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+}
+
+/* ---- the welcome: the tour as a front door ---- */
+/* Opaque and over everything, including the bars: it is a screen, not a
+   dialog over one. z 95 clears the header (20), both navs (40), every sheet
+   (70-80) and the menu (90) — nothing in the app should be reachable behind
+   a front door. */
+
+/* the strip is shared with About; only its height is trimmed here so the
+   whole screen — wordmark to button — fits a phone without scrolling */
+
+/* the demo's share button — quiet next to a primary action, and the same
+   whether it sits under the welcome, the About tour, or /tour */
+
+/* on the About page it stands alone under the strip rather than in a
+   centred action stack */
+
+/* ---- /tour: the demo at an address of its own ---- */
+
+/* ---- the tour: the demo deck folded into the About page ---- */
+/* A shelf of app screens, thumbed sideways. The images vary in height (each
+   ends where its content ends, not at a uniform slice), so it is the image
+   height that is fixed and the widths that follow — a shelf of photographs,
+   not a contact sheet. Every img carries its aspect-ratio inline, so the
+   shelf takes its final shape before anything has loaded. */
+
+/* the taps that lead to a feature, under its description */
+
+/* Each slide was captured once per theme, and the theme picks which capture
+   is real. The default (no data-theme, or an explicit dark) is the dark set;
+   light and grey swap in their own. Hidden images never download — lazy
+   loading skips a display:none element. */
+
+/* The grey captures already ARE the grey theme — its own greys, its kept-red
+   letters, its gold primary buttons. The photo-greying rule above must not
+   run them through grayscale again, or the one colour the theme keeps would
+   be filtered back out of the very slide that demonstrates it. */
+
+/*
+ * On a wide screen the shelf stops being a shelf.
+ *
+ * Thumbed sideways is right for a phone and was quietly broken everywhere
+ * else. The strip laid ten screens out in about 3,400px inside a 620px
+ * column, hid its scrollbar, and a mouse wheel does not scroll a horizontal
+ * container — so a desktop reader got two slides, no way to reach the other
+ * eight, and eight blank frames where the pictures should be. Blank, because
+ * the images are lazy and lazy images that are never scrolled into view are
+ * never fetched. The tour is almost entirely pictures; a tour of blank
+ * rectangles is worse than no tour.
+ *
+ * A grid fixes both halves at once. The slides go into the page's own
+ * vertical flow, so the page scrollbar reaches all of them, and lazy loading
+ * starts working the way it is meant to — downward, against a viewport that
+ * actually moves. The three-theme trick is untouched: the other two captures
+ * are still display:none and still never downloaded.
+ */
+/* Width is the obvious test and not quite the right one. What decides whether
+   a sideways shelf works is whether the reader can push it sideways: a thumb
+   can, a mouse cannot — a vertical wheel does nothing to a horizontal
+   container. So a mouse gets the grid at any width, and a wide screen gets it
+   however it is driven. A phone keeps its shelf. */
+
+/* The note about the underlines is a paragraph of small print, not a one-line
+   aside. .notice centres its text and drops it to the faintest ink there is,
+   which is right for a sentence and unreadable at a hundred and forty words —
+   and it would have set the closing benediction below it in the same voice,
+   turning the last line of the page into a second footnote. So: quieter than
+   body copy, but left-aligned, legible, and marked off as an aside by the
+   rule down its side. */
+
+.word-root .chip-remove {
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.72rem;
+  padding: 0 0 0 2px;
+}
+
+.word-root .chip-remove:hover {
+  color: #a33d33;
+}
+
+/* ---- verse of the day ---- */
+
+/* ---- topics & plans ---- */
+/* Verses for the moment: two rows, thumbed sideways, so the fourteen cards
+   take two cards' height and the Bookshelf below is a short scroll away.
+   Each column is a little under half the screen, so the third card peeks in
+   at the edge and says there are more. The page's own gestures leave it
+   alone because it scrolls sideways (scrollsSideways in lib/scroller). Run
+   out to the screen's edges past the page gutter, so the cards slide off the
+   glass rather than stop short of it.
+
+   No scroll snapping. It was here, and a snap point every card's width
+   pulled every flick onto a card's edge, cutting its glide short — the row
+   felt sticky. A free scroll with the platform's own momentum glides. */
+
+/* on a wider screen there is room for all of them in a few columns more */
+
+/* ---- glass primitives ---- */
+.word-root .glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.word-root .card {
+  padding: 22px;
+}
+
+.word-root .card + .card {
+  margin-top: 16px;
+}
+
+/* ---- buttons & fields ---- */
+.word-root .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-strong);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.2s, border-color 0.2s;
+}
+
+.word-root .btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--glass-border-bright);
+}
+
+.word-root .btn:active {
+  transform: scale(0.98);
+}
+
+.word-root .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.word-root .btn-primary {
+  background: linear-gradient(120deg, rgba(229, 180, 91, 0.9), rgba(196, 138, 48, 0.9));
+  border-color: rgba(229, 180, 91, 0.6);
+  color: #221604;
+  font-weight: 600;
+}
+
+.word-root .btn-primary:hover {
+  background: linear-gradient(120deg, #eec06b, #cf9339);
+}
+
+.word-root .btn-sm {
+  padding: 6px 12px;
+  font-size: 0.84rem;
+  border-radius: 10px;
+}
+
+.word-root .field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.word-root .field span {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+
+.word-root input,
+.word-root select,
+.word-root textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.word-root input:focus,
+.word-root select:focus,
+.word-root textarea:focus {
+  border-color: var(--gold);
+}
+
+.word-root select option {
+  background: var(--bg-1);
+  color: var(--ink);
+}
+
+/* ---- reader: search & zoom ---- */
+.word-root .search-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+}
+
+.word-root .search-bar input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+}
+
+.word-root .search-results {
+  margin-bottom: 18px;
+}
+
+/* Words or Ask Claude, under the search bar, for the people with Ask */
+.word-root .search-modes {
+  display: flex;
+  /* a pill that cannot fit goes onto a line of its own, whole, rather than
+     breaking its label in two */
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 14px;
+}
+
+.word-root .search-modes .chip {
+  cursor: pointer;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* "By Word" and "Illuminated Search" side by side need about 250px, and the
+   Spanish pair 276; the navigator on a 320px phone gives them 249. A little
+   smaller there, and both languages sit on one row. */
+@media (max-width: 374px) {
+  .word-root .search-modes .chip {
+    font-size: 0.7rem;
+    padding-inline: 10px;
+  }
+}
+
+/* why Claude chose a passage, between its reference and its words */
+.word-root .search-why {
+  display: block;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+}
+
+.word-root .search-credit {
+  margin-top: 10px;
+}
+
+.word-root .search-results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-dim);
+  font-size: 0.86rem;
+  margin: 4px 2px 10px;
+}
+
+.word-root .search-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.word-root .search-result + .search-result {
+  margin-top: 10px;
+}
+
+.word-root .search-result:hover {
+  background: var(--glass-strong);
+  border-color: var(--glass-border-bright);
+}
+
+.word-root .search-result .ref {
+  display: block;
+  color: var(--gold);
+  font-size: 0.8rem;
+  margin-bottom: 3px;
+}
+
+.word-root .search-result p {
+  font-family: var(--serif);
+  font-size: 0.98rem;
+  color: var(--ink-dim);
+}
+
+.word-root mark {
+  background: var(--gold-soft);
+  color: var(--gold);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.word-root .verse-highlight {
+  background: var(--gold-soft);
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+/* ---- reader ---- */
+/* the reader's controls, folded out from the edge of the page by the
+   passage chip in the header */
+.word-root .panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 69;
+  background: rgba(5, 6, 14, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: fade-in 0.2s ease;
+}
+
+.word-root[data-theme="light"] .panel-scrim {
+  background: rgba(74, 58, 30, 0.35);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.word-root .side-panel {
+  position: fixed;
+  top: 0;
+  bottom: var(--kb, 0px);
+  left: 0;
+  z-index: 70;
+  width: min(88vw, 390px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 0 22px 22px 0;
+  border-left: none;
+  /* The open edge, in the app's own accent rather than the platform's.
+     The panel takes focus when it opens, so that Escape closes it and the tab
+     order starts inside — and the browser draws its own ring for that, which
+     on iOS is a blue that belongs to no theme here. Worse, it is a
+     :focus-visible ring, so it came and went depending on how the panel had
+     been opened. This edge is always drawn, and follows the theme: gold in
+     dark and light, and the grey theme's own accent in grey. */
+  border-color: var(--gold);
+  box-shadow: 14px 0 44px rgba(0, 0, 0, 0.5);
+  padding: env(safe-area-inset-top) 0 0;
+  animation: fold-out 0.26s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.word-root .side-panel:focus,
+.word-root .side-panel:focus-visible {
+  outline: none;
+}
+
+@keyframes fold-out {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+.word-root .sp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* the round buttons in the navigator's header: the theme, and the menu */
+.word-root .sp-icon-btn {
+  display: inline-flex;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.word-root .sp-where {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  color: var(--gold);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.word-root .sp-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(
+    16px,
+    calc(16px + env(safe-area-inset-bottom, 0px) - var(--kb, 0px))
+  );
+}
+
+.word-root .sp-pad {
+  padding: 12px 16px;
+}
+
+.word-root .sp-fixed {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.word-root .sp-pad .search-bar {
+  margin-bottom: 0;
+}
+
+/* the navigator's search button, its icon alone: square, so it reads as a
+   button and not a stray glyph */
+.word-root .search-go-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+}
+
+/* The Words / Ask Claude pills tuck up under the bar above a result list,
+   whose bar keeps a margin below it; here the bar has none, so they stand
+   off it instead of riding up into it */
+.word-root .sp-pad .search-modes {
+  margin: 10px 0 0;
+}
+
+/* The word search's filters: Old Testament, New Testament, Books. Under the
+   modes in the navigator, and over the results with the bar there. */
+.word-root .search-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 14px;
+}
+
+.word-root .sp-pad .search-scope {
+  margin: 8px 0 0;
+}
+
+.word-root .search-modes + .search-scope {
+  margin-top: 0;
+}
+
+.word-root .sp-pad .search-modes + .search-scope {
+  margin-top: 8px;
+}
+
+.word-root .search-scope .chip {
+  cursor: pointer;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 374px) {
+  .word-root .search-scope .chip {
+    font-size: 0.7rem;
+    padding-inline: 10px;
+  }
+}
+
+/* the books sheet opens from inside the navigator, so it stands over it */
+.word-root .modal-overlay.over-panel {
+  z-index: 80;
+}
+
+/* A place on the map, told about (components/PlaceCard.tsx): what it was,
+   where it is now and how sure anyone is, and every chapter that names it. */
+.word-root .place-card {
+  max-width: 460px;
+}
+
+.word-root .place-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.word-root .place-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.word-root .place-kind {
+  margin: 6px 0 0;
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+
+.word-root .place-today {
+  margin: 12px 0 0;
+  font-family: var(--serif);
+  font-size: 1.08rem;
+}
+
+.word-root .place-sure {
+  margin: 2px 0 0;
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+  font-style: italic;
+}
+
+.word-root .place-others {
+  margin: 4px 0 0;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+
+.word-root .place-go {
+  margin-top: 16px;
+}
+
+.word-root .place-refs-head {
+  margin: 20px 0 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.word-root .place-refs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* the book's name, and its chapters beside it, wrapping under themselves */
+.word-root .place-refs li {
+  display: grid;
+  grid-template-columns: minmax(86px, 34%) 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.word-root .place-book {
+  padding-top: 4px;
+  font-family: var(--serif);
+  overflow-wrap: anywhere;
+}
+
+.word-root .place-chapters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.word-root .place-ch {
+  justify-content: center;
+  min-width: 38px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.word-root .place-more {
+  margin-top: 12px;
+}
+
+.word-root .book-picker h3 {
+  margin: 14px 0 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.word-root .book-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.word-root .book-picker-grid .chip {
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+/* sixty-six books are taller than a phone: Clear and Done stay in reach at
+   the foot of the sheet while it scrolls, on the bars' own solid colour */
+.word-root .book-picker .modal-actions {
+  position: sticky;
+  bottom: -24px;
+  margin: 16px -24px -24px;
+  padding: 12px 24px 16px;
+  background: var(--bar);
+  border-top: 1px solid var(--glass-border);
+}
+
+/* translation and bookmarks ride above the book list, one row */
+.word-root .sp-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 0;
+}
+
+.word-root .sp-trans {
+  flex: 1;
+  min-width: 0;
+}
+
+.word-root .sp-bm {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.word-root .sp-prefs {
+  border-top: 1px solid var(--glass-border);
+  display: grid;
+  gap: 4px;
+}
+
+.word-root .sp-prefs .field {
+  margin-bottom: 0;
+}
+
+/* the arrows sit under the panel and its scrim while it is open */
+.word-root .reader-open .chap-arrow {
+  display: none;
+}
+
+/* ---- the book & chapter navigator ---- */
+.word-root .bn-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 12px 16px 6px;
+}
+
+.word-root .bn-testament,
+.word-root .bn-book {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.word-root .bn-testament {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  /* the list is long and the books alone do not say which testament you are
+     in, so the heading rides the top of the scroller until the next one
+     pushes it off. -1px hides the seam its own border would leave. */
+  position: sticky;
+  top: -1px;
+  z-index: 2;
+  /* opaque, not translucent: the book rows slide underneath it */
+  background: var(--bg-0);
+}
+
+.word-root .bn-book {
+  font-size: 0.98rem;
+  font-family: var(--serif);
+  color: var(--ink-dim);
+  padding: 11px 16px 11px 26px;
+}
+
+.word-root .bn-book:hover {
+  color: var(--ink);
+}
+
+.word-root .bn-book.current {
+  color: var(--gold);
+}
+
+.word-root .bn-caret {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 0.18s;
+}
+
+.word-root .bn-caret.open {
+  transform: rotate(180deg);
+}
+
+/* the block that holds a book's chapter rows, and the verses opened between
+   two of them */
+.word-root .bn-chapters {
+  padding: 2px 14px 12px 24px;
+}
+
+/* One row of chapters. Drawn a row at a time rather than as one grid so the
+   verse grid can be inserted between rows; repeat(5) here must match
+   PER_ROW in components/BookNav.tsx, or the columns stop lining up. */
+.word-root .bn-ch-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.word-root .bn-ch {
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 11px 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.word-root .bn-ch:hover {
+  background: var(--glass);
+  color: var(--ink);
+}
+
+/* the chapter whose verses are open below it */
+.word-root .bn-ch.open {
+  background: var(--gold-soft);
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+}
+
+/* The verses open immediately under the row holding the chapter that was
+   tapped — not at the foot of the book, where you would have to hunt for
+   them past a hundred and fifty chapters. Six to a row, because verse
+   numbers run past 100 in a few psalms and the column has to hold three
+   digits. */
+.word-root .bn-verses {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  margin: 5px 0 7px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+}
+
+.word-root .bn-v {
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 9px 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.word-root .bn-v:hover {
+  background: var(--glass-strong);
+  color: var(--gold);
+}
+
+.word-root .bn-v-wait {
+  grid-column: 1 / -1;
+  padding: 8px 6px;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+.word-root .bn-ch.current {
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* the pinch gesture replaced the A−/A+ buttons on touch; say so where the
+   buttons used to be */
+.word-root .pinch-tip {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .word-root .pinch-tip {
+    display: block;
+  }
+}
+
+.word-root .chap-trans {
+  font-size: 0.58em;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* Scripture carries no card. A book is one continuous column: no border, no
+   seam between chapters, and the page gutter cancelled so the only inset is
+   the one that keeps the text off the bezel. On a 390px phone that is 358px
+   of line rather than 314px. */
+.word-root .scripture {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  line-height: 1.85;
+  margin-inline: -16px;
+  padding-inline: 16px;
+}
+
+/* The whole book is in the document and every chapter is laid out for real.
+   Letting the browser skip the chapters nobody is looking at was tried and
+   reverted: a skipped chapter stands at an estimated height, and when the
+   true height replaced the estimate above the reader the page slid under
+   them — 28 slides of 1,000-7,000px over one pass up through Psalms. An
+   exact column costs one render when a book opens and never moves again. */
+
+/* chapters are told apart by their heading, not by a gap in the page */
+.word-root .scripture + .scripture .chap-head {
+  margin-top: 34px;
+}
+
+.word-root .scripture h2 {
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin-bottom: 14px;
+  color: var(--gold);
+}
+
+/* The Hebrew letter opening a stanza of Psalm 119. Centred, and outside the
+   hanging indent the verses sit in — it belongs to the stanza, not to the
+   line under it. */
+.word-root .acrostic {
+  margin: 1.1em 0 0.45em;
+  text-align: center;
+  font-size: 1.6em;
+  line-height: 1;
+  color: var(--gold);
+  /* the psalm opens on one, and nothing should push it off the top */
+  text-indent: 0;
+}
+
+.word-root .verse-block:first-child > .acrostic,
+.word-root .section:first-child > .acrostic {
+  margin-top: 0.3em;
+}
+
+/* The poems that turn every line rather than every stanza — Lamentations 1, 2
+   and 4, Proverbs 31, and the alphabetic psalms. The letter travels with the
+   verse number instead of standing over the verse, so twenty-two of them read
+   as one poem rather than as twenty-two headings. */
+.word-root .acrostic-line {
+  color: var(--gold);
+  font-size: 1.05em;
+  line-height: 1;
+  margin-right: 0.4em;
+  /* Two things at once, which is what isolate-override is for. Isolate: the
+     Hebrew must not drag the verse number or the punctuation around it into
+     right-to-left order. Override: where a verse carries two or three letters,
+     they are numbering it, and must run the way the line is read — left to
+     itself a Hebrew run turns round and aleph-beth reads beth-aleph. */
+  direction: ltr;
+  unicode-bidi: isolate-override;
+}
+
+/* ---- prose: the books that have paragraphs to break on ---- */
+
+/* The book's name, once, over its first chapter. Every chapter after it is
+   opened by its drop cap instead — printing the name again above each one
+   would be the same word twenty, fifty, a hundred and fifty times. */
+.word-root .chap-head.book-title {
+  display: block;
+  text-align: center;
+  /* the chapter's own face — the app's, or the one chosen in Settings */
+  font-family: inherit;
+  font-size: 1.85rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 2px 0 26px;
+}
+
+.word-root .chap-head.book-title .chap-trans {
+  display: block;
+  margin: 6px 0 0;
+  letter-spacing: 0.16em;
+}
+
+/* A chapter that is not the first still needs somewhere to scroll to. This is
+   that somewhere, and nothing else: the drop cap below it is what a reader
+   sees. */
+.word-root .chap-anchor {
+  display: block;
+  height: 0;
+  margin: 26px 0 0;
+  overflow: hidden;
+}
+
+.word-root .scripture + .scripture .chap-anchor {
+  margin-top: 30px;
+}
+
+.word-root .prose {
+  margin: 0 0 0.55em;
+  text-align: justify;
+  /* justified setting on a phone column will open rivers without it */
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* the chapter number, set into the first two lines of what opens the chapter */
+.word-root .chap-drop {
+  float: left;
+  font-family: inherit;
+  font-size: 3.1em;
+  line-height: 0.86;
+  padding: 0.04em 0.14em 0 0;
+  color: var(--gold);
+}
+
+/* A chapter that opens on poetry sets its number against a line rather than a
+   paragraph. That line hangs an indent for its verse number, which the drop
+   cap is standing in for — so the one line the number falls on gives the
+   indent up rather than trying to reach back through it.
+
+   Not a negative margin: em on the drop cap is its own 3.1em, so -1.9em there
+   is -110px, and the numeral leaves the page to the left. */
+.word-root .verse-line.chapter-opener {
+  padding-left: 0;
+  text-indent: 0;
+}
+
+/* Verses run on. The span is there to be found — bookmarked, jumped to, held
+   in place across a reflow — not to be seen, so it draws nothing itself. */
+.word-root .prose-v {
+  /* a highlight on a run that wraps must be painted on every line of it,
+     not once around the union of them */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* One verse, one line. The number hangs in the margin and the wrapped lines
+   align under the text rather than under the number — what a printed Bible
+   does, and the reason the indent is negative on top of the padding. */
+.word-root .verse-line {
+  margin: 0 0 0.3em;
+  padding-left: 1.9em;
+  text-indent: -1.9em;
+}
+
+.word-root .verse-num {
+  font-family: var(--sans);
+  font-size: 0.68em;
+  color: var(--gold);
+  vertical-align: super;
+  margin-right: 5px;
+  margin-left: 2px;
+  opacity: 0.85;
+}
+
+/* ---- floating chapter arrows ----
+   In the bottom corners, level with the bar between them: its bottom edge
+   (the same expression as .bottom-nav's) plus half the difference between
+   the bar's 68px and an arrow's 44px. Three tabs leave the room for them on
+   the narrowest phones — 320px wide still has a few pixels either side. */
+.word-root .chap-arrow {
+  position: fixed;
+  bottom: calc(max(4px, calc(env(safe-area-inset-bottom, 0px) - 6px)) + 12px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0 0 3px;
+  color: var(--ink);
+  z-index: 39;
+  cursor: pointer;
+  transition: transform 0.28s ease, opacity 0.28s ease;
+}
+
+/* painted like the bar they sit beside — its colour and sheen, and no blur —
+   so the bottom edge reads as one row, and no verse shows through an arrow */
+.word-root .chap-arrow.glass,
+.word-root .panel-tab.glass {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.02)
+    ),
+    var(--bar);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.word-root .chap-arrow-l {
+  left: 10px;
+}
+
+.word-root .chap-arrow-r {
+  right: 10px;
+}
+
+.word-root .chap-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* The tab on the right edge of The Word that opens and closes the reading
+   controls. Centred 65% of the way down the screen, nearer the thumb than
+   halfway and still well clear of the bottom row; and narrow:
+   at 24px it overlaps the 16px margin by a sliver, so a line passing behind
+   it loses at most the edge of a letter. Under the pop-ups (50 and up) while
+   the panel is shut; over the panel and its shade (69, 70) while it is open,
+   so it can close what it opened. Painted like the chapter arrows. */
+.word-root .panel-tab {
+  position: fixed;
+  top: 65%;
+  right: env(safe-area-inset-right, 0px);
+  transform: translateY(-50%);
+  z-index: 45;
+  width: 24px;
+  height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 0 0 2px;
+  border-right: none;
+  border-radius: 14px 0 0 14px;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.word-root .panel-tab.open {
+  z-index: 71;
+}
+
+/* On a phone, open, the tab reaches left to meet the panel's edge, so the
+   two read as one piece and the whole strip of shade beside the panel is
+   the way to close it. It grows with the panel's fold-out, in the same time
+   and curve, and its left corners square off where it joins. The width is
+   what is left of the screen beside the panel: .side-panel's own
+   min(88vw, 390px), and the inset the tab already stands clear of. On a
+   wider screen that strip is hundreds of pixels across, so the tab keeps its
+   size there. */
+@media (max-width: 639px) {
+  .word-root .panel-tab {
+    transition: width 0.26s cubic-bezier(0.22, 0.8, 0.3, 1),
+      border-radius 0.26s cubic-bezier(0.22, 0.8, 0.3, 1);
+  }
+
+  .word-root .panel-tab.open {
+    width: calc(100vw - min(88vw, 390px) - env(safe-area-inset-right, 0px));
+    border-left: none;
+    border-radius: 0;
+  }
+}
+
+/* the grip above and below the icon: three short upright lines, a little
+   quieter than the icon so the icon still says what the tab is */
+.word-root .panel-tab .pt-grip {
+  width: 8px;
+  height: 10px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.word-root .panel-tab svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (min-width: 640px) {
+  .word-root .chap-arrow {
+    bottom: 26px;
+  }
+}
+
+/* section headings inside a chapter — quiet small caps, the way a print
+   Bible sets a pericope title */
+.word-root .section-head {
+  font-family: var(--sans);
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  line-height: 1.4;
+  margin: 1.1em 0 0.35em;
+}
+
+.word-root .section:first-child > .section-head,
+.word-root .verse-block:first-child > .section-head {
+  margin-top: 0.2em;
+}
+
+.word-root .section + .section {
+  margin-top: 0.2em;
+}
+
+/* transient badge while pinch-zooming the text */
+.word-root .pinch-hint {
+  position: fixed;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 20px;
+  border-radius: 14px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  z-index: 70;
+  pointer-events: none;
+}
+
+/* ---- study mode ---- */
+.word-root .switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.22);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  display: inline-block;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.word-root .switch.on {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+}
+
+.word-root .scripture.study h2::after {
+  content: " ✦";
+  font-size: 0.65em;
+  color: var(--gold);
+  vertical-align: middle;
+}
+
+.word-root .study-verses {
+  display: grid;
+  gap: 12px;
+}
+
+.word-root .verse-block p {
+  margin: 0;
+}
+
+.word-root .verse-block.verse-highlight {
+  box-shadow: none;
+  background: var(--gold-soft);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.word-root .xref-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 6px 0 0 20px;
+}
+
+.word-root .xref-chip {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  line-height: 1;
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.word-root .xref-chip:hover {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.word-root .note-chip.has-note {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+}
+
+/* The Context pop-up: the heading holds still, with the way out in it, and
+   the map and the two readings scroll beneath. A column, so the body takes
+   exactly the height the pop-up has left on any screen rather than a guess. */
+.word-root .ctx-modal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.word-root .ctx-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.word-root .ctx-section {
+  margin-bottom: 14px;
+}
+
+.word-root .ctx-section h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.02rem;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+.word-root .ctx-section p {
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+/* ---- the chapter's map ----------------------------------------------------
+ *
+ * Drawn, not scanned, so it can be coloured from the theme's own tokens —
+ * which is the difference between a map that belongs in this app at night and
+ * a lithograph with a white sky in the middle of a dark page.
+ *
+ * The palette is a period atlas read through the theme: warm ground for the
+ * land, a cooler wash for the sea, a hairline coast, and names set in the
+ * serif the scripture is set in.
+ */
+/*
+ * The palette, declared on both places a map is drawn.
+ *
+ * The full-screen viewer is portalled to <body> — it has to be, or the panel's
+ * own backdrop-filter would make it a small box inside a card — so it is not
+ * inside .ctx-map and inherits nothing from it. Named here together so the two
+ * can never drift, and so neither can be given colours the other lacks.
+ *
+ * Land and sea have to be told apart at a glance and at thumbnail size, which
+ * on a dark ground means the land is the lighter of the two: the opposite of
+ * paper, and the only way round that works at night.
+ */
+.word-root .ctx-map,
+.word-root .map-full {
+  /* today, over the ancient map: a violet the rivers' blue and the journeys'
+     red are both clear of */
+  --map-now: rgba(185, 166, 255, 0.85);
+  --map-sea: #080e1b;
+  --map-land: #343a45;
+  --map-coast: rgba(229, 180, 91, 0.55);
+  --map-river: rgba(139, 160, 240, 0.7);
+  /* the ground itself, laid over the land and under everything written */
+  --map-desert: rgba(229, 180, 91, 0.055);
+  --map-range: rgba(255, 255, 255, 0.038);
+  --map-plain: rgba(139, 160, 240, 0.03);
+}
+
+.word-root .ctx-map {
+  margin-bottom: 16px;
+}
+
+.word-root[data-theme="light"] .ctx-map,
+.word-root[data-theme="light"] .map-full {
+  /* an old map's water and ground: a greyed sea, land the colour of the page */
+  --map-now: rgba(84, 62, 150, 0.85);
+  --map-sea: #bfcdcc;
+  --map-land: #f3e6c8;
+  --map-coast: rgba(90, 64, 30, 0.55);
+  --map-river: rgba(62, 98, 140, 0.72);
+  --map-desert: rgba(190, 145, 60, 0.16);
+  --map-range: rgba(97, 74, 38, 0.13);
+  --map-plain: rgba(70, 105, 175, 0.07);
+}
+
+.word-root[data-theme="grey"] .ctx-map,
+.word-root[data-theme="grey"] .map-full {
+  --map-now: rgba(225, 225, 225, 0.8);
+  --map-sea: #070707;
+  --map-land: #303030;
+  --map-coast: rgba(210, 210, 210, 0.5);
+  --map-river: rgba(170, 180, 200, 0.7);
+  --map-desert: rgba(255, 255, 255, 0.05);
+  --map-range: rgba(255, 255, 255, 0.045);
+  --map-plain: rgba(255, 255, 255, 0.028);
+}
+
+/* the era, over the map, the way a plate is captioned */
+.word-root .mp-era {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+.word-root .mp-frame {
+  position: relative;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--map-sea);
+  cursor: zoom-in;
+}
+
+/* the quiet promise that there is more of this than the panel is showing */
+.word-root .mp-expand {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  color: var(--ink-dim);
+  pointer-events: none;
+}
+
+.word-root .mp-expand svg {
+  width: 15px;
+  height: 15px;
+}
+
+.word-root .mp-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 46vh;
+}
+
+.word-root .mp-sea {
+  fill: var(--map-sea);
+}
+
+.word-root .mp-land {
+  fill: var(--map-land);
+  stroke: var(--map-coast);
+  stroke-width: calc(var(--mp-u, 1) * 1.1px);
+  stroke-linejoin: round;
+}
+
+.word-root .mp-lake {
+  fill: var(--map-sea);
+  stroke: var(--map-coast);
+  stroke-width: calc(var(--mp-u, 1) * 0.9px);
+}
+
+/*
+ * The kind of ground, not just its outline.
+ *
+ * A wash over the land: the Negev and the Syrian Desert warm, the mountains of
+ * Lebanon and the Taurus a shade lighter, plains and deltas barely there. Very
+ * faint on purpose — this is the paper the chapter is printed on, and a reader
+ * should feel that Galilee and the Negev are different country without ever
+ * looking at it directly.
+ */
+.word-root .mp-ground {
+  stroke: none;
+  pointer-events: none;
+}
+
+.word-root .mp-ground.mp-ground {
+  /* the plain case, when it is neither desert nor range */
+  fill: var(--map-plain);
+}
+
+.word-root .mp-ground-name {
+  fill: var(--ink-faint);
+  opacity: 0.62;
+  font-family: var(--sans);
+  font-size: calc(var(--mp-u, 1) * 10px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* a range gets the serif italic every atlas gives its mountains */
+.word-root .mp-range-name {
+  font-family: var(--serif);
+  font-style: italic;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-size: calc(var(--mp-u, 1) * 12px);
+}
+
+/* the mark for a mountain, in the gazetteer's quiet grey */
+.word-root .mp-peak {
+  fill: var(--ink-faint);
+}
+
+.word-root .mp-river {
+  fill: none;
+  stroke: var(--map-river);
+  stroke-width: calc(var(--mp-u, 1) * 1.4px);
+  stroke-linecap: round;
+}
+
+/* A country's name is written across it, not pinned to a dot on it — the
+   convention every atlas uses, and the thing that tells a region from a town
+   at a glance. */
+/* --mp-u is one CSS pixel in the map's own units, published by the component
+   from a live measurement of the element — so every size below is written in
+   the pixels it will actually come out at, on a phone and on a desktop, at
+   any zoom. */
+.word-root .mp-region {
+  fill: var(--ink-faint);
+  font-family: var(--sans);
+  font-size: calc(var(--mp-u, 1) * 12px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.word-root .mp-region.mp-water {
+  fill: var(--map-river);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: calc(var(--mp-u, 1) * 13px);
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.word-root .mp-pin {
+  cursor: pointer;
+}
+
+/* the thumb's target, several times the mark it aims at */
+.word-root .mp-hit {
+  fill: transparent;
+}
+
+.word-root .mp-dot {
+  fill: var(--gold);
+  stroke: var(--map-land);
+  stroke-width: calc(var(--mp-u, 1) * 1.2px);
+}
+
+.word-root .mp-name {
+  fill: var(--ink);
+  font-family: var(--serif);
+  font-size: calc(var(--mp-u, 1) * 15px);
+  /* the halo that lets a name cross a coastline and still be read — the
+     printer's trick, and the reason a crowded chapter is still legible */
+  paint-order: stroke fill;
+  stroke: var(--map-land);
+  stroke-width: calc(var(--mp-u, 1) * 3px);
+  stroke-linejoin: round;
+}
+
+/*
+ * The places the chapter does not name.
+ *
+ * Quieter in every way than the ones it does — smaller dot, smaller and
+ * dimmer type, no halo heavy enough to shout — because they are the ground
+ * this chapter stands on rather than the chapter. And inert: a name that
+ * answers a touch by doing nothing is worse than one that plainly will not.
+ */
+.word-root .mp-site {
+  pointer-events: none;
+}
+
+/* full screen, the countryside opens its cards too */
+.word-root .mp-site-tap {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* its thumb-sized target, unseen: `.mp-site circle` would paint it */
+.word-root .mp-site .mp-hit {
+  fill: transparent;
+}
+
+.word-root .mp-site-tap:hover text,
+.word-root .mp-site-tap:focus-visible text {
+  fill: var(--ink-dim);
+}
+
+.word-root .mp-site circle {
+  fill: var(--ink-faint);
+}
+
+.word-root .mp-site text {
+  fill: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: calc(var(--mp-u, 1) * 11.5px);
+  paint-order: stroke fill;
+  stroke: var(--map-land);
+  stroke-width: calc(var(--mp-u, 1) * 2.5px);
+  stroke-linejoin: round;
+}
+
+/* the hills and valleys, blended in: level ground is the middle grey that
+   both blends leave as it was. Soft light on a dark ground; on parchment it
+   barely darkens at all, so there the harder blend, at a little over half. */
+.word-root .mp-relief {
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.word-root[data-theme="light"] .mp-relief {
+  mix-blend-mode: hard-light;
+  opacity: 0.55;
+}
+
+/* A journey (scripts/map-journeys.mjs), in the reds ink dries to — the
+   words of Christ's colour, which every theme already sets for its ground.
+   The way here faint; this chapter's part bold, with the way it went. */
+.word-root .mp-route {
+  pointer-events: none;
+}
+
+.word-root .mp-leg {
+  fill: none;
+  stroke: var(--wj);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.38;
+}
+
+.word-root .mp-leg.now {
+  opacity: 0.92;
+}
+
+.word-root .mp-arrow {
+  fill: var(--wj);
+}
+
+.word-root .mp-stop-dot {
+  fill: var(--wj);
+  opacity: 0.5;
+}
+
+.word-root .mp-stop-dot.now {
+  opacity: 1;
+}
+
+.word-root .mp-stop {
+  pointer-events: none;
+}
+
+.word-root .mp-stop rect {
+  fill: var(--map-land);
+  stroke: var(--wj);
+  stroke-width: calc(var(--mp-u, 1) * 1.2px);
+  opacity: 0.75;
+}
+
+.word-root .mp-stop text {
+  fill: var(--wj);
+  font-family: var(--sans);
+  font-size: calc(var(--mp-u, 1) * 9.5px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.word-root .mp-stop.now rect {
+  fill: var(--wj);
+  stroke: none;
+  opacity: 1;
+}
+
+.word-root .mp-stop.now text {
+  fill: var(--map-land);
+  opacity: 1;
+}
+
+/* the journey's name, under the era's */
+.word-root .mp-journey {
+  margin: -2px 0 8px;
+  color: var(--wj);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+.word-root .map-full-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.word-root .map-full-title .mp-journey {
+  margin: 2px 0 0;
+}
+
+/* the thread from a moved name back to the place it names */
+.word-root .mp-leader {
+  stroke: var(--ink-faint);
+  stroke-width: calc(var(--mp-u, 1) * 0.8px);
+}
+
+.word-root .mp-pin:hover .mp-dot {
+  fill: var(--ink);
+}
+
+.word-root .mp-pin:hover .mp-name {
+  fill: var(--gold);
+}
+
+.word-root .mp-area .mp-name {
+  font-style: italic;
+  fill: var(--ink-dim);
+}
+
+.word-root .mp-note {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.word-root .mp-credit {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* ---- the map with the screen to itself ---- */
+/*
+ * Its own fixed layer, from the top of the status bar to the bottom of the
+ * home indicator. The map is the point, so the bar above it and the line
+ * below it take only the room their type needs and the rest is ground.
+ */
+.word-root .map-full {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  /* the keyframe is declared with the sheet's other one, further up */
+  animation: fade-in 0.18s ease-out;
+}
+
+.word-root .map-full-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 8px 16px;
+  flex: 0 0 auto;
+}
+
+.word-root .map-full-bar .mp-era {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.word-root .map-full-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.word-root .map-full-tools .lex-close {
+  font-size: 1.05rem;
+}
+
+.word-root .map-full-tools svg {
+  width: 16px;
+  height: 16px;
+}
+
+/*
+ * The stage owns the gesture.
+ *
+ * touch-action: none, because <html> says pan-x pan-y and without saying
+ * otherwise here the browser would scroll the page under a drag meant for the
+ * map. And the pinch is answered in JS — see components/ChapterMap — so the
+ * browser must not answer it too.
+ */
+.word-root .map-full-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  touch-action: none;
+  overflow: hidden;
+  background: var(--map-sea);
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.word-root .map-full-stage .mp-svg {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  display: block;
+  /* the drawing fills the stage exactly: the opening view is widened to the
+     stage's own proportions, so there is nothing to letterbox */
+  cursor: grab;
+}
+
+.word-root .map-full-stage .mp-svg:active {
+  cursor: grabbing;
+}
+
+.word-root .map-full-note {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  padding: 8px 16px 0;
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+/* then, or now: the toggle under the map */
+.word-root .mp-tools {
+  display: flex;
+  margin-top: 10px;
+}
+
+.word-root .mp-now {
+  cursor: pointer;
+}
+
+.word-root .mp-now svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* today's borders, settled and dashed, and its countries and cities */
+.word-root .mp-border {
+  fill: none;
+  stroke: var(--map-now);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.word-root .mp-border-open {
+  opacity: 0.65;
+}
+
+.word-root .mp-country {
+  fill: var(--map-now);
+  font-family: var(--sans);
+  font-size: calc(var(--mp-u, 1) * 11px);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  paint-order: stroke fill;
+  stroke: var(--map-land);
+  stroke-width: calc(var(--mp-u, 1) * 2.5px);
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.word-root .mp-city {
+  pointer-events: none;
+}
+
+.word-root .mp-city rect {
+  fill: var(--map-now);
+}
+
+.word-root .mp-city text {
+  fill: var(--map-now);
+  font-family: var(--sans);
+  font-size: calc(var(--mp-u, 1) * 11px);
+  font-style: italic;
+  paint-order: stroke fill;
+  stroke: var(--map-land);
+  stroke-width: calc(var(--mp-u, 1) * 2.5px);
+  stroke-linejoin: round;
+}
+
+.word-root .verse-note {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  background: var(--gold-soft);
+  border-left: 2px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  padding: 8px 12px;
+  margin: 8px 0 0 20px;
+  cursor: pointer;
+  white-space: pre-wrap;
+}
+
+.word-root .note-edit {
+  margin: 8px 0 0 20px;
+  font-family: var(--sans);
+}
+
+.word-root .note-edit textarea {
+  font-size: 0.88rem;
+  resize: vertical;
+}
+
+.word-root .note-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.word-root .skeleton {
+  color: var(--ink-faint);
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* ---- churches ---- */
+
+.word-root .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.word-root .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.84rem;
+  color: var(--ink-dim);
+}
+
+.word-root .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 26px 0 12px;
+  /* The prayer list carries two buttons, and on a narrow phone two buttons
+     squeeze a title until it breaks over two lines. Wrapping lets the actions
+     take a line of their own instead, and costs nothing on the headings that
+     carry one button or none — they never reach the point of wrapping. */
+  flex-wrap: wrap;
+}
+
+.word-root .section-head h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+
+/* ---- the menu, as a menu (components/MenuMenu) ---- */
+
+/*
+ * Hangs from the button and hard right, because the button is hard right and
+ * a menu that opened leftward from there would run off the screen. z-index
+ * above the header's own, since the header is what it is hanging from.
+ */
+
+/* In the reader's navigator the ☰ sits near the middle of the screen rather
+   than at its right edge, and a 280px menu hung from either side of it ran
+   off — off the panel one way, off the screen the other. So there it is
+   anchored to the panel instead of to the button: the wrap gives up being the
+   containing block, and the menu spans the panel under the header it came
+   from. */
+
+.word-root .plan-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+/* ---- admin dashboard (owner and trusted admins) ---- */
+/* The tile used to be hidden below 900px, which meant the one screen the app
+   is actually used on was the one screen that could not reach it. The tables
+   are still wide, so they scroll sideways and the note below stays. */
+
+/* trusted status: a switch, because it is a state and not an action */
+
+/* ---- standing in someone's account ---- */
+/* Above the nav rather than over the header: the header is different on every
+   screen and the safe-area inset is already spoken for up there, while the
+   space just above the bar is empty everywhere. */
+
+/* the study-mode questions: four figures and the terms they run on */
+
+/* expand and delete, side by side at the end of a row */
+
+.word-root .back-pill {
+  position: fixed;
+  /* flex, so the arrow sits on the text's centre line rather than its
+     baseline — the pill is a <button> coming back from a cross-reference and
+     an <a> going back to the Journal, and the two must look the same */
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  z-index: 60;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  color: var(--ink);
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 900px) {
+  .word-root .back-pill {
+    bottom: 26px;
+  }
+}
+
+.word-root .bookmark-list {
+  display: grid;
+  gap: 6px;
+  max-height: calc(var(--vvh, 100dvh) * 0.5);
+  overflow-y: auto;
+}
+
+.word-root .bookmark-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.word-root .bookmark-jump {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--ink);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.word-root .bookmark-jump:hover {
+  border-color: var(--gold);
+}
+
+.word-root .coll-new {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.word-root .coll-new input {
+  flex: 1;
+}
+
+.word-root .coll-group {
+  margin-bottom: 14px;
+}
+
+.word-root .coll-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.word-root .coll-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.word-root .bookmark-row {
+  flex-wrap: wrap;
+}
+
+.word-root .bm-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin-top: 2px;
+}
+
+.word-root .bm-edit {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 0 2px;
+}
+
+.word-root .bm-edit input {
+  flex: 1;
+  min-width: 0;
+}
+
+.word-root .bm-edit select {
+  max-width: 130px;
+}
+
+.word-root .shared-verse {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Keeping a verse and reading it are the same size of decision here, so the
+   keep affordance sits beside the verse rather than under it. */
+
+.word-root .shared-verse .ref {
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.word-root .shared-verse p {
+  font-family: var(--serif);
+  margin-top: 6px;
+}
+
+/* tap-a-word originals (study mode + KJV) */
+.word-root .w {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 0;
+}
+
+.word-root .w:hover {
+  border-bottom-color: var(--gold);
+}
+
+/* A word lined up against the King James rather than tagged: the underline is
+   dotted, which is the same claim a dotted line makes anywhere — this is the
+   shape of the thing, and the detail is not guaranteed. */
+.word-root .w.approx {
+  border-bottom-style: dotted;
+}
+
+/* The words of Christ (lib/redletter.tsx), where the reader has asked for them.
+   Not a pure red: scripture is set in a serif at reading length, and #ff0000
+   on a page of it buzzes. These are the reds ink actually dries to — a warm
+   brick on the parchment, a lighter clay on the dark, since a dark red on a
+   dark ground is unreadable rather than reverent. */
+
+.word-root .approx-mark {
+  color: var(--gold);
+}
+
+.word-root .lex-approx {
+  margin: 6px 0 0;
+}
+
+.word-root .w.sel {
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+  border-bottom-color: var(--gold);
+}
+
+.word-root .lex-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--kb, 0px);
+  /* the sheet never had a cap: a long word study already ran off the top of
+     the screen unreachably. Clamping it to the visible band fixes that and
+     the keyboard case at once. */
+  max-height: calc(var(--vvh, 100dvh) - 12px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 70;
+  border-radius: 20px 20px 0 0;
+  border-bottom: none;
+  /* the sheet covers the bottom nav, so it only needs room for the home
+     indicator — not a full nav's worth of padding */
+  /* max(), never a sum: env(safe-area-inset-bottom) does not update when the
+     keyboard opens, so adding it to a sheet already lifted by --kb reserves
+     34px of dead strip above the keyboard. Once --kb clears the home
+     indicator there is nothing left to leave room for. */
+  padding: 16px 18px
+    max(8px, calc(8px + env(safe-area-inset-bottom, 0px) - var(--kb, 0px)));
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .word-root .lex-sheet {
+    padding-bottom: 18px;
+  }
+}
+
+.word-root .lex-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.word-root .lex-lemma {
+  font-size: 1.7rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.word-root .lex-count {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.word-root .lex-close {
+  background: none;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  color: var(--ink);
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* the journal sheet's bookmark: the same round button as the way out beside
+   it, gold and filled while the verse is kept */
+.word-root .bm-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-size: 0.95rem;
+  color: var(--ink-dim);
+}
+
+.word-root .bm-toggle.on {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.word-root .lex-body {
+  max-height: calc(var(--vvh, 100dvh) * 0.46);
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.word-root .lex-entry {
+  font-size: 0.94rem;
+}
+
+.word-root .lex-sub-lemma {
+  font-size: 1.15rem;
+  margin-bottom: 2px;
+}
+
+.word-root .lex-meta {
+  color: var(--ink-dim);
+  font-size: 0.84rem;
+  margin-bottom: 6px;
+}
+
+.word-root .lex-gram {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 8px;
+}
+
+.word-root .lex-derivation {
+  font-style: italic;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+}
+
+.word-root .lex-def {
+  line-height: 1.5;
+}
+
+.word-root .lex-kjv {
+  margin-top: 6px;
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+}
+
+.word-root .bm-sheet-title {
+  font-size: 1.15rem;
+  font-family: var(--serif);
+}
+
+/* The settings title, with the way to the download screen beside it. Wraps to
+   its own line on a narrow phone rather than squeezing the title. */
+
+/* the title takes the room that is left, so the button stays on its line
+   rather than being pushed under the subtitle on a narrow phone */
+
+/* inside Home, where the tab row is the heading: the download button alone,
+   at the right, above the first card */
+
+/* ---- how Scripture is set: the preview and its two sliders ---- */
+
+.word-root .slider-field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.word-root .slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.word-root .slider-value {
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+
+/* the small A and the large (or heavy) A at either end say what the slider
+   does before it is touched */
+.word-root .slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.word-root .slider-end {
+  flex: none;
+  width: 1.4em;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.word-root .slider-end-big {
+  font-size: 1.35rem;
+}
+
+.word-root .slider-end-bold {
+  font-weight: 800;
+  -webkit-text-stroke-width: 0.06em;
+}
+
+/* The typeface picker: six tiles, each showing its face, three to a row so
+   it stays two rows on the narrowest phone. Sized so the longest names,
+   Fondamento and the Spanish "Por defecto", fit whole on a 320px screen. */
+.word-root .face-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.word-root .face-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 2px 7px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  cursor: pointer;
+}
+
+.word-root .face-opt.on {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.word-root .face-sample {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.word-root .face-opt.on .face-sample {
+  color: var(--gold);
+}
+
+.word-root .face-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.66rem;
+}
+
+.word-root .face-about {
+  margin-top: 8px;
+}
+
+/* the app's inputs are boxes; a range is a track, and takes none of that */
+.word-root .slider-row input[type="range"] {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  accent-color: var(--gold);
+  height: 28px;
+  cursor: pointer;
+}
+
+/* How far a bookmark runs. Sits above the collections, because how much of
+   the passage you are keeping is decided before where you file it. */
+.word-root .bm-through {
+  margin-bottom: 10px;
+}
+
+.word-root .bm-through select {
+  max-width: 55%;
+}
+
+/* the note, kept from the bookmark sheet */
+.word-root .bm-note {
+  width: 100%;
+  margin: 4px 0 10px;
+  resize: vertical;
+}
+
+.word-root .bm-coll-chips {
+  margin: 6px 0 10px;
+  max-height: calc(var(--vvh, 100dvh) * 0.22);
+  overflow-y: auto;
+}
+
+/* One verse against every translation. The list scrolls inside the dialog
+   rather than the dialog growing past the screen — with six translations and
+   a verse the length of Esther 8:9, it would. */
+.word-root .compare-modal {
+  max-width: 34rem;
+}
+
+.word-root .compare-list {
+  margin: 4px 0 8px;
+  max-height: calc(var(--vvh, 100dvh) * 0.55);
+  overflow-y: auto;
+}
+
+.word-root .compare-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.word-root .compare-row:last-child {
+  border-bottom: 0;
+}
+
+.word-root .compare-abbrev {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.word-root .compare-row.reading .compare-abbrev {
+  color: var(--gold);
+}
+
+.word-root .compare-here {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+
+/* A row that is a door: same clothes as its div siblings, plus the signs of
+   being tappable — the hint at the end of its label line, and a border that
+   warms under the finger. */
+.word-root button.compare-pick {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--glass-border);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.word-root button.compare-pick:hover,
+.word-root button.compare-pick:focus-visible {
+  border-bottom-color: var(--gold);
+}
+
+.word-root button.compare-pick:last-child {
+  border-bottom: 0;
+}
+
+.word-root .compare-go {
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.7rem;
+  color: var(--gold);
+}
+
+/* ---- Ask, under the translations or the commentary ----
+   With Ask the pop-up is a column: the heading holds still at the top, the
+   question box at the foot, and between them what the pop-up shows and the
+   conversation scroll as one. Whatever scrolled on its own loses its scroll —
+   two scrollers, one inside the other, is a trap for a thumb. */
+.word-root .modal.asking {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 14px;
+}
+
+.word-root .modal.asking .ask-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.word-root .modal.asking .compare-list,
+.word-root .modal.asking .mh-body {
+  max-height: none;
+  overflow: visible;
+}
+
+/* the scholars, in one row that slides sideways rather than three that
+   push the question box up the screen */
+.word-root .ask-voices {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -24px 8px;
+  padding: 0 24px 2px;
+}
+
+.word-root .ask-voices::-webkit-scrollbar {
+  display: none;
+}
+
+.word-root .ask-voices .chip {
+  flex: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+/* who is speaking, above a scholar's answer: his name, and that it is AI */
+.word-root .ask-by {
+  margin: 12px 0 -4px;
+}
+
+.word-root .ask-thread {
+  border-top: 1px solid var(--glass-border);
+  margin-top: 6px;
+}
+
+.word-root .ask-exchange {
+  padding: 12px 0 4px;
+  scroll-margin-top: 6px;
+}
+
+/* the reader's question on the right, as said to someone; the answer full
+   width beneath it, as read */
+.word-root .ask-q {
+  width: fit-content;
+  max-width: 88%;
+  margin-left: auto;
+  background: var(--gold-soft);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px 14px 4px 14px;
+  padding: 7px 12px;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.word-root .ask-a {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.word-root .ask-wait {
+  color: var(--ink-faint);
+  animation: ask-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes ask-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.word-root .ask-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+}
+
+.word-root .ask-save:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.word-root .ask-box {
+  flex: none;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 10px;
+}
+
+.word-root .ask-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+/* the box's title, with the scholar's About pill at the right of it */
+.word-root .ask-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.word-root .ask-title-row .ask-title {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.word-root .ask-about-btn {
+  flex: none;
+}
+
+/* the About pop-up, over the commentary it was opened from */
+.word-root .about-overlay {
+  z-index: 80;
+}
+
+.word-root .about-modal {
+  max-width: 30rem;
+}
+
+.word-root .about-years {
+  margin: -8px 0 12px;
+  font-size: 0.82rem;
+  color: var(--gold);
+}
+
+.word-root .about-bio {
+  margin: 0;
+  font-family: var(--serif);
+  line-height: 1.6;
+}
+
+.word-root .about-bio + .about-bio {
+  margin-top: 0.75em;
+}
+
+.word-root .ask-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.word-root .ask-starters .chip {
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.word-root .ask-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.word-root .ask-input {
+  flex: 1;
+  resize: none;
+  min-height: 42px;
+  max-height: 120px;
+  line-height: 1.4;
+}
+
+.word-root .ask-send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--gold);
+  color: var(--bg-0);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.word-root .ask-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.word-root .ask-hint {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.word-root .ask-full {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.word-root .compare-text {
+  margin-top: 4px;
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.word-root .chip-active {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.word-root .lex-tabs {
+  margin: 2px 0 8px;
+}
+
+.word-root .absmith-divider {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+}
+
+.word-root .absmith-text {
+  white-space: pre-wrap;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.word-root .lex-count-btn {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  transition: border-color 0.15s ease;
+}
+
+.word-root .lex-count-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---- the concordance, folded out from the right edge -------------------
+   The navigator's mirror. .side-panel above carries the shared geometry —
+   position, top, bottom: var(--kb), the safe-area padding, the flex column,
+   the glass — and everything here flips its handedness. These rules MUST
+   stay below .side-panel: the two selectors have equal specificity, so
+   source order is what decides, and above it every override is lost. */
+.word-root .conc-scrim {
+  z-index: 79; /* over the word sheet at 70 that opened it */
+}
+
+.word-root .conc-panel {
+  /* .side-panel sets left: 0, and in a left-to-right page left + width beat
+     right — without this the "right sidebar" opens on the left */
+  left: auto;
+  right: 0;
+  z-index: 80;
+  /* wider than the navigator's 390px: this one holds whole verses, and at
+     460px a line runs to about the 55 characters the clamp assumes */
+  width: min(92vw, 460px);
+  border-radius: 22px 0 0 22px;
+  /* the accent edge again, on the side this panel opens from — the shorthand
+     would otherwise put the plain glass border back over it */
+  border-left: 1px solid var(--gold);
+  border-right: none;
+  box-shadow: -14px 0 44px rgba(0, 0, 0, 0.5);
+  animation: fold-out-right 0.26s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+/* like fold-out, no `to` and no fill: the resting state is where it lives */
+@keyframes fold-out-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+.word-root .conc-meta {
+  padding: 0 16px 10px;
+}
+
+.word-root .conc-note {
+  padding: 8px 16px 10px;
+  margin: 0;
+}
+
+.word-root .conc-tabs {
+  padding: 0 16px 12px;
+  margin: 0;
+}
+
+.word-root .conc-list {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  /* no height cap and no scroller of its own — .sp-body is the scroller, and
+     it is the one lib/viewport.tsx knows how to lift off the keyboard */
+}
+
+.word-root .conc-row {
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.word-root .conc-row:hover {
+  border-color: var(--glass-border);
+}
+
+.word-root .conc-row:focus-within {
+  border-color: var(--gold);
+}
+
+.word-root .conc-go {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 9px 10px 7px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.word-root .conc-ref {
+  display: block;
+  color: var(--gold);
+  font-size: 0.86rem;
+  margin-bottom: 3px;
+}
+
+/* the King James address, on a Septuagint row whose numbering differs */
+.word-root .conc-kjv-ref {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin-left: 6px;
+}
+
+/* four lines is enough to place a verse; the rest is a tap away. All four
+   declarations are load-bearing — drop overflow and nothing clamps, and the
+   Septuagint has a verse 3,528 characters long that would fill the panel. */
+.word-root .conc-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+.word-root .conc-text.open {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.word-root .conc-expand {
+  display: block;
+  margin: 0 10px 8px auto;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.word-root .conc-expand:hover {
+  color: var(--gold);
+}
+
+/* why a verse is not here: no connection, or not in this text */
+.word-root .conc-status {
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+/* a line's worth of nothing, so rows do not jump as text lands */
+.word-root .conc-waiting {
+  display: block;
+  height: 1.45em;
+}
+
+/* the verse's cross-references, moved here out of the reading column */
+.word-root .lex-xrefs {
+  margin: 8px 0 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.word-root .lex-xrefs .lex-meta {
+  margin-bottom: 6px;
+}
+
+/* the originals behind a verse, for the translations no one has tagged */
+.word-root .lex-originals {
+  margin: 8px 0 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.word-root .lex-originals .lex-meta {
+  margin-bottom: 6px;
+}
+
+.word-root .lex-originals .xref-chips {
+  max-height: calc(var(--vvh, 100dvh) * 0.24);
+  overflow-y: auto;
+}
+
+/* the original above, the King James word under it — the second is how a
+   reader finds the first in whatever translation is on their screen */
+.word-root .orig-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.25;
+}
+
+.word-root .orig-lemma {
+  font-size: 1rem;
+}
+
+.word-root .orig-kjv {
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+}
+
+.word-root .orig-note {
+  margin-top: 8px;
+}
+
+.word-root .lex-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* the word study's four actions share one row at any width */
+.word-root .word-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.word-root .word-actions .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 4px;
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.word-root .wa-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.word-root .wa-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.word-root .rsvp-btn {
+  font-size: 0.8rem;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.word-root .rsvp-btn.active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---- small print and pill links ----
+   Named for the calendar, where they began; every screen uses them now. */
+.word-root .cal-label {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.word-root .cal-hint {
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  flex-basis: 100%;
+}
+
+.word-root .email-sent {
+  font-size: 0.84rem;
+  color: var(--gold);
+}
+
+/* ---- modal ---- */
+.word-root .modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(5, 6, 14, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  padding-top: calc(16px + var(--vv-top, 0px));
+  /* max(), never a sum: iOS does not zero the safe-area inset when the
+     keyboard opens, and adding the two leaves a 34px dead strip */
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px), var(--kb, 0px));
+}
+
+.word-root .modal {
+  width: 100%;
+  max-width: 560px;
+  /* 100% is the overlay's content box, i.e. the visible band less its
+     gutters, so it tracks the padding above with no arithmetic to keep in
+     step. 88dvh preserves today's proportions when no keyboard is up. */
+  max-height: min(100%, 88dvh);
+  overflow-y: auto;
+  padding: 24px;
+  animation: rise 0.22s ease-out;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.word-root .modal h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.word-root .steps {
+  display: flex;
+  gap: 8px;
+  margin: -8px 0 16px;
+}
+
+.word-root .modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.word-root .notice {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-top: 28px;
+}
+
+.word-root .error-text {
+  color: #f0938b;
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
+.word-root .empty {
+  color: var(--ink-dim);
+  text-align: center;
+  padding: 36px 20px;
+}
+
+@media (min-width: 640px) {
+  .word-root .modal-overlay {
+    align-items: center;
+  }
+  .word-root .page {
+    padding-top: 40px;
+  }
+}
+
+/* ---- drawn icons ---- */
+/* Sized in em so an icon always matches the type it sits beside, and stroked
+   in currentColor so it takes the colour of whatever it is part of. */
+.word-root .ic {
+  width: 1.15em;
+  height: 1.15em;
+  display: inline-block;
+  vertical-align: -0.2em;
+  flex: none;
+}
+
+/* scrollIntoView({block:"nearest"}) stops the moment a field fits, which
+   leaves whatever sits under it — usually its Save button — off the bottom
+   of the screen. The trailing margin drags that up with it. */
+.word-root .modal input,
+.word-root .modal textarea,
+.word-root .modal select,
+.word-root .lex-sheet input,
+.word-root .sp-body input {
+  scroll-margin-block: 16px 24px;
+}
+
+/* A verse carrying a note or a bookmark wears a small star where an asterisk
+   would go, so plain reading still shows you where you have been. */
+.word-root .verse-mark {
+  font-size: 0.58em;
+  color: var(--gold);
+  margin-left: 0.15em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+/* ---- walls ---- */
+/* A wall reads shut: reference, who hung it, and nothing else until it is
+   asked for. The rows are tighter than a journal row for the same reason —
+   six of them should be one glance rather than one scroll. */
+
+/* ---- hanging one ---- */
+
+/*
+ * Lift the row a confirmation floats out of.
+ *
+ * Every row is .glass, and backdrop-filter makes a stacking context, so a
+ * neighbouring row paints over whatever hangs out of this one — here the
+ * "hung" note below, which floats over the row rather than pushing it about.
+ * A z-index on the note alone cannot win that, because the contest is between
+ * the rows. (It was first written for the menu that chose which wall, when
+ * there was more than one wall to choose from.)
+ *
+ * Rows only. The bookmark sheet used to be in this rule, and `position:
+ * relative` on a sheet that is `position: fixed` is not a lift — it is a drop:
+ * the sheet left the viewport and landed 47,000px down the document, which
+ * from the reader's side looked like the button closing it. The sheet is
+ * z-index 70 already and has no sibling to lose to.
+ */
+
+/*
+ * "Hung on Set Free" — said without moving anything.
+ *
+ * This used to sit in the flow beside the button. In a row of icon buttons
+ * that is a nowrap phrase appearing from nothing, which widened the row,
+ * wrapped it, and pushed the hang button somewhere else for the two and a half
+ * seconds the message lasted — then snapped it back. It read as the screen
+ * refreshing. A confirmation is not worth a reflow, so it is taken out of the
+ * flow and floated over the row instead.
+ */
+
+/* ---- asked to sign in (components/SignInNeeded) ---- */
+
+/* ---- the prayer list (components/MyPrayers) -------------------------------
+   Under the verses on the reader's wall: what is still being prayed for, and
+   the answered prayer kept below it. */
+
+/* an answered prayer stays on the list, but stops asking for attention */
+
+/* the edit and delete marks: icons the size of the type beside them, with
+   room enough round them to be pressed, and only delete turns red */
+
+/* Prayed today is a state, so it holds its colour once pressed — and a
+   border as well as a colour, for the grey theme. */
+
+/* A folded prayer is a line: when, and the first words with an ellipsis.
+   The newest few arrive open; everything older arrives folded, and the
+   caret — or the line itself — opens it out. The tools fold away with the
+   body: a card being skimmed past is not the moment for its delete button. */
+
+/* the section header carries two small buttons — fold-all and add */
+
+/* who can see the list, said where it is written */
+
+/* In the sheet there is a line to itself and room on it, so the message can
+   simply be part of the page the way any other confirmation is. */
+
+/* ---- plans people write for themselves (components/PlanBuilder) ---- */
+
+/* The way in, rather than another shelf to look at — so it reads as an
+   action while sitting in the row where the thought occurs. */
+
+/* Four controls that belong to one sentence — this book, these chapters, this
+   many a day — so they sit on one line and wrap together rather than each
+   taking a row of its own. */
+
+/* the book is the one worth reading at a glance, so it gets the room */
+
+/* Capped and scrolled: a year-long plan is 365 lines, and a modal that grows
+   to hold them all is a modal with its buttons off the bottom of the screen. */
+
+/* .passage-link is written for anchors, so on a button it keeps the browser's
+   own chrome — a grey box in the middle of a sentence. */
+
+/* tabular so the numbers form a column rather than a ragged edge */
+
+/* Correcting, sharing and throwing away — the three things you can do to a
+   plan of your own and to none of the catalogue's, so they sit apart from the
+   two anybody can do to any plan. */
+
+/* The one decision in the builder that reaches past the reader's own account,
+   so it is set apart from the rest of the form rather than sitting in it. */
+
+/* ---- Journal ----------------------------------------------------------
+   One screen for everything this account has made: notes, kept verses and
+   plan progress, each sorted into its own kind. Rows are cards so they read
+   as the same material as the rest of the app, but a good deal quieter —
+   there can be hundreds of them, and .card's 22px would make a wall. */
+
+/* The day's action, on a line of its own under the plan. */
+/* Mark today read, and beside it the day's devotional or guide: a row of
+   their own, spaced and centred on one another. As inline boxes they sat
+   flush together, each on its own text's baseline, so the one with an icon
+   rode higher than the one without. */
+
+/* When a plan asks for you. A line of its own beneath the plan, because
+   .jr-row wraps — flex-basis 100% is what sends it there rather than letting
+   it squeeze in beside the progress bar. */
+
+/* "Every day · 7:00 AM", then Adjust at the end of the line */
+
+/* ---- a plan's reminders: on or off, the days, the hour ---- */
+
+/* the label keeps to one line ("A las" wrapped beside a wide menu) */
+
+/* seven round days across, as wide as the sheet allows and no wider */
+
+.word-root .link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* an on/off switch: a knob that slides across, gold when on */
+
+/* the journal's switch is the Table's switch; only the spacing is its own */
+
+/* the word and its count, side by side, under the icon */
+
+/* the heading is the handle: everything but the tools opens and shuts it */
+
+/* fixed width so the name starts in the same place open or shut */
+
+/* the sibling rule that spaces stacked cards would fight the grid gap */
+
+/* the row is a container now: a link that fills it, and a share button that
+   sits beside — the button cannot live inside the link */
+
+/* The handle a collection is rearranged by. It is its own target rather than
+   the whole row, so that a tap still opens the passage and a drag down the
+   page still scrolls it — touch-action tells the browser to leave the gesture
+   alone once it starts here, and nowhere else. */
+
+/* edit and share sit together at the end of a row */
+
+/* an open editor takes the whole row; nothing else competes with it */
+
+/* removing something reads as an ordinary button until you look at it */
+
+/* renaming a collection takes over its heading row */
+
+/* the verse itself, which is the thing that was kept */
+
+/* a line's worth of nothing while the text is on its way, so the list does
+   not jump as verses land */
+
+/* a bookmark's own label sits under the verse, quieter than it */
+
+/* three lines is enough to recognise a note by; the reader has the whole of
+   it, and that is one tap away */
+
+/*
+ * A plan card is one column, top to bottom.
+ *
+ * It was not. .jr-go — the title, the progress bar and the "day N next" line
+ * — shared a flex row with the icon buttons, so it stopped short of the card's
+ * edge; the buttons under it and the reminder row are full-width children and
+ * ran past. The bar and the buttons beneath it were 34px out of line with each
+ * other, on the same card.
+ *
+ * Worse, how far short depended on how many icons were showing. A plan not
+ * started yet has only the ✕, a plan under way has restart as well — so the
+ * count sat in a different place on every card in the list, which is the one
+ * thing in a column of cards the eye actually reads down.
+ *
+ * The icons come out of the flow, and a gutter is kept for them at the top
+ * right whether one is showing or two. Everything else runs the full width of
+ * the card and lines up with everything else.
+ */
+
+/* Room for both icons, kept whether or not both are there. */
+
+/* ---- the navigator's history ---------------------------------------------
+   Where the reader has been sent, under a heading that behaves exactly like
+   the two testaments above it. */
+.word-root .bn-history-count {
+  margin-left: 8px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dressed as a testament heading — sticky, same weight — but it is a heading
+   and not a control, so it does not offer a finger anything to press. */
+.word-root .bn-history-head {
+  cursor: default;
+}
+
+.word-root .bn-history {
+  display: grid;
+  padding: 4px 0 10px;
+}
+
+.word-root .bn-history-row {
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  font-family: var(--serif);
+  font-size: 0.98rem;
+  text-align: left;
+  padding: 10px 16px 10px 24px;
+  cursor: pointer;
+}
+
+.word-root .bn-history-row:hover {
+  background: var(--glass);
+  color: var(--gold);
+}
+
+/* The apology screen — see components/ErrorBoundary. Deliberately plain:
+   it is the one screen that must not depend on anything that might be
+   what broke. */
+
+/* A switched-off account in the admin table. Dimmed rather than hidden: the
+   point of the row is that the person is still here and still has everything
+   they wrote — they simply cannot act. See lib/admin. */
+
+/* the row is dimmed; the way back must not be */
+
+/* Deleting an account — see components/DeleteAccount. Red only once it is
+   open: the closed state is a door, not a warning. */
+
+/* Matthew Henry's commentary — see components/Reader. The panel is prose and
+   nothing else, so it is set like prose: measure held down, paragraphs given
+   room, and the attribution quiet at the foot where a footnote belongs. */
+.word-root .mh-chip {
+  color: var(--gold);
+}
+
+/* the heading row: title on the left, the way out hard right */
+.word-root .mh-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.word-root .mh-head h2 {
+  flex: 1;
+  min-width: 0;
+}
+
+/* the round button does not squash when the reference is long */
+.word-root .mh-head .lex-close {
+  flex: 0 0 auto;
+}
+
+.word-root .mh-title {
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  color: var(--ink);
+  margin: 2px 0 12px;
+}
+
+.word-root .mh-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  /* Up and down, never side to side.
+     Naming one axis makes the other `auto` on its own, so a single word too
+     wide to fit turned this into a two-axis scroller and the prose slid out
+     from under the panel. Saying `hidden` here keeps the pane vertical, and
+     breaking the word means nothing is hidden by it. */
+  overflow-x: hidden;
+  overflow-wrap: break-word;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: var(--ink-dim);
+}
+
+.word-root .mh-body p + p {
+  margin-top: 0.85em;
+}
+
+.word-root .mh-who {
+  margin-top: 14px;
+  font-size: 0.76rem;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* Two commentators in one panel — see components/Reader. Each gets a named
+   band so it is never in doubt who is speaking; the rule between them does
+   the work a heading would, without shouting. */
+.word-root .mh-voice + .mh-voice {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.word-root .mh-by {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+/* the psalm's own introduction, set apart from the verse note under it */
+.word-root .mh-overview {
+  padding-left: 12px;
+  border-left: 2px solid var(--glass-border);
+  color: var(--ink-faint);
+  margin-bottom: 12px;
+}
+
+.word-root .mh-hints {
+  margin-top: 14px;
+}
+
+.word-root .mh-hints .mh-by {
+  color: var(--ink-faint);
+}
+
+.word-root .mh-hints p + p {
+  margin-top: 0.5em;
+}
+
+/* ---- the devotional panel ---- */
+
+/* Spurgeon opened each meditation with the verse it hangs on, set apart from
+   the prose the way he set it apart on the page. Not a quotation of the whole
+   verse — often a clause of it — so it is styled as a line of scripture
+   rather than as a reference. */
+
+/* the way back to the chapter it came from, small enough not to interrupt */
+
+/* ---- the commentary that goes with a plan's day ---- */
+
+/* which plan this day belongs to, under "Day 12" */
+
+/* told once, at the top, in Spanish only */
+
+/* the verses a note is about, small, so it reads as a signpost */
+
+/* ---- the Bookshelf -------------------------------------------------------
+   Books to read beside Scripture: the shelf in the Discover tab, a book's own
+   page, and a part of it (components/Bookshelf, components/BookView).
+
+   A part is set the way its PDF sets it: a small gold chapter label over the
+   title, a knot under it, the picture in a gold frame, a drop cap in a framed
+   box, justified text, and verse set in. In the book's own faces — Sorts Mill
+   Goudy and Libre Baskerville, scoped to .bk by lib/bookFonts — and in the
+   reader's theme: Parchment's colours are the PDF's, and Illuminated and grey
+   lend theirs to the same ornaments. */
+
+/* Two rows that scroll sideways, as the topic cards above do and for the
+   same reasons (see .topic-grid): a column is most of the screen, so the
+   next one peeks in at the edge, and the row runs out past the gutter to
+   the glass's edges. Books fill a column top to bottom, so the volumes of
+   one work sit one over the other. */
+
+/* side by side in the grid, not stacked: no card's gap above it */
+
+/* "In English", on a Spanish reader's shelf */
+
+/* ---- a book's own page ---- */
+
+/* the cover is a button that opens it over the screen */
+
+/* A cover keeps its own shape once it has loaded. The PDF editions' page is
+   the shape held for it until then; The Divine Comedy's painting is a little
+   taller, and cropping it to that would cut into its gilt frame. */
+
+/* which chapter "Continue" goes to, under the word itself */
+
+/* the part the reader is in */
+
+/* the same contents in the navigator beside a chapter: inside the panel's
+   margins, a little smaller, and the last row clear of the panel's foot */
+
+/* ---- a part of a book ---- */
+
+/* The chapter's picture: across the page on a phone, above the opening;
+   beside it on anything wider, as the PDF has it. */
+
+/* The opening paragraph is set ragged, as the PDF sets the lines beside its
+   drop cap: justified, three short lines beside a box open up into gaps. */
+
+/* figures that read as figures — Goudy's old-style 1 is a small "ı" */
+
+/* The drop cap: the letter in its own framed box, three lines deep, as the
+   PDF draws it — cream on brown in a gold frame. */
+
+/* a line too long for a phone wraps under itself, set in a little */
+
+/* An engraving in the verse of a poem in Books: the full measure, never
+   floated beside the lines, which are long enough already */
+
+/* The poet's Argument at a Book's head: his prose summary, in italic and a
+   size down, as the edition sets it under the engraving. Ragged rather than
+   justified: italic justified to a phone's width opens up into gaps. */
+
+/* the part a chapter begins, small, over the chapter's own label */
+
+/* A letter or a record in a novel — "Dear Stephen, …" — set in from both
+   margins, as the edition sets it; its italic is the text's own */
+
+/* An epigraph at a chapter's head — an in-world document, a catechism card
+   or a routing slip — set in further than a letter and a size down, as the
+   edition sets it: first a line saying what the document is, smaller and
+   dimmer, then the document. Ragged, as italic in a narrow column should be. */
+
+/* "Notes on Book I", after the verse */
+
+/* a note: its word or phrase in bold, the line it is on, then the note — a
+   size down, and ragged, since a narrow column of short entries justified
+   opens up into gaps */
+
+/* "OBJECTION 1.", "ANSWER.", the author's name: bold capitals at the margin */
+
+/* On a phone three columns leave the reasons a word wide: each row becomes
+   an entry instead — the old name, an arrow, the new one, and why under it. */
+
+/* Bunyan's Bible references, still in their brackets: each one a quiet tap */
+
+/* A picture, or a cover, on its own over the screen, as large as the screen
+   allows, to be zoomed into (components/PictureViewer.tsx). The stage takes
+   every touch for itself: the pinch, the drag and the double-tap are the
+   viewer's, not the page's. */
+.word-root .bk-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(8, 8, 12, 0.96);
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
+.word-root .bk-viewer-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* room above for the ✕ and below for the zoom, the same both ways so the
+     picture sits in the middle of the screen */
+  padding: max(64px, calc(env(safe-area-inset-top) + 56px)) 12px;
+  overflow: hidden;
+  touch-action: none;
+  cursor: zoom-out;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* a phone on its side has little height to spare: the picture takes it all,
+   and the ✕ and the zoom sit over it */
+@media (max-height: 500px) {
+  .word-root .bk-viewer-stage {
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+}
+
+.word-root .bk-viewer-stage img {
+  display: block;
+  flex: none;
+  max-width: none;
+  border-radius: 6px;
+  transform-origin: center;
+  will-change: transform;
+  cursor: zoom-in;
+  -webkit-user-drag: none;
+}
+
+.word-root .bk-viewer-stage.zoomed,
+.word-root .bk-viewer-stage.zoomed img {
+  cursor: grab;
+}
+
+.word-root .bk-viewer-stage.zoomed:active,
+.word-root .bk-viewer-stage.zoomed:active img {
+  cursor: grabbing;
+}
+
+/* the larger copy on its way: a thin ring, quiet, in the middle of the dark */
+.word-root .bk-viewer-wait {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 2px solid rgba(242, 240, 234, 0.2);
+  border-top-color: rgba(242, 240, 234, 0.85);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+.word-root .bk-viewer-close {
+  position: absolute;
+  z-index: 1;
+  top: max(14px, env(safe-area-inset-top));
+  right: 14px;
+  color: #f2f0ea;
+  border-color: rgba(242, 240, 234, 0.4);
+  background: rgba(8, 8, 12, 0.55);
+}
+
+.word-root .bk-viewer-zoom {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid rgba(242, 240, 234, 0.25);
+  border-radius: 999px;
+  background: rgba(8, 8, 12, 0.7);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.word-root .bk-viewer-zoom button {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #f2f0ea;
+  font: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.word-root .bk-viewer-zoom .bk-viewer-pct {
+  min-width: 64px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.word-root .bk-viewer-zoom button:hover:not(:disabled) {
+  background: rgba(242, 240, 234, 0.12);
+}
+
+.word-root .bk-viewer-zoom button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.word-root .bk-viewer-zoom .bk-viewer-pct:disabled {
+  opacity: 0.75;
+}
+
+.word-root .bk-viewer-zoom button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+/* a whole chapter, cited by Bunyan as "Rom. 3", scrolls inside the pop-up */
+
+/* Grey keeps no colour of its own, so the drop cap's brown box turns grey
+   with everything else. The pictures do not: they are the book, painted for
+   it, and grey is the theme a new reader starts in — greying them would show
+   most readers a different book from the one that was made. */
+
+/* which part of a work in two a book is, under its title */
+
+/* the other part of a work in two, from either one's own page */
+
+/* Illumination's tier, in the dashboard's table: small, so the row stays one
+   line, and gold when it is more than the standard day */
+
+/* "✦ Illumination · AI" over the titles of the demo's three AI screens */
+
+/* ---- a chapter's study pictures, in its Context panel ------------------------
+ *
+ * A row to swipe along rather than a grid: most chapters that have any have
+ * one to three, and Exodus 26 has nine, so the row is as tall as one picture
+ * however many there are. The diagrams are line drawings on white, so their
+ * card keeps a white ground in the dark theme as well.
+ */
+.word-root .study-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+  margin: 0 -2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.word-root .study-card {
+  flex: 0 0 auto;
+  width: min(62vw, 240px);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.word-root .study-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.word-root .study-card.diagram img {
+  object-fit: contain;
+  background: #fff;
+}
+
+.word-root .study-card span {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+
+.word-root .study-card:focus-visible img {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.word-root .study-note {
+  font-size: 0.8rem !important;
+  line-height: 1.45 !important;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+/* the caption over a study picture: a line at the top, the rest on a tap */
+.word-root .bk-viewer-cap {
+  position: absolute;
+  z-index: 1;
+  top: max(14px, env(safe-area-inset-top));
+  left: 14px;
+  right: 66px;
+  max-width: 560px;
+  color: #f2f0ea;
+  border: 1px solid rgba(242, 240, 234, 0.25);
+  border-radius: 14px;
+  background: rgba(8, 8, 12, 0.72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.word-root .bk-viewer-cap-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.word-root .bk-viewer-cap-kind {
+  grid-column: 1;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.word-root .bk-viewer-cap-title {
+  grid-column: 1;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.word-root .bk-viewer-cap-more {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 0.8rem;
+  color: #e6c878;
+}
+
+.word-root .bk-viewer-cap-body {
+  max-height: 45vh;
+  overflow-y: auto;
+  padding: 0 12px 10px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.word-root .bk-viewer-cap-body p {
+  margin: 0 0 8px;
+}
+
+.word-root .bk-viewer-cap-refs {
+  color: #e6c878;
+}
+
+.word-root .bk-viewer-cap-period {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.word-root .bk-viewer-cap-body h4 {
+  margin: 10px 0 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.word-root .bk-viewer-cap-body ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.word-root .bk-viewer-cap-body a {
+  color: #f2f0ea;
+}
+
+.word-root .bk-viewer-step {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 64px;
+  border: 1px solid rgba(242, 240, 234, 0.25);
+  border-radius: 12px;
+  background: rgba(8, 8, 12, 0.55);
+  color: #f2f0ea;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.word-root .bk-viewer-step.prev {
+  left: 8px;
+}
+
+.word-root .bk-viewer-step.next {
+  right: 8px;
+}
+
+.word-root .bk-viewer-cap-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px 10px;
+  padding: 6px 12px;
+  border: 1px solid rgba(230, 200, 120, 0.5);
+  border-radius: 999px;
+  color: #e6c878;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+/* ---- the Picture Bible: its row in Discover, and the gallery ----------------
+ *
+ * In Discover, one row of the stories rather than the shelf's two: a picture
+ * wants its width more than a book cover does. In the gallery, the stories as
+ * cards two to a row on a phone, and a story's pictures as a grid under its
+ * parts.
+ */
+
+/* ---- the illustrated Bible in the text ---------------------------------------
+ *
+ * A picture where a scene begins, the column's full width, between the
+ * section heading and the verse. Its box is kept from the picture's own
+ * width and height before it arrives, so the text below does not jump.
+ */

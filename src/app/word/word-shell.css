@@ -1,0 +1,95 @@
+/*
+ * The Word's place in the Barnabas shell, and its toolbar. Hand-written; the
+ * reader's own styles are in word.css (generated, see scripts/).
+ *
+ * Communion's document did not scroll: one element (#app-scroll) did, with
+ * the header above it. Here the same column fills the main area, and its
+ * height is the room left between Barnabas's header and tab bar, measured by
+ * WordApp into --word-h (the fallbacks below are close estimates).
+ */
+.main-area main.main-fill {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.word-root {
+  height: var(--word-h, 100dvh);
+  min-height: 320px;
+  position: relative;
+  /*
+   * The reader is its own screen inside Barnabas's. Everything it puts on
+   * top of the page is position:fixed — the navigator and its shade, the
+   * chapter arrows, the sheets and modals — and in Communion "fixed" meant
+   * the whole viewport. Layout containment makes this element their
+   * containing block, so they lie over The Word and never over Barnabas's
+   * sidebar, header or tab bar.
+   */
+  contain: layout;
+  /* the sheets size themselves against the visible height (Communion's
+     lib/viewport); here that is the room this element has */
+  --vvh: var(--word-h, 100dvh);
+}
+
+@media (max-width: 860px) {
+  .word-root {
+    height: var(
+      --word-h,
+      calc(100dvh - 56px - 62px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+    );
+  }
+}
+
+/* in place of Communion's header (components/Nav): the passage and the star */
+.word-root .word-toolbar {
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 20;
+  background: var(--bar);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.word-root .word-toolbar-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.84rem;
+  padding: 7px 12px;
+}
+
+.word-root .word-title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.word-root .word-toolbar .theme-toggle {
+  flex-shrink: 0;
+}
+
+.word-root[data-theme="light"] .word-toolbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--paper-grain) 0 0 / 180px 180px;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (max-width: 639px) {
+  .word-root .word-toolbar-inner {
+    padding: 8px 12px;
+  }
+  .word-root .word-toolbar .nav-passage {
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

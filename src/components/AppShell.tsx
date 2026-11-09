@@ -21,7 +21,16 @@ export async function requirePageLeader(): Promise<{ leader: Leader; profile: Pr
   return { leader, profile: await getProfile(leader) };
 }
 
-export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
+export function AppShell({
+  profile,
+  fill = false,
+  children,
+}: {
+  profile: Profile;
+  /** the page fills the main area edge to edge and scrolls itself (The Word) */
+  fill?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -53,9 +62,13 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
             {initials(profile.name)}
           </Link>
         </header>
-        <main className="wrap" style={{ width: "100%", maxWidth: 1180 }}>
-          {children}
-        </main>
+        {fill ? (
+          <main className="main-fill">{children}</main>
+        ) : (
+          <main className="wrap" style={{ width: "100%", maxWidth: 1180 }}>
+            {children}
+          </main>
+        )}
       </div>
       <TabBar />
     </div>
