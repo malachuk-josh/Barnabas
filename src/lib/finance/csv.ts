@@ -169,11 +169,17 @@ export function bankImportKeys(bankAccountId: string, rows: { date: string; amou
   });
 }
 
-/** A deposit in the bank file that is probably a Sunday offering already entered in Giving (same amount, within 3 days). */
+/**
+ * A deposit in the bank file that is probably a Sunday offering already entered in Giving, or a Stripe
+ * payout already posted from the webhook (same amount, within 3 days). Either way, importing it would
+ * count those gifts twice.
+ */
 export function findGiftDeposit(txns: Transaction[], bankAccountId: string, date: string, signedAmount: number): Transaction | null {
   if (signedAmount <= 0) return null;
   const t0 = Date.parse(`${date}T00:00:00Z`);
-  return (
-    txns.find((t) => t.source === "giving" && t.bankAccountId === bankAccountId && t.direction === "in" && txnTotal(t) === signedAmount && Math.abs(Date.parse(`${t.date}T00:00:00Z`) - t0) <= 3 * 86_400_000) ?? null
-  );
+  const near = (t: Transaction) => t.bankAccountId === bankAccountId && t.direction === "in" && txnTotal(t) === signedAmount && Math.abs(Date.parse(`${t.date}T00:00:00Z`) - t0) <= 3 * 86_400_000;
+  return txns.find((t) => t.source === "giving" && near(t)) ?? txns.find((t) => isPayout(t) && near(t)) ?? null;
 }
+
+/** A Stripe payout posted to the bank by the webhook (or "Fetch from Stripe"). */
+export const isPayout = (t: Transaction) => t.source === "stripe" && Boolean(t.importKey?.startsWith("stripe-payout:"));

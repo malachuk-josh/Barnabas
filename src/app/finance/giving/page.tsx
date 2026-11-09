@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { stripeReady } from "@/lib/stripe/config";
 import { FinanceFrame, NoFinance, financePage } from "@/components/finance/FinanceFrame";
 import { GivingView } from "@/components/finance/GivingView";
 import { TrendChart } from "@/components/finance/TrendChart";
@@ -79,14 +81,18 @@ export default async function GivingPage() {
           dueCount={dueCount}
         />
 
-        <section className="fin-card fin-disabled" aria-disabled="true">
+        <section className="fin-card">
           <div className="fin-card-head">
-            <h2>Online giving: connect Stripe (coming soon)</h2>
-            <button className="btn" type="button" disabled>
-              Connect Stripe
-            </button>
+            <h2>Online giving</h2>
+            <Link className="btn" href="/finance/online">
+              {stripeReady() ? "Online gifts and payouts" : "Connect Stripe"}
+            </Link>
           </div>
-          <p className="muted small">Online gifts will come in on their own once this is ready. Until then, record online and ACH gifts here, or set them up as recurring givers.</p>
+          <p className="muted small">
+            {stripeReady()
+              ? "Gifts made on the website and in the member app come in from Stripe on their own, with their fees, and appear here and on each giver's statement."
+              : "Connect Stripe to take gifts on the website and in the member app. Until then, record online and ACH gifts here, or set them up as recurring givers."}
+          </p>
         </section>
       </div>
     </FinanceFrame>

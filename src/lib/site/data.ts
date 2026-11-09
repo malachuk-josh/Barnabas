@@ -5,6 +5,8 @@ import { loadEvents } from "../events/store";
 import { counts } from "../events/service";
 import { loadServices } from "../services/store";
 import { parseRef } from "../services/scripture";
+import { onlineFunds } from "../finance/online";
+import { stripeReady } from "../stripe/config";
 import { currentAnnouncements } from "./service";
 import type { Announcement, SiteBook } from "./types";
 
@@ -24,7 +26,16 @@ export type PublicSermons = {
   series: { title: string; passage?: string; startDate: string; endDate: string; current: boolean }[];
   upcoming: { date: string; preacher: string; title?: string; passage?: string; series?: string }[];
 };
-export type SiteData = { serviceTimes: ServiceTimes; events: PublicEvent[]; leaders: PublicLeader[]; sermons: PublicSermons; announcements: Announcement[] };
+export type GiveFund = { id: string; name: string; description?: string };
+export type SiteData = {
+  serviceTimes: ServiceTimes;
+  events: PublicEvent[];
+  leaders: PublicLeader[];
+  sermons: PublicSermons;
+  announcements: Announcement[];
+  /** Funds open for online giving (names and descriptions only), when Stripe is connected. */
+  giveFunds?: GiveFund[];
+};
 
 /**
  * The Word (/word) needs a sign-in in this build, so public pages show passage references as text. If
@@ -96,6 +107,12 @@ export function churchIdOf() {
 }
 
 export async function siteData(book: Pick<SiteBook, "announcements">): Promise<SiteData> {
-  const [times, events, leaders, sermons] = await Promise.all([serviceTimes(), publicEvents(), publicLeaders(), publicSermons()]);
-  return { serviceTimes: times, events, leaders, sermons, announcements: currentAnnouncements(book) };
+  const [times, events, leaders, sermons, giveFunds] = await Promise.all([serviceTimes(), publicEvents(), publicLeaders(), publicSermons(), publicGiveFunds()]);
+  return { serviceTimes: times, events, leaders, sermons, announcements: currentAnnouncements(book), giveFunds };
+}
+
+/** Funds open for online giving, read only when Stripe is connected (so the public site never opens the books otherwise). */
+export async function publicGiveFunds(): Promise<GiveFund[]> {
+  if (!stripeReady()) return [];
+  return onlineFunds(churchIdOf()).catch(() => []);
 }

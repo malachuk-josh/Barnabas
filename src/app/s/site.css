@@ -157,3 +157,21 @@ html:has(.cs-root), html:has(.cs-root) body { background: var(--cs-page-bg, #f3f
 .ma-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .ma-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .ma-install { font-size: 0.92rem; }
+
+/* ---------- Online giving (the Give block's form, when Stripe is connected) ---------- */
+.cs-give-form { max-width: 560px; }
+.cs-root .cs-give-funds, .cs-root .cs-give-freq { grid-template-columns: 1fr; }
+.cs-root .cs-give-freq { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+.cs-give-choice span { display: grid; gap: 2px; }
+.cs-give-desc { font-weight: 400; }
+.cs-give-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cs-root .cs-give-chip { min-height: 44px; border-radius: 10px; border: 1.5px solid var(--cs-line); background: var(--cs-surface); color: var(--cs-text); font: inherit; font-weight: 700; cursor: pointer; }
+.cs-root .cs-give-chip.is-on { border-color: var(--cs-primary); background: var(--cs-primary); color: var(--cs-on-primary); }
+.cs-give-amount { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cs-give-amount span { font-weight: 700; font-size: 1.1rem; }
+.cs-root .cs-give-amount input { max-width: 220px; }
+.cs-give-verse { margin: 4px 0 0; padding: 12px 16px; border-left: 3px solid var(--cs-accent, var(--cs-primary)); background: var(--cs-soft); border-radius: 0 10px 10px 0; font-style: italic; }
+.cs-give-verse cite { display: block; margin-top: 6px; font-style: normal; font-size: 0.9rem; color: var(--cs-muted); }
+.cs-give-done { display: grid; gap: 8px; max-width: 560px; }
+@media (max-width: 400px) { .cs-give-presets { grid-template-columns: repeat(2, 1fr); } .cs-root .cs-give-amount input { max-width: none; } }
+.cs-give-form .cs-check input { flex: none; }

@@ -47,11 +47,20 @@ export type Answer = string | number | boolean;
 export type PaymentStatus = "not_required" | "due" | "paid" | "refunded" | "waived";
 
 /**
- * Stripe plugs in here. Today a paid event records `due` and the amount, and a leader can mark it paid
- * (cash or check at the door). A Stripe Checkout session id and webhook-confirmed status would live on
- * this object; nothing else needs to change.
+ * A paid event's payment. A leader can mark it paid at the door (cash or check). When Stripe is connected,
+ * a public registration goes to Stripe Checkout and `checkout` holds the session; Stripe's webhook marks it
+ * paid. An unpaid hold releases its spot after 60 minutes (`HOLD_MINUTES`).
  */
-export type Payment = { status: PaymentStatus; amountCents?: number; /** future: Stripe Checkout session / payment intent id */ providerRef?: string; markedBy?: string; markedAt?: number };
+export type Payment = {
+  status: PaymentStatus;
+  amountCents?: number;
+  /** The Stripe Checkout session id (and, once paid, `paymentIntentId`). */
+  providerRef?: string;
+  paymentIntentId?: string;
+  checkout?: { sessionId: string; expiresAt: number; state: "open" | "processing" | "paid" | "failed" | "expired" };
+  markedBy?: string;
+  markedAt?: number;
+};
 
 export type Registration = {
   id: string;
@@ -68,6 +77,8 @@ export type Registration = {
   source: "public" | "leader";
   createdAt: number;
   cancelledAt?: number;
+  /** Cancelled because an online payment wasn't finished in time (or the bank payment failed). */
+  releasedAt?: number;
   promotedAt?: number;
 };
 

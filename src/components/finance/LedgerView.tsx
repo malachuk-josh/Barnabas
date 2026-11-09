@@ -161,6 +161,7 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
                     {t.source === "giving" && <span className="badge">gifts</span>}
                     {t.source === "import" && <span className="badge">imported</span>}
                     {t.source === "barnabas" && <span className="badge badge-barnabas">Barnabas</span>}
+                    {t.source === "stripe" && <span className="badge">Stripe</span>}
                     {split && (
                       <details className="fin-details small">
                         <summary>Split into {t.lines.length} lines</summary>
@@ -692,7 +693,7 @@ function ReconcilePanel({ canEdit, reconcile, today }: Props) {
   );
 }
 
-type PreviewRow = { row: number; date: string | null; description: string; amount: number | null; reference?: string; problem?: string; accountId: string; fundId: string; duplicate: boolean; alreadyImported?: boolean; giftDeposit?: boolean; importKey?: string; keep: boolean };
+type PreviewRow = { row: number; date: string | null; description: string; amount: number | null; reference?: string; problem?: string; accountId: string; fundId: string; duplicate: boolean; alreadyImported?: boolean; giftDeposit?: boolean; payoutDeposit?: boolean; importKey?: string; keep: boolean };
 
 function ImportPanel({ accounts, funds, banks }: Props) {
   const router = useRouter();
@@ -821,6 +822,8 @@ function ImportPanel({ accounts, funds, banks }: Props) {
                       {r.problem && <div className="small error">Row {r.row}: {r.problem}</div>}
                       {r.alreadyImported ? (
                         <div className="small muted">Already imported from an earlier file; it won&apos;t be added again</div>
+                      ) : r.payoutDeposit ? (
+                        <div className="small muted">Looks like a Stripe payout already in the books (online gifts are counted from Stripe, not from this deposit)</div>
                       ) : r.giftDeposit ? (
                         <div className="small muted">Looks like an offering deposit already entered in Giving</div>
                       ) : (

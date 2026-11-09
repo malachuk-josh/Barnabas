@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isResponse, requirePermission } from "@/lib/auth/require";
-import { bankImportKeys, bankRows, detectColumns, findDuplicate, findGiftDeposit, parseCsv, suggestAccount } from "@/lib/finance/csv";
+import { bankImportKeys, bankRows, detectColumns, findDuplicate, findGiftDeposit, isPayout, parseCsv, suggestAccount } from "@/lib/finance/csv";
 import { rawBody, respond } from "@/lib/finance/http";
 import { FinanceError, ImportInput, importTransactions } from "@/lib/finance/service";
 import { loadBooks } from "@/lib/finance/store";
@@ -39,7 +39,9 @@ export async function POST(request: Request) {
       const direction = (r.amount ?? 0) >= 0 ? "in" : "out";
       const account = r.problem ? null : suggestAccount(books.chart, r.description, direction);
       const importKey = keyOf.get(r);
-      const giftDeposit = Boolean(r.date && r.amount !== null && findGiftDeposit(books.transactions, input.bankAccountId, r.date, r.amount));
+      const match = r.date && r.amount !== null ? findGiftDeposit(books.transactions, input.bankAccountId, r.date, r.amount) : null;
+      const payoutDeposit = Boolean(match && isPayout(match));
+      const giftDeposit = Boolean(match) && !payoutDeposit;
       return {
         ...r,
         importKey,
@@ -47,7 +49,8 @@ export async function POST(request: Request) {
         fundId: account?.defaultFundId ?? general?.id ?? "",
         alreadyImported: Boolean(importKey && imported.has(importKey)),
         giftDeposit,
-        duplicate: Boolean(r.date && r.amount !== null && (findDuplicate(books.transactions, input.bankAccountId, r.date, r.amount) || giftDeposit)),
+        payoutDeposit,
+        duplicate: Boolean(r.date && r.amount !== null && (findDuplicate(books.transactions, input.bankAccountId, r.date, r.amount) || match)),
       };
     });
     return { header: table[0], columns, rows };

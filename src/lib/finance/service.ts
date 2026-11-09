@@ -291,10 +291,10 @@ async function donorFor(personId: string | undefined, name: string | undefined) 
 }
 
 type Donor = { personId?: string; donorName: string };
-type GiftRow = Omit<z.infer<typeof GiftInput>, "personId" | "donorName"> & Donor & { recurringId?: string; importKey?: string };
+export type GiftRow = Omit<z.infer<typeof GiftInput>, "personId" | "donorName"> & Donor & { recurringId?: string; importKey?: string };
 
-/** Adds gifts to the books and posts them as one deposit, with a line per fund. */
-function postGifts(books: Books, leader: Leader, input: { depositDate: string; bankAccountId?: string; description?: string }, rows: GiftRow[], source: Transaction["source"]) {
+/** Adds gifts to the books and posts them as one deposit, with a line per fund. (Online gifts post here too.) */
+export function postGifts(books: Books, leader: Leader, input: { depositDate: string; bankAccountId?: string; description?: string }, rows: GiftRow[], source: Transaction["source"]) {
   const bank = books.chart.accounts.find((a) => a.id === (input.bankAccountId ?? "") && a.bank) ?? books.chart.accounts.find((a) => a.bank && !a.archived);
   if (!bank) throw new FinanceError("Add a bank account first.");
   const funds = new Map(books.chart.funds.map((f) => [f.id, f]));
@@ -354,6 +354,7 @@ export async function deleteGift(leader: Leader, id: string) {
   return updateBooks(leader.churchId, ["gifts", "transactions"], async (books) => {
     const gift = books.gifts.find((g) => g.id === id);
     if (!gift) throw new FinanceError("That gift wasn't found.");
+    if (gift.online || gift.reversalOf) throw new FinanceError("This gift came from online giving. Refund it in the Stripe dashboard; the reversing entry is recorded here when Stripe reports it.");
     const txn = books.transactions.find((t) => t.id === gift.txnId);
     if (txn?.reconciliationId) throw new FinanceError("Its deposit is part of a finished reconciliation, so the gift can't be deleted. Record a correction instead.");
     books.gifts = books.gifts.filter((g) => g.id !== id);

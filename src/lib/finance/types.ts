@@ -40,6 +40,8 @@ export type Fund = {
   /** Opening balance in cents as of the books' start date. */
   openingBalance: number;
   description?: string;
+  /** A pastor or treasurer opened this fund for online giving (the website's and member app's Give form). */
+  online?: boolean;
 };
 
 export type TxnLine = {
@@ -64,7 +66,8 @@ export type Transaction = {
   cleared: boolean;
   /** Set when a finished reconciliation locked this transaction. */
   reconciliationId?: string;
-  source: "manual" | "import" | "giving" | "barnabas";
+  /** "stripe": posted by the Stripe webhook (online gifts and their fees, refunds, payouts to the bank). */
+  source: "manual" | "import" | "giving" | "barnabas" | "stripe";
   /** Check number or bank reference. */
   reference?: string;
   /** Gift entries posted by this deposit. */
@@ -97,10 +100,35 @@ export type Gift = {
   pledgeId?: string;
   /** An offering line with no donor (the plate, a special offering): counted in totals, never listed as a donor. */
   anonymous?: boolean;
-  /** Gifts imported from a giving CSV (ChurchTrac): a stable key from the row, so a re-import skips it. */
+  /**
+   * Gifts imported from a giving CSV (ChurchTrac): a stable key from the row, so a re-import skips it.
+   * Online gifts use "stripe:{payment id}" and their reversals "stripe-refund:..." / "stripe-dispute:...".
+   */
   importKey?: string;
+  /** Online gifts: Stripe's processing fee and what reached the church, in cents (amount is the gross). */
+  fee?: number;
+  net?: number;
+  /** Of the amount, what the giver added to cover the processing fee. */
+  coveredFee?: number;
+  online?: OnlineRef;
+  /** A refund or lost dispute: a negative amount reversing the gift with this id. */
+  reversalOf?: string;
+  /** Stripe reported a dispute (chargeback) on this gift. */
+  disputed?: boolean;
   createdAt: number;
   createdBy: string;
+};
+
+/** Where an online gift came from in Stripe. Ids only: no card or bank details are ever stored. */
+export type OnlineRef = {
+  provider: "stripe";
+  paymentIntentId: string;
+  chargeId?: string;
+  checkoutSessionId?: string;
+  subscriptionId?: string;
+  invoiceId?: string;
+  frequency?: "once" | "weekly" | "biweekly" | "monthly";
+  testMode?: boolean;
 };
 
 export type Recurring = {

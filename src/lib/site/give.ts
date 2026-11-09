@@ -1,18 +1,24 @@
+import { stripeReady } from "../stripe/config";
 import type { SiteDoc } from "./types";
 
 /**
  * Where the Give block, the Give page and the member app's Give tab send people.
  *
- * STRIPE PLUGS IN HERE. Today a church either links its existing giving page (`doc.give.url`) or shows
- * "online giving is coming soon". When Stripe is added, return `{ kind: "checkout", href: "/api/s/give" }`
- * (a route that creates a Stripe Checkout session for a fund and amount and records the gift through
- * Finance's `recordGifts` from the webhook). The block, page and tab render whatever this returns, so
- * nothing else changes.
+ *   - Stripe connected (STRIPE_SECRET_KEY): `{ kind: "checkout" }`. The block shows Barnabas's own give form
+ *     (funds a treasurer opened for online giving, an amount, one-time or recurring, "cover the fee"), which
+ *     posts to `href` (/api/s/give) and goes on to Stripe's hosted Checkout. The webhook records the gift
+ *     in Finance.
+ *   - Otherwise, the church's existing giving page (`doc.give.url`) if it has one,
+ *   - or "online giving is coming soon".
+ *
+ * The block, page and tab render whatever this returns, so nothing else changes.
  */
-export type GiveTarget = { kind: "link"; href: string; note?: string } | { kind: "soon"; note?: string };
+export type GiveTarget = { kind: "checkout"; href: string; note?: string } | { kind: "link"; href: string; note?: string } | { kind: "soon"; note?: string };
 
-export function giveTarget(doc: Pick<SiteDoc, "give">): GiveTarget {
+export function giveTarget(doc: Pick<SiteDoc, "give">, stripe: boolean = stripeReady()): GiveTarget {
+  const note = doc.give.note || undefined;
+  if (stripe) return { kind: "checkout", href: "/api/s/give", note };
   const url = doc.give.url?.trim();
-  if (url) return { kind: "link", href: url, note: doc.give.note || undefined };
-  return { kind: "soon", note: doc.give.note || undefined };
+  if (url) return { kind: "link", href: url, note };
+  return { kind: "soon", note };
 }

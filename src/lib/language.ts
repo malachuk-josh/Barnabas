@@ -29,6 +29,12 @@ export const VERSES = {
     short: "Feed the flock of God which is among you",
     reference: "1 Peter 5:2",
   },
+  /** Online giving: the give form and thank-you drafts. */
+  giving: {
+    text: "Every man according as he purposeth in his heart, so let him give; not grudgingly, or of necessity: for God loveth a cheerful giver.",
+    short: "God loveth a cheerful giver.",
+    reference: "2 Corinthians 9:7",
+  },
 } as const satisfies Record<string, Verse>;
 
 export type VerseKey = keyof typeof VERSES;

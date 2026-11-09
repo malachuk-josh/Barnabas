@@ -33,6 +33,9 @@ import { donorSummaries, lastMonths, monthLabel } from "../finance/giving";
 import { dollars, wholeDollars } from "../finance/money";
 import { addTransaction, recordGifts } from "../finance/service";
 import { loadBooks } from "../finance/store";
+import { onlineTotals } from "../finance/online";
+import { stripeStatus } from "../stripe/config";
+import { listPayouts } from "../stripe/store";
 import { GIFT_METHODS, METHOD_LABELS, type Books, type GiftMethod } from "../finance/types";
 import { budgetView, financeOverview, givingSummary, missionsView, sameDayLastYear } from "../finance/views";
 import { SIGNAL_LABELS } from "../care/load";
@@ -1148,6 +1151,46 @@ const givingSummaryTool = tool({
   },
 });
 
+/** Online giving through Stripe: totals only (no names, no gift list). It can't charge, refund or change anything. */
+const onlineGivingTool = tool({
+  phrase: "Let me look at online giving.",
+  def: {
+    name: "online_giving_summary",
+    description:
+      "Online giving through Stripe for this month or this year: gross given online, processing fees, what givers covered, refunds, net, number of gifts and recurring gifts, card vs bank (ACH), by fund, and the latest payouts to the bank. Aggregates only, never donor names. Read-only: it cannot create charges or refunds (refunds are made in the Stripe dashboard). Pastors, treasurers and deacons.",
+    eager_input_streaming: true,
+    input_schema: { type: "object", properties: { period: { type: "string", enum: ["this_month", "this_year"] } } },
+  },
+  schema: z.object({ period: z.enum(["this_month", "this_year"]).optional() }),
+  async run({ period = "this_year" }, ctx) {
+    const access = await financeAccess(ctx);
+    if (!can(access, "finance.view")) return fail(NO_FINANCE);
+    const status = stripeStatus();
+    const books = await loadBooks(ctx.leader.churchId);
+    const asOf = today();
+    const from = period === "this_month" ? `${asOf.slice(0, 7)}-01` : `${asOf.slice(0, 4)}-01-01`;
+    const t = onlineTotals(books, from, asOf);
+    const funds = new Map(books.chart.funds.map((f) => [f.id, f.name]));
+    const payouts = (await listPayouts(ctx.leader.churchId)).slice(0, 3);
+    return ok({
+      stripe: status.connected ? (status.testMode ? "connected (test mode: these are test gifts, not real money)" : "connected") : "not connected (online giving isn't set up; see Finance → Online giving)",
+      period: { from, to: asOf },
+      given_online: wholeDollars(t.gross),
+      gifts: t.count,
+      recurring_gifts: t.recurringCount,
+      card_and_wallets: wholeDollars(t.card),
+      bank_ach: wholeDollars(t.ach),
+      processing_fees: dollars(t.fees),
+      fees_covered_by_givers: dollars(t.coveredFees),
+      refunded: dollars(t.refunded),
+      net: wholeDollars(t.net),
+      disputed: t.disputed,
+      by_fund: Object.entries(t.byFund).filter(([, v]) => v).map(([id, v]) => ({ fund: funds.get(id) ?? id, total: wholeDollars(v) })),
+      latest_payouts: payouts.map((p) => ({ arrives: p.arrivalDate, net: dollars(p.amount), gross: dollars(p.gross), fees: dollars(p.fees) })),
+    });
+  },
+});
+
 const recordGift = tool({
   def: {
     name: "record_gift",
@@ -1282,6 +1325,7 @@ const ALL: ToolSpec<any>[] = [
   ...KNOW_TOOLS,
   ...THORN_TOOLS,
   ...SITE_TOOLS,
+  onlineGivingTool,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */

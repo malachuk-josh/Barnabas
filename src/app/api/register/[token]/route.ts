@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { zodMessage } from "@/lib/finance/http";
 import { clientAddress, RATE_LIMITS, rateLimit, tokenHash, TOKEN_RE } from "@/lib/care/welcome";
-import { EventsError, register, resolveEventToken } from "@/lib/events/service";
+import { attachCheckout, EventsError, HOLD_MINUTES, register, resolveEventToken } from "@/lib/events/service";
+import { eventSessionParams, returnOrigin } from "@/lib/stripe/checkout";
+import { stripePort } from "@/lib/stripe/client";
+import { stripeReady } from "@/lib/stripe/config";
 
 export const runtime = "nodejs";
 
@@ -32,6 +35,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   if (typeof raw.website === "string" && raw.website.trim()) return NextResponse.json({ ok: true, status: "registered" });
   try {
     const reg = await register(found.churchId, found.event.id, { name: raw.name, email: raw.email || undefined, phone: raw.phone || undefined, partySize: raw.partySize ?? 1, answers: raw.answers ?? {} }, null);
+    // A paid event with Stripe connected: hold the spot and send them to Stripe Checkout. Waitlisted
+    // registrations pay later (a leader marks it); if Checkout can't be reached, it's due at the door.
+    const port = stripeReady() ? stripePort() : null;
+    if (port && reg.status === "registered" && reg.payment.status === "due" && found.event.priceCents) {
+      try {
+        const params = eventSessionParams({ id: found.event.id, title: found.event.title, priceCents: found.event.priceCents, date: found.event.date }, reg, { churchId: found.churchId, origin: returnOrigin(request), token, holdMinutes: HOLD_MINUTES });
+        const session = await port.createCheckout(params, `reg-${reg.id}`);
+        await attachCheckout(found.churchId, reg.id, session.id, (params.expires_at ?? 0) * 1000);
+        return NextResponse.json({ ok: true, status: reg.status, paymentDue: reg.payment.amountCents, checkoutUrl: session.url, holdMinutes: HOLD_MINUTES });
+      } catch (err) {
+        console.error("[barnabas] event checkout failed", err instanceof Error ? err.message : "unknown");
+      }
+    }
     return NextResponse.json({ ok: true, status: reg.status, paymentDue: reg.payment.status === "due" ? reg.payment.amountCents : undefined });
   } catch (err) {
     if (err instanceof EventsError) return NextResponse.json({ error: err.message }, { status: 400 });

@@ -5,11 +5,21 @@ import type { FormField } from "@/lib/events/types";
 import { RegistrationFields, type RegForm } from "./EventsViews";
 
 /** The public registration form. It says only how it went; nothing about anyone else. */
-export function PublicRegistration({ token, fields, maxParty, full }: { token: string; fields: FormField[]; maxParty: number; full: boolean }) {
+export function PublicRegistration({ token, fields, maxParty, full, payOnline = false }: { token: string; fields: FormField[]; maxParty: number; full: boolean; payOnline?: boolean }) {
   const [form, setForm] = useState<RegForm & { website: string }>({ name: "", email: "", phone: "", partySize: 1, answers: {}, website: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<null | { status: string; paymentDue?: number }>(null);
+  const [redirecting, setRedirecting] = useState(false);
+
+  if (redirecting) {
+    return (
+      <div className="stack" role="status">
+        <h2>Taking you to secure payment…</h2>
+        <p className="small muted">Your spot is held for 60 minutes while you pay on Stripe&apos;s page. Card and bank details are entered there, never here.</p>
+      </div>
+    );
+  }
 
   if (done) {
     const first = form.name.split(/\s+/)[0] || "friend";
@@ -36,7 +46,10 @@ export function PublicRegistration({ token, fields, maxParty, full }: { token: s
         const res = await fetch(`/api/register/${token}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, answers }) });
         setBusy(false);
         const json = await res.json().catch(() => ({}));
-        if (res.ok) setDone({ status: json.status, paymentDue: json.paymentDue });
+        if (res.ok && typeof json.checkoutUrl === "string" && json.checkoutUrl.startsWith("https://")) {
+          setRedirecting(true);
+          window.location.assign(json.checkoutUrl);
+        } else if (res.ok) setDone({ status: json.status, paymentDue: json.paymentDue });
         else setError(json.error ?? "Something went wrong. Please try again, or contact the church.");
       }}
     >
@@ -53,7 +66,7 @@ export function PublicRegistration({ token, fields, maxParty, full }: { token: s
         </p>
       )}
       <button className="btn btn-primary" type="submit" disabled={busy}>
-        {busy ? "Sending…" : full ? "Join the waitlist" : "Register"}
+        {busy ? "Sending…" : full ? "Join the waitlist" : payOnline ? "Register and pay" : "Register"}
       </button>
     </form>
   );

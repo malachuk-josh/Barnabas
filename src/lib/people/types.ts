@@ -46,6 +46,11 @@ export type PersonRecord = {
   mergedInto?: string;
   /** The import batch and stable row key that created it (for undo and idempotent re-imports). */
   source?: { batchId: string; key: string; system: "churchtrac" | "planning_center" | "csv" };
+  /**
+   * Added by online giving (no one in People had the giver's email): a minimal record for a leader to review,
+   * and merge into an existing person if it's someone the church knows. Never merged automatically.
+   */
+  review?: { reason: "online_giving"; at: number; possibleMatchIds?: string[]; reviewedAt?: number; reviewedBy?: string };
 };
 
 export type HouseholdRecord = { id: string; name: string; address?: Address; homePhone?: string; createdAt: number; source?: PersonRecord["source"]; archivedAt?: number };

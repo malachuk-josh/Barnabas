@@ -145,7 +145,7 @@ export function EventForm({ churchEvents = [], event }: { churchEvents?: ChurchE
           Registration open
         </label>
       </div>
-      {f.price && <p className="small muted ops-seam">Payment isn&apos;t collected online yet. Registrations are marked as due and you mark them paid at the door. (Stripe will plug in here.)</p>}
+      {f.price && <p className="small muted ops-seam">When Stripe is connected (Finance → Online giving), people pay online as they register, and their spot is held for 60 minutes while they pay. Otherwise registrations are marked as due. Either way you can mark a payment paid at the door.</p>}
       <h3>Registration questions</h3>
       <p className="small muted">Name and an email or phone are always asked. Add your own questions:</p>
       {fields.map((x) => (
@@ -277,8 +277,9 @@ export function Attendees({ event, registrations, origin }: { event: RegEvent; r
                 <span className="ops-att-who">
                   <strong>{r.name}</strong>
                   {r.partySize > 1 && <span className="badge">Party of {r.partySize}</span>}
-                  {r.payment.status === "due" && <span className="badge ops-due">{money(r.payment.amountCents)} due</span>}
-                  {r.payment.status === "paid" && <span className="badge">Paid</span>}
+                  {r.payment.status === "due" && <span className="badge ops-due">{money(r.payment.amountCents)} due{r.payment.checkout?.state === "open" ? " (paying online)" : r.payment.checkout?.state === "processing" ? " (bank payment clearing)" : ""}</span>}
+                  {r.payment.status === "paid" && <span className="badge">{r.payment.checkout?.state === "paid" ? "Paid online" : "Paid"}</span>}
+                  {r.payment.status === "refunded" && <span className="badge">Refunded</span>}
                   <span className="small muted">
                     {[r.email, r.phone].filter(Boolean).join(" · ")}
                     {event.fields.length ? " · " : ""}

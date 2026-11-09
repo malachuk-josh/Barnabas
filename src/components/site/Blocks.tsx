@@ -1,12 +1,14 @@
 import { friendlyDate } from "@/lib/dates";
 import { WORD_IS_PUBLIC, type SiteData } from "@/lib/site/data";
 import { giveTarget } from "@/lib/site/give";
+import { stripeConfig } from "@/lib/stripe/config";
 import { directionsHref, mapEmbedSrc, parseVideo } from "@/lib/site/media";
 import { siteHref } from "@/lib/site/routing";
 import { sanitizeHtml } from "@/lib/site/sanitize";
 import { wordHref } from "@/lib/services/scripture";
 import type { Block, BlockOf, SiteDoc, SiteImage } from "@/lib/site/types";
 import { ContactForm, GuestCardForm } from "./PublicForms";
+import { GiveForm } from "./GiveForm";
 
 /**
  * Renders website blocks on the server. Rich text is sanitized again here (it was sanitized when saved),
@@ -254,7 +256,9 @@ function Give({ b, ctx }: { b: BlockOf<"give">; ctx: RenderCtx }) {
     <section className="cs-section cs-give">
       <SectionHead heading={b.heading} />
       {b.text && <p className="cs-lead">{b.text}</p>}
-      {target.kind === "link" ? (
+      {target.kind === "checkout" ? (
+        <GiveForm href={target.href} funds={ctx.data.giveFunds ?? []} feePercent={stripeConfig()?.feePercent ?? 2.9} feeFixedCents={stripeConfig()?.feeFixedCents ?? 30} portalLoginUrl={stripeConfig()?.portalLoginUrl} buttonLabel={b.buttonLabel === "Give online" ? undefined : b.buttonLabel} />
+      ) : target.kind === "link" ? (
         <p>
           <a className="cs-btn cs-btn-primary" href={target.href} rel="noopener noreferrer">
             {b.buttonLabel || "Give online"}

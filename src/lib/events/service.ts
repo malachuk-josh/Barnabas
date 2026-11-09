@@ -14,7 +14,8 @@ import { FIELD_KINDS, type Answer, type EventsBook, type FormField, type RegEven
  * Events with registration. Leaders with `events.manage` create events and forms, see registrants,
  * export them and check people in; anyone can register through the public link. Capacity counts party
  * size; when an event is full, registrations join the waitlist (if it has one) and move up in order when
- * someone cancels. Payments aren't collected (see `Payment` in ./types: Stripe plugs in there).
+ * someone cancels. Paid events take payment at the door, or online through Stripe Checkout when Stripe is
+ * connected (see "Online payment" below).
  */
 
 export class EventsError extends Error {}
@@ -221,10 +222,13 @@ export async function register(churchId: string, eventId: string, input: Registr
     if (typeof a === "string" && checkMemoryText(a, { allowSensitive: true })) fail("Please leave out passwords, codes and account numbers.");
   }
   const reg = await updateEvents(churchId, ["registrations"], (book) => {
+    releaseExpiredHolds(book, Date.now());
     const ev = findEvent(book, eventId);
     if (ev.date < new Date().toISOString().slice(0, 10)) fail("This event has already happened.");
     const dup = book.registrations.find((r) => r.eventId === ev.id && r.status !== "cancelled" && r.name.toLowerCase() === v.name.toLowerCase() && ((v.email && r.email === v.email) || (v.phone && r.phone === v.phone)));
-    if (dup) fail(`${v.name} is already ${dup.status === "waitlisted" ? "on the waitlist" : "registered"}.`);
+    // Someone who left Stripe Checkout and registers again starts over: the unfinished hold is released.
+    if (dup && dup.payment.status === "due" && dup.payment.checkout?.state === "open") release(book, dup, "expired");
+    else if (dup) fail(`${v.name} is already ${dup.status === "waitlisted" ? "on the waitlist" : "registered"}.`);
     const c = counts(book, ev.id);
     const fits = c.spotsLeft === null || (v.partySize <= c.spotsLeft && c.waitlisted === 0);
     if (!fits && !ev.waitlist) fail(c.spotsLeft ? `Only ${c.spotsLeft} spot${c.spotsLeft === 1 ? "" : "s"} left.` : "This event is full.");
@@ -291,7 +295,7 @@ export async function checkIn(actor: EventsActor, regId: string, present: boolea
   return r;
 }
 
-/** Marks a payment taken at the door (cash or check), waived or refunded. Online payment is a Stripe step for later. */
+/** Marks a payment taken at the door (cash or check), waived or refunded. Online payments are marked by Stripe's webhook. */
 export async function setPayment(actor: EventsActor, regId: string, status: "paid" | "due" | "waived" | "refunded") {
   needManage(actor);
   const r = await updateEvents(actor.leader.churchId, ["registrations"], (book) => {
@@ -316,6 +320,79 @@ export async function admit(actor: EventsActor, regId: string) {
   });
   await log(actor.leader, "admit", regId);
   return r;
+}
+
+/* ---------- Online payment (Stripe Checkout) ---------- */
+
+/** How long an unpaid online registration holds its spot (the Checkout session expires at the same time). */
+export const HOLD_MINUTES = 60;
+
+/** A hold whose Checkout session ran out unpaid: its spot goes back (and the waitlist moves up). */
+export function isExpiredHold(r: Registration, now: number) {
+  return r.status === "registered" && r.payment.status === "due" && r.payment.checkout?.state === "open" && r.payment.checkout.expiresAt <= now;
+}
+
+function release(book: EventsBook, r: Registration, state: "expired" | "failed") {
+  r.status = "cancelled";
+  r.cancelledAt = Date.now();
+  r.releasedAt = r.cancelledAt;
+  if (r.payment.checkout) r.payment.checkout.state = state;
+  const ev = book.events.find((e) => e.id === r.eventId);
+  return ev ? promote(book, ev) : [];
+}
+
+/** Releases every expired hold in the book. Returns the released registrations. */
+export function releaseExpiredHolds(book: EventsBook, now: number): Registration[] {
+  const released = book.registrations.filter((r) => isExpiredHold(r, now));
+  for (const r of released) release(book, r, "expired");
+  return released;
+}
+
+/** Releases expired holds for a church (the public page and leader views call this before counting). */
+export async function releaseExpired(churchId: string, now = Date.now()) {
+  const book = await loadEvents(churchId);
+  if (!book.registrations.some((r) => isExpiredHold(r, now))) return [];
+  return updateEvents(churchId, ["registrations"], (b) => releaseExpiredHolds(b, now));
+}
+
+/** Records the Checkout session a public registration was sent to. */
+export async function attachCheckout(churchId: string, regId: string, sessionId: string, expiresAt: number) {
+  return updateEvents(churchId, ["registrations"], (book) => {
+    const r = book.registrations.find((x) => x.id === regId) ?? fail("That registration doesn't exist.");
+    r.payment = { ...r.payment, providerRef: sessionId, checkout: { sessionId, expiresAt, state: "open" } };
+    return r;
+  });
+}
+
+/**
+ * What Stripe's webhook reports about a registration's Checkout session. Paid marks it paid (and gives a
+ * released spot back if the payment landed after the hold ran out); processing (a bank payment on its way)
+ * keeps the spot; failed or expired releases it. Repeats are harmless.
+ */
+export async function onlinePayment(churchId: string, regId: string, state: "paid" | "processing" | "failed" | "expired", ref: { sessionId?: string; paymentIntentId?: string } = {}) {
+  const result = await updateEvents(churchId, ["registrations"], (book) => {
+    const r = book.registrations.find((x) => x.id === regId);
+    if (!r || r.payment.status === "not_required") return null;
+    if (ref.sessionId && r.payment.checkout && r.payment.checkout.sessionId !== ref.sessionId) return null;
+    const checkout = r.payment.checkout ?? { sessionId: ref.sessionId ?? "", expiresAt: Date.now(), state: "open" as const };
+    if (state === "paid") {
+      if (r.payment.status === "paid") return r;
+      if (r.status === "cancelled" && r.releasedAt) {
+        r.status = "registered";
+        r.cancelledAt = undefined;
+        r.releasedAt = undefined;
+      }
+      r.payment = { ...r.payment, status: "paid", paymentIntentId: ref.paymentIntentId, checkout: { ...checkout, state: "paid" }, markedBy: "Paid online (Stripe)", markedAt: Date.now() };
+    } else if (state === "processing") {
+      if (r.payment.status === "due") r.payment = { ...r.payment, paymentIntentId: ref.paymentIntentId, checkout: { ...checkout, state: "processing" } };
+    } else if (r.payment.status === "due" && r.status !== "cancelled") {
+      r.payment = { ...r.payment, checkout };
+      release(book, r, state);
+    }
+    return r;
+  });
+  if (result) await audit({ churchId, leaderId: "stripe-webhook", name: "Online payments (Stripe)", email: "", role: "system" }, { action: `events.payment.online`, detail: `${regId} ${state}` });
+  return result;
 }
 
 /* ---------- CSV ---------- */

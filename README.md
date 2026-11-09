@@ -20,10 +20,11 @@ Built with Next.js on Vercel, Claude (Anthropic API) and Redis.
 | Mesa | A consent-based network of churches sharing sermon series, service templates, training, event ideas and needs, never people | See [Mesa](#mesa-the-church-to-church-network) |
 | Calendar | Month and agenda views, create, edit and delete; Barnabas adds and changes events when asked and must ask before deleting; Google and Outlook events and church events shown alongside | Google and Outlook two-way sync need a one-time app registration (below); Apple Calendar and any other app can subscribe to a private link |
 | Finance | Overview, budget and plans, fund accounting (chart of accounts, funds, split transactions, bank reconciliation, CSV import), giving (batches, recurring givers, donor history, year-end statements), missions (partners, pledges, faith-promise campaigns) and printable reports; Barnabas answers budget, giving and missions questions and records gifts and expenses after a yes | See [Finance](#finance) below. The demo church starts with labeled demo books |
+| Online giving | One-time and recurring gifts (weekly, every two weeks, monthly) on Stripe's hosted Checkout (card, ACH, Apple Pay, Google Pay), recorded in Finance by a signed webhook with fees and net; refunds, disputes and payouts; paid event registrations | See [Online giving (Stripe)](#online-giving-stripe). Off until `STRIPE_SECRET_KEY` is set |
 | Shepherding | Shepherding cases with a contact timeline, prayer requests, guest follow-up with a public guest card, the discipleship pathway and classes, and a private care-load tracker; Barnabas opens cases, logs contacts and records guests when asked, and asks before reassigning or closing | See [Shepherding](#shepherding) below. The demo church starts with example classes only; no one's shepherding records are made up |
 | Serve | Rosters per team per gathering (Sunday 8:30 and 10:45, 9:45 Growth Groups, Wednesday 6:00), sign-ups, swap requests, away dates, monthly limits, auto-fill and reminder drafts; the weariness watch reads real rosters | See [Operations](#operations-serve-services-events-and-kids). Reminders are drafts only |
 | Services | Sermon series, the preaching rotation and orders of service with scripture linked into The Word | |
-| Events | Registration forms, capacity and waitlist, a public sign-up link, attendee lists with CSV export, event-day check-in, and registration status on the Calendar | Online payment (Stripe) isn't built: paid events are settled at the door |
+| Events | Registration forms, capacity and waitlist, a public sign-up link, attendee lists with CSV export, event-day check-in, and registration status on the Calendar | With Stripe connected, paid events are paid online through Stripe Checkout as people register; otherwise at the door. See [Online giving](#online-giving-stripe) |
 | Kids | Check-in station, 4" × 2" child labels with matching parent pickup tags, checkout by pickup code, room counts and ratio warnings, families with allergies and authorized pickups | Restricted to `kids.checkin` and `kids.admin`; Barnabas sees counts only |
 | Website | A church website builder at **Website** (`/site`): pages, a block editor, theme, draft and publish with a preview link and version history, a contact inbox; served at `/s` or on the church's own domain | See [Website](#website). The demo site is an unpublished draft (noindex) |
 | Member app | A separate installable app for the congregation at `/m`: announcements, events with sign-up, sermons, give, plan a visit, prayer requests and contact; optional push notifications | See [Member app](#member-app). No member sign-in yet |
@@ -112,7 +113,7 @@ Every leader has a role, kept on their leader record (`leader:{church}:{leaderId
 | Permission | Pastor | Treasurer | Deacon | Staff | Leader | Kids check-in |
 |---|---|---|---|---|---|---|
 | See finance summaries, budgets, funds, missions and reports (`finance.view`) | Yes | Yes | Yes | No | No | No |
-| Change budgets, transactions, gifts and missions records; import and reconcile (`finance.edit`) | Yes | Yes | No | No | No | No |
+| Change budgets, transactions, gifts and missions records; import and reconcile; open funds for online giving and fetch Stripe payouts (`finance.edit`) | Yes | Yes | No | No | No | No |
 | See individual giving: donor names, gifts, pledges, statements (`giving.donors`) | Yes | Yes | No | No | No | No |
 | See every shepherding case, including confidential ones (`care.view_all`) | Yes | No | No | No | No | No |
 | Assign shepherding cases to someone else; keep the pathway and classes; make guest-card links (`care.assign`) | Yes | No | Yes | Yes | No | No |
@@ -143,22 +144,75 @@ Prayer requests marked shareable are visible to the whole team; private ones to 
 
 ## Finance
 
-**Finance** (after Calendar) has six views:
+**Finance** (after Calendar) has seven views:
 
 - **Overview**: year-to-date income vs expenses, the General fund balance and each restricted fund, giving this month vs the same days last year, budget health by ministry (on track, watch, over), and missions giving vs pledged. Each number says where it comes from.
 - **Budget**: an annual budget per fiscal year (the calendar year) by account, entered monthly or annually, with actual, budget to date, variance, percent spent and health. Lines marked seasonal (insurance, a summer trip) are judged against the whole year. Plan notes, and copy last year's budget into a new year.
 - **Funds and ledger**: the chart of accounts (assets, liabilities, income, expenses), funds (General unrestricted; Missions, Building and Benevolence restricted), transactions split into lines (account, fund, amount, memo), bank reconciliation against a statement balance, and CSV import from the bank with suggested accounts and duplicate checks. Payroll appears as expense accounts only: paychecks run through a payroll provider such as Gusto, and Barnabas doesn't calculate pay.
-- **Giving**: gift records (a directory person or a new name; cash, check, online or ACH), Sunday batch entry posted as one deposit with a line per fund, recurring givers, donor history, printable year-end contribution statements, and a monthly trend chart. Online giving through Stripe is a later step (shown as "coming soon").
+- **Giving**: gift records (a directory person or a new name; cash, check, online or ACH), Sunday batch entry posted as one deposit with a line per fund, recurring givers, donor history, printable year-end contribution statements, and a monthly trend chart. Online gifts from Stripe come in on their own (see [Online giving](#online-giving-stripe)).
+- **Online giving**: Stripe's connection status (and a "Test mode" badge), setup steps, which funds are open for online giving, totals with fees and net, Stripe payouts with gross, fees and net, recent online gifts, new givers to review, and thank-you drafts.
 - **Missions**: partners (missionaries and organizations, field, type, support level, monthly commitment, pledge dates, prayer updates), pledges toward a faith-promise campaign, and given vs pledged. It ties to the restricted Missions fund.
 - **Reports**: a printable monthly finance report for the deacons or board (income and expense by category vs budget, fund balances, missions) and a giving report.
 
 **Confidentiality.** Individual giving is visible to the pastor and treasurer only. Deacons see totals and trends, never names, in the app, the API and Barnabas. Barnabas shares one donor's totals only when the pastor or treasurer asks, and never their full ledger. Every finance write is in the audit log. Barnabas doesn't give tax or legal advice; it points to the church's accountant.
 
-**Barnabas tools**: `finance_overview`, `budget_status`, `missions_status`, `giving_summary` (read-only), and `record_gift` and `record_expense`, which propose first and run only after the leader says yes on a later turn.
+**Barnabas tools**: `finance_overview`, `budget_status`, `missions_status`, `giving_summary`, `online_giving_summary` (read-only), and `record_gift` and `record_expense`, which propose first and run only after the leader says yes on a later turn.
 
 **Demo data.** The demo church gets a labeled demo dataset the first time Finance is opened, only while it has no finance data: a budget for a church of about 175, twelve months of transactions, giving recorded as anonymous offering lines (the Sunday plate, the online payout, missions, building and benevolence offerings) with no donor attached, and fictional missions partners. No donor, recurring gift or pledge is made up, so the donor list, statements and pledges start empty. A pastor or treasurer can clear it from the banner and start with empty books.
 
 **Storage**: `fin:{church}:*` keys in Redis (chart, transactions and gifts by year, budgets by year, reconciliations, recurring givers, missions). Amounts are whole cents. Code: `src/lib/finance/`.
+
+## Online giving (Stripe)
+
+Gifts on the church's website and in the member app, and payment for paid events, through **Stripe's hosted Checkout**. Givers type card or bank details only on Stripe's page; no card data, Stripe.js or publishable key touches Barnabas. Off until `STRIPE_SECRET_KEY` is set; until then the Give block shows the church's giving link or "coming soon", and paid events are paid at the door.
+
+**What givers see.** The Give block (the website's Give page, any page with a Give block, and the member app's Give tab, on the Barnabas domain or the church's own) shows a form: the funds a pastor or treasurer opened for online giving, an amount ($1 to $25,000), one time, weekly, every two weeks or monthly, and "add the processing fee so the church receives the full amount". It quotes 2 Corinthians 9:7 (KJV). **Give** goes to Stripe Checkout (cards, Apple Pay and Google Pay, and ACH bank payments); recurring gifts are Stripe subscriptions. After giving, the thank-you note offers **Manage a recurring gift** (the Stripe Customer Portal, opened from that Checkout session), and the form links to the portal's own email sign-in when `STRIPE_PORTAL_LOGIN_URL` is set. Stripe emails the receipt.
+
+**What happens in the books** (`src/lib/finance/online.ts`). Stripe holds money between a gift and the payout, so online gifts go into a **Stripe balance (online giving)** clearing account (1050, a bank-type account), added on first use:
+
+| Stripe reports | Barnabas records |
+|---|---|
+| A gift (`checkout.session.completed`, or `async_payment_succeeded` once ACH clears; each recurring payment's `invoice.paid`) | A gift record through Finance's gift posting: the giver, the fund, the gross, Stripe's fee, the net, the method (Online or ACH) and what the giver covered; a deposit into the Stripe balance; and the fee out to Bank and processing fees (5620) in the same fund. It's on the giver's year-end statement |
+| A refund (`charge.refunded`, partial or full) | A reversing entry: a negative gift against the original (giving totals and the statement go down) and the money out of the Stripe balance |
+| A dispute (`charge.dispute.created`, `charge.dispute.closed`) | The gift is flagged; if the dispute is lost, a reversing entry |
+| A payout (`payout.paid`) | A transfer from the Stripe balance to the operating bank account, with the payout's gross, fees and net |
+| An event payment | Event registrations income (4600, General fund) and its fee; the registration is marked paid. Not a gift |
+
+Every entry carries a stable key from Stripe's ids (`stripe:{payment}`, `stripe-refund:{charge}:{refunded so far}`, `stripe-payout:{payout}`), and each webhook event is handled once by its id, so a replay never records anything twice. ACH gifts are recorded only when the bank payment clears; a failed one records nothing.
+
+**Reconciling the bank.** **Finance → Online giving** lists payouts (from `payout.paid`, or **Fetch from Stripe**) with gross, fees, refunds and net. When the bank statement is imported, a deposit matching a payout (same amount within 3 days) is flagged "Looks like a Stripe payout already in the books" and left unticked, the same way a Sunday deposit already entered in Giving is, so online gifts are never counted twice. The Stripe balance account should match the Stripe dashboard's balance.
+
+**Givers and People.** A giver is matched to People by email only: one person with that email, and the gift links to them; several, and it keeps the giver's name without linking; none, and a minimal person (name and email) is added, flagged "from online giving" under **New givers to review**, with any same-named person noted as a possible match. Nothing is ever merged automatically.
+
+**Thank-you notes.** Optional: a pastor or treasurer turns on **Draft a thank-you for each online gift**, and each gift's thank-you email (with 2 Corinthians 9:7) goes into that leader's Drafts for review. Barnabas never sends it.
+
+**Permissions.** Opening funds for online giving, fetching payouts and the thank-you setting need `finance.edit` (pastor, treasurer); online gift lists and new givers need `giving.donors`; deacons see totals and payouts; other roles, including kids check-in, see nothing. There's no refund or charge button and no Barnabas tool that moves money: refunds are made in the Stripe dashboard and reflected here by the webhook. `online_giving_summary` (Barnabas) returns totals only.
+
+### Setting up Stripe
+
+1. **Account.** At [dashboard.stripe.com](https://dashboard.stripe.com), create the church's account with business type **Nonprofit organization**, the church's legal name, EIN, a representative and the operating bank account, and finish verification (Settings → Business).
+2. **Test mode first.** With **Test mode** on, copy the secret key (Developers → API keys, `sk_test_…`) into Vercel → Settings → Environment Variables as `STRIPE_SECRET_KEY`. A restricted key works too, with write access to Checkout Sessions and Customer portal and read access to PaymentIntents, Charges, Invoices (and invoice payments), Payouts and Balance transactions. Finance → Online giving then shows a **Test mode** badge.
+3. **Webhook.** Developers → Webhooks → **Add endpoint**: `https://barnabas-three.vercel.app/api/stripe/webhook`, with these events:
+   - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded`
+   - `checkout.session.async_payment_failed`
+   - `checkout.session.expired`
+   - `invoice.paid`
+   - `charge.refunded`
+   - `charge.dispute.created`
+   - `charge.dispute.closed`
+   - `payout.paid`
+
+   Copy the endpoint's signing secret (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`. Barnabas verifies every delivery's signature against the raw body and refuses anything else.
+4. **Payment methods.** Settings → Payment methods: turn on Cards, Apple Pay, Google Pay and **ACH Direct Debit** (US bank account). For Apple Pay on the church's own domain, add the domain under Payment method domains. Settings → Emails: turn on **Successful payments** receipts (and refunds).
+5. **Customer Portal.** Settings → Billing → Customer portal: allow customers to **cancel subscriptions** (at the end of the period), **update payment methods** and see invoice history; turn off plan switching; set the church's terms and privacy links; turn on the **login link** and copy it into `STRIPE_PORTAL_LOGIN_URL` (optional, so givers can manage a recurring gift by email any time).
+6. **Redeploy**, then in **Finance → Online giving** open the funds for online giving. Give a test gift with card `4242 4242 4242 4242` (any future date, any CVC), a test ACH payment (test bank account `000123456789`, routing `110000000`), a monthly gift, and a refund from the dashboard, and watch each appear.
+7. **Go live.** Switch the dashboard out of test mode, and repeat steps 2 and 3 with the live secret key and a live webhook endpoint (it has its own signing secret).
+8. **Nonprofit rate.** Stripe offers a discounted processing rate to 501(c)(3) organizations: contact Stripe support (support.stripe.com) from the account and send the IRS determination letter (or other proof of 501(c)(3) status) and a note that most volume is donations. If granted, set `STRIPE_FEE_PERCENT` (for example `2.2`) so "cover the processing fee" estimates the new rate.
+
+**Local testing.** `STRIPE_API_BASE` (ignored in production) points the Stripe client at a local stub server for development and tests. The Stripe CLI (`stripe listen --forward-to localhost:3000/api/stripe/webhook`) forwards real test-mode events.
+
+**Storage**: online gifts, fees, refunds and payouts are in the books (`fin:{church}:*`); `stripe:evt:{id}` marks handled webhook events (90 days); `stripe:{church}:settings` and `stripe:{church}:payouts` hold the thank-you setting and the last 100 payouts. Code: `src/lib/stripe/`, `src/lib/finance/online.ts`, `src/lib/people/online.ts`, `src/app/api/stripe/webhook`, `src/app/api/s/give`, `src/app/api/finance/online`, `src/app/finance/online`, `src/components/site/GiveForm.tsx`.
 
 ## Shepherding
 
@@ -209,7 +263,7 @@ Four areas after Shepherding in the navigation (under More on phones). The weekl
 - **Events** (`/events`): each event with registration shows how it's filling. Create one from scratch or from the church calendar, with capacity (counting party size), a waitlist, up to how many people per registration, a cost (display only) and a form of your own questions: short answer, choice, number, yes/no, each optional or required.
 - **Public registration page** (`/register/{token}`): no sign-in. Like the guest card, the token is 32 random bytes looked up by its hash, a new link turns the old one off, and submissions are rate-limited (5 per address per 10 minutes, 200 per link per hour) with a honeypot. It never shows who else registered. When an event is full, new registrations join the waitlist (if it has one) and move up, in order, when someone cancels.
 - **Attendees** (`/events/{id}`): registered, waitlist and cancelled lists, event-day **check-in**, cancel, move up from the waitlist, add someone by hand, and **CSV export** (cells starting with `=`, `+`, `-` or `@` are escaped so a spreadsheet won't run them; every export is audited).
-- **Payments: Stripe plugs in here.** Online payment isn't built. A paid event marks each registration's `payment` as `due` with the amount, and a leader marks it paid at the door. A Stripe Checkout session and webhook would set `payment.status` and `payment.providerRef` (`src/lib/events/types.ts`); nothing else needs to change.
+- **Payments.** A paid event marks each registration's `payment` as `due` with the amount. With Stripe connected, the public sign-up sends the registrant to Stripe Checkout for the price times their party size and holds the spot for 60 minutes; Stripe's webhook marks it paid (a bank payment that's still clearing keeps the spot), and an unpaid hold past 60 minutes (or a failed bank payment) releases the spot and moves the waitlist up. Waitlisted registrations pay later. **Mark paid** at the door still works either way. See [Online giving](#online-giving-stripe).
 - **Calendar**: events with registration appear on the Calendar with their status ("Registration open · 12 of 40 registered") and a link to their registrations.
 - **Who manages**: `events.manage` (pastors, deacons, staff). Everyone signed in sees events and counts.
 
@@ -355,7 +409,7 @@ Churches using Barnabas can connect on **Mesa** (`/network`) to share sermon ser
 
 So a church knows what it still needs before it lets the old platform go:
 
-- **Online giving processing**: card and bank (ACH) giving, text-to-give, recurring online gifts and processor payouts. Barnabas records gifts and statements; it doesn't take payments (Stripe is the planned seam).
+- **Text-to-give** and kiosk giving. Card, bank (ACH) and recurring online giving, and payouts, run through Stripe (see [Online giving](#online-giving-stripe)).
 - **Kids check-in hardware**: printing straight to label printers (DYMO, Brother) from a kiosk, self check-in kiosks and parent pagers. Barnabas prints labels through the browser.
 - **Background checks** for co-laborers who serve with children (Planning Center integrates Protect My Ministry and Sterling Volunteers).
 - **Worship planning**: a song library with CCLI reporting, chord charts, arrangements and keys, rehearsal media, and a live service-timing view (Planning Center Services).
@@ -399,7 +453,7 @@ None is ever returned to the browser or logged: the app reports only which names
 - **What it shows**: only what's published plus public-facing data: the weekly schedule, event titles, times, places, descriptions and public sign-up links, leaders' names and titles, preaching dates, preachers, series and passages. Leaders' bios come from the website's own text, never from church records. No registrants, rosters, care, giving or People records.
 - **Safety**: rich text is reduced to a small allowlist of tags (`src/lib/site/sanitize.ts`) when it's saved and again when it's rendered; it's the only HTML the site injects. Links must be https, http, mailto, tel or a site path. Videos are embedded only from YouTube (no-cookie) and Vimeo, built from the video id.
 - **Forms** (`/api/s/contact`, `/api/s/prayer`, `/api/s/guest`, `/api/s/push`): no sign-in; open only once the site is published (or for a signed-in leader trying the draft); 5 per address per 10 minutes and 200 per hour overall per form; a hidden honeypot field makes a bot's submission a silent no-op; they answer only whether it worked.
-- **Giving**: the Give block, Give page and the app's Give tab link to the church's existing giving page (set in **Member app and giving**) or say "Online giving is coming soon". **Stripe plugs in at `giveTarget()` in `src/lib/site/give.ts`**: return a `checkout` target pointing at a Checkout route, and record gifts through Finance from the webhook; nothing else changes.
+- **Giving**: `giveTarget()` in `src/lib/site/give.ts` decides what the Give block, Give page and the app's Give tab show. With Stripe connected it's Barnabas's give form (see [Online giving](#online-giving-stripe)); otherwise a link to the church's existing giving page (set in **Member app and giving**) or "Online giving is coming soon".
 - **The Word**: passage references show as text, because The Word needs a sign-in. If it's opened to the public, set `WORD_IS_PUBLIC` in `src/lib/site/data.ts` and references link to `/word?b=&c=&v=`.
 
 ### Using the church's own domain
@@ -450,15 +504,15 @@ The rules are enforced in code, not only in the instructions:
 - **Church policy**: set `BARNABAS_ALLOW_SENSITIVE_MEMORY` to match your written policy (default `false`).
 - **Messaging**: register for A2P 10DLC before texting anyone in the US, verify the email domain, and make sure the people you text have agreed to hear from the church by text (a connection card or sign-up form is the usual way). STOP replies and unsubscribes are honored automatically.
 - **Shepherding**: clear the demo shepherding records, set roles in Settings → Team, and turn off any guest-card links you aren't using. Shepherding notes follow `BARNABAS_ALLOW_SENSITIVE_MEMORY`.
-- **Operations**: clear the demo rosters, rotation and events from their banners; add teams' co-laborers, families and children; and give check-in co-laborers the staff role (the station shows children's names and allergies). Stripe payments for events are not built yet.
+- **Operations**: clear the demo rosters, rotation and events from their banners; add teams' co-laborers, families and children; and give check-in co-laborers the staff role (the station shows children's names and allergies).
 - **Website**: replace the placeholder words ("Add your church's story here"), check the leaders' website bios, add a logo and photos, then publish from **Website**. Nothing is public until you do.
-- **Finance**: clear the demo books, set roles in Settings → Team, and have your accountant review the chart of accounts and opening balances. Fund transfers between funds, multiple fiscal-year start months and Stripe are not built yet.
+- **Finance**: clear the demo books, set roles in Settings → Team, and have your accountant review the chart of accounts and opening balances. Fund transfers between funds and multiple fiscal-year start months are not built yet.
+- **Online giving**: run Stripe in test mode first (a test gift, a test refund, a test ACH payment), then switch to live keys.
 
 ## Next steps
 
 1. Kids families linked to People households (Kids check-in keeps its own family records today), and serving teams imported with the migration tool.
 2. Hands-free voice with a streaming speech service (for example Deepgram or AssemblyAI) and a higher-quality voice (for example ElevenLabs or Cartesia), keeping the same `/api/chat` stream.
 3. Scheduled sends (for example serving reminders the evening before) that still need a person's Send on each draft.
-4. Stripe Checkout for paid event registrations, at the `payment` seam on registrations.
-5. Online giving (Stripe) so giving no longer needs another platform; see the gap list below.
-6. An evaluation set of scripted conversations (latency, tool accuracy, memory precision, gate integrity, crisis handling) run before every prompt or model change.
+4. Text-to-give, and matching Stripe's dispute fees and payout adjustments into the books automatically.
+5. An evaluation set of scripted conversations (latency, tool accuracy, memory precision, gate integrity, crisis handling) run before every prompt or model change.

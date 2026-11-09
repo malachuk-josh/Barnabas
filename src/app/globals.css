@@ -873,3 +873,14 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .migrate-file h3 .badge { margin-left: 0; }
 .migrate-reasons { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .migrate-reasons .tabular { font-weight: 700; margin-right: 4px; }
+
+/* Finance → Online giving (Stripe) */
+.badge-test { background: var(--watch-bg); color: var(--watch); }
+.badge-live { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.page-head .badge-test, .page-head .badge-live { font-size: 0.8rem; padding: 4px 12px; align-self: start; }
+.fin-steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; font-size: 0.95rem; }
+.fin-steps code { font-size: 0.85em; background: var(--surface-2); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.fin-fund-toggle { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.fin-fund-toggle:last-child { border-bottom: 0; }
+.fin-flag { color: var(--watch); font-weight: 700; }
+.fin-review { list-style: none; margin: 0; padding: 0; }
