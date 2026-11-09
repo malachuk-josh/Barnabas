@@ -277,7 +277,7 @@ export class BrowserSpeaker implements Speaker {
 /* ======================= Listening ======================= */
 
 /** How long a pause ends the leader's turn, in ms. Short feels quick; long is patient with slow speakers. */
-export const DEFAULT_PAUSE_MS = 300;
+export const DEFAULT_PAUSE_MS = 600;
 export const MIN_PAUSE_MS = 200;
 export const MAX_PAUSE_MS = 2000;
 export const clampPause = (ms: number) => Math.round(Math.min(MAX_PAUSE_MS, Math.max(MIN_PAUSE_MS, Number.isFinite(ms) ? ms : DEFAULT_PAUSE_MS)));

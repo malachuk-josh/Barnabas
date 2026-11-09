@@ -321,7 +321,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
               </div>
               <div className="field">
                 <label htmlFor="pauseMs">
-                  Wait before answering: {((p.voice.pauseMs ?? 300) / 1000).toFixed(1)} s
+                  Wait before answering: {((p.voice.pauseMs ?? 600) / 1000).toFixed(1)} s
                 </label>
                 <input
                   id="pauseMs"
@@ -329,7 +329,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
                   min={200}
                   max={2000}
                   step={100}
-                  value={p.voice.pauseMs ?? 300}
+                  value={p.voice.pauseMs ?? 600}
                   onChange={(e) => setP({ ...p, voice: { ...p.voice, pauseMs: Number(e.target.value) } })}
                 />
                 <span className="small muted">

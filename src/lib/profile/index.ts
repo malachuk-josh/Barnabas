@@ -65,7 +65,7 @@ export function defaultProfile(leader: Leader): Profile {
     timezone: DEFAULT_TIMEZONE,
     replyLanguage: "en",
     bibleTranslation: DEFAULT_BIBLE_TRANSLATION,
-    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true, readTyped: false, pauseMs: 300 },
+    voice: { speakReplies: true, language: "en-US", rate: 1, handsFree: true, readTyped: false, pauseMs: 600 },
     pronunciations: [],
     about: "",
     notifications: defaultNotifications(),
