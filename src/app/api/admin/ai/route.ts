@@ -18,6 +18,7 @@ const Body = z.object({
   textModel: z.enum(MODEL_IDS).nullable(),
   voiceModel: z.enum(MODEL_IDS).nullable(),
   textEffort: z.enum(EFFORT_IDS).nullable(),
+  voiceEffort: z.enum(EFFORT_IDS).nullable().optional(),
 });
 
 export async function PUT(request: Request) {
@@ -26,6 +27,6 @@ export async function PUT(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Choose a model and thinking level from the lists." }, { status: 400 });
   const view = await saveAiSettings(leader.churchId, leader.name, parsed.data);
-  await audit(leader, { action: "settings.ai", detail: `typed ${view.textModel} (${view.textEffort}), voice ${view.voiceModel}` });
+  await audit(leader, { action: "settings.ai", detail: `typed ${view.textModel} (${view.textEffort}), voice ${view.voiceModel} (${view.voiceEffort})` });
   return NextResponse.json(view);
 }

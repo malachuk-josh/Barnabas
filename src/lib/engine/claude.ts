@@ -44,7 +44,8 @@ export type TurnMode = "voice" | "text";
 export function modelFor(mode: TurnMode, ai: ResolvedAi = defaultAi()): { model: string; thinking: Anthropic.Beta.BetaThinkingConfigParam; effort: Effort } {
   if (mode === "voice") {
     const model = ai.voiceModel;
-    return { model, thinking: model.startsWith("claude-sonnet-5-5") ? { type: "between_tools" } : { type: "adaptive" }, effort: "low" };
+    // between_tools (Sonnet 5.5's no-extended-thinking mode) is accepted at high effort or below; the choices stop at high.
+    return { model, thinking: model.startsWith("claude-sonnet-5-5") ? { type: "between_tools" } : { type: "adaptive" }, effort: ai.voiceEffort as Effort };
   }
   return { model: ai.textModel, thinking: { type: "adaptive" }, effort: ai.textEffort as Effort };
 }

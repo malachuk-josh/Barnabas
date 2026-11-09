@@ -21,8 +21,9 @@ export type AiSettingsView = {
   textModel: string;
   voiceModel: string;
   textEffort: string;
-  chosen: { textModel: boolean; voiceModel: boolean; textEffort: boolean };
-  defaults: { textModel: string; voiceModel: string; textEffort: string };
+  voiceEffort: string;
+  chosen: { textModel: boolean; voiceModel: boolean; textEffort: boolean; voiceEffort: boolean };
+  defaults: { textModel: string; voiceModel: string; textEffort: string; voiceEffort: string };
   updatedBy?: string;
   updatedAt?: number;
 };

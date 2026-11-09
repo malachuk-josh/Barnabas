@@ -319,6 +319,23 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
                 <label htmlFor="rate">Speaking speed: {p.voice.rate.toFixed(1)}×</label>
                 <input id="rate" type="range" min={0.7} max={1.4} step={0.1} value={p.voice.rate} onChange={(e) => setP({ ...p, voice: { ...p.voice, rate: Number(e.target.value) } })} />
               </div>
+              <div className="field">
+                <label htmlFor="pauseMs">
+                  Wait before answering: {((p.voice.pauseMs ?? 300) / 1000).toFixed(1)} s
+                </label>
+                <input
+                  id="pauseMs"
+                  type="range"
+                  min={200}
+                  max={2000}
+                  step={100}
+                  value={p.voice.pauseMs ?? 300}
+                  onChange={(e) => setP({ ...p, voice: { ...p.voice, pauseMs: Number(e.target.value) } })}
+                />
+                <span className="small muted">
+                  How long you can pause while talking before Barnabas answers. Shorter feels quicker; longer gives you room to think mid-sentence.
+                </span>
+              </div>
             </div>
             <label className="check">
               <input id="speakReplies" type="checkbox" checked={p.voice.speakReplies} onChange={(e) => setP({ ...p, voice: { ...p.voice, speakReplies: e.target.checked } })} />

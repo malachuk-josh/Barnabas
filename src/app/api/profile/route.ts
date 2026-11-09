@@ -29,6 +29,7 @@ const Body = z.object({
     voiceId: z.string().regex(/^[A-Za-z0-9]{8,40}$/).optional().or(z.literal("")),
     handsFree: z.boolean(),
     readTyped: z.boolean().optional(),
+    pauseMs: z.number().int().min(200).max(2000).optional(),
   }),
   pronunciations: z.array(z.object({ word: z.string().trim().min(1).max(40), sayAs: z.string().trim().min(1).max(60) })).max(50),
   about: z.string().max(1500),
@@ -76,7 +77,11 @@ export async function PUT(request: Request) {
     ...current,
     ...parsed.data,
     bibleTranslation: parsed.data.bibleTranslation ?? current.bibleTranslation,
-    voice: { ...parsed.data.voice, readTyped: parsed.data.voice.readTyped ?? current.voice.readTyped },
+    voice: {
+      ...parsed.data.voice,
+      readTyped: parsed.data.voice.readTyped ?? current.voice.readTyped,
+      pauseMs: parsed.data.voice.pauseMs ?? current.voice.pauseMs,
+    },
   };
   await saveProfile(leader, next);
   await updateLeaderDisplay(leader, next.name, next.role);

@@ -50,3 +50,16 @@ describe("read typed replies aloud", () => {
     expect((await getProfile(leader)).voice.readTyped).toBe(false);
   });
 });
+
+describe("wait before answering", () => {
+  beforeEach(() => freshStore());
+
+  it("defaults to 0.3 s, and the listener keeps it within 0.2–2 s", async () => {
+    expect((await ensureProfile(leader)).voice.pauseMs).toBe(300);
+    const { clampPause } = await import("@/lib/voice/client");
+    expect(clampPause(50)).toBe(200);
+    expect(clampPause(900)).toBe(900);
+    expect(clampPause(9000)).toBe(2000);
+    expect(clampPause(Number.NaN)).toBe(300);
+  });
+});

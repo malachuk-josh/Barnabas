@@ -9,13 +9,13 @@ const effortLabel = (id: string) => EFFORT_CHOICES.find((e) => e.id === id)?.lab
 /** Settings → Barnabas AI (admins): which Claude model answers typed and spoken messages. */
 export function AiSettings() {
   const [view, setView] = useState<AiSettingsView | null>(null);
-  const [form, setForm] = useState({ textModel: "", voiceModel: "", textEffort: "" });
+  const [form, setForm] = useState({ textModel: "", voiceModel: "", textEffort: "", voiceEffort: "" });
   const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = (v: AiSettingsView) => {
     setView(v);
-    setForm({ textModel: v.chosen.textModel ? v.textModel : "", voiceModel: v.chosen.voiceModel ? v.voiceModel : "", textEffort: v.chosen.textEffort ? v.textEffort : "" });
+    setForm({ textModel: v.chosen.textModel ? v.textModel : "", voiceModel: v.chosen.voiceModel ? v.voiceModel : "", textEffort: v.chosen.textEffort ? v.textEffort : "", voiceEffort: v.chosen.voiceEffort ? v.voiceEffort : "" });
   };
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function AiSettings() {
     const res = await fetch("/api/admin/ai", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null }),
+      body: JSON.stringify({ textModel: form.textModel || null, voiceModel: form.voiceModel || null, textEffort: form.textEffort || null, voiceEffort: form.voiceEffort || null }),
     });
     setSaving(false);
     if (res.ok) {
@@ -85,7 +85,21 @@ export function AiSettings() {
               ))}
             </select>
             <span className="small muted">
-              {MODEL_CHOICES.find((m) => m.id === (form.voiceModel || view.defaults.voiceModel))?.note} Spoken replies always think as little as possible, so they start quickly.
+              {MODEL_CHOICES.find((m) => m.id === (form.voiceModel || view.defaults.voiceModel))?.note}
+            </span>
+          </div>
+          <div className="field">
+            <label htmlFor="ai-voice-effort">Thinking on spoken messages</label>
+            <select id="ai-voice-effort" value={form.voiceEffort} onChange={(e) => setForm({ ...form, voiceEffort: e.target.value })}>
+              <option value="">Default ({effortLabel(view.defaults.voiceEffort)})</option>
+              {EFFORT_CHOICES.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.label}
+                </option>
+              ))}
+            </select>
+            <span className="small muted">
+              {EFFORT_CHOICES.find((x) => x.id === (form.voiceEffort || view.defaults.voiceEffort))?.note} More thinking means a longer pause before Barnabas starts speaking.
             </span>
           </div>
           {state && (

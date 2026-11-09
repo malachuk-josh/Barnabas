@@ -276,6 +276,12 @@ export class BrowserSpeaker implements Speaker {
 
 /* ======================= Listening ======================= */
 
+/** How long a pause ends the leader's turn, in ms. Short feels quick; long is patient with slow speakers. */
+export const DEFAULT_PAUSE_MS = 300;
+export const MIN_PAUSE_MS = 200;
+export const MAX_PAUSE_MS = 2000;
+export const clampPause = (ms: number) => Math.round(Math.min(MAX_PAUSE_MS, Math.max(MIN_PAUSE_MS, Number.isFinite(ms) ? ms : DEFAULT_PAUSE_MS)));
+
 export type ListenerEvents = {
   /** Words heard so far in this utterance (updates live). */
   onInterim: (text: string) => void;
@@ -313,6 +319,8 @@ export class DeepgramListener implements Listener {
   constructor(
     private readonly lang: string,
     private readonly events: ListenerEvents,
+    /** How long a pause (ms) ends the leader's turn: the "Wait before answering" setting. */
+    private readonly pauseMs = DEFAULT_PAUSE_MS,
   ) {}
 
   private flush() {
@@ -343,8 +351,9 @@ export class DeepgramListener implements Listener {
       smart_format: "true",
       interim_results: "true",
       // How long a pause ends your turn: short enough to feel quick, long enough not to cut off a breath.
-      endpointing: "300",
-      utterance_end_ms: "1000",
+      endpointing: String(clampPause(this.pauseMs)),
+      // The backstop for when no clear pause is detected; Deepgram's minimum is 1000 ms.
+      utterance_end_ms: String(Math.min(5000, Math.max(1000, clampPause(this.pauseMs) + 700))),
       vad_events: "true",
       // Raw 16-bit PCM works the same on every browser, including iPhone home-screen apps.
       encoding: "linear16",

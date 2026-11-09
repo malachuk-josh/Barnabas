@@ -18,7 +18,7 @@ type Turn = { id: number; role: "leader" | "barnabas"; text: string; unheard: st
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type Lang = "en-US" | "es-US" | "ko-KR";
 
-type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean; readTyped?: boolean };
+type VoicePrefs = { speakReplies: boolean; language: Lang; rate: number; handsFree: boolean; readTyped?: boolean; pauseMs?: number };
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: "en-US", label: "English" },
@@ -359,7 +359,7 @@ export function Talk({
         }
       },
     };
-    const l: Listener = cloudListening ? new DeepgramListener(lang, events) : new BrowserListener(lang, events);
+    const l: Listener = cloudListening ? new DeepgramListener(lang, events, voice.pauseMs) : new BrowserListener(lang, events);
     listener.current = l;
     setStatus("listening");
     // Start the conversation (and warm Claude's cache) while the leader is still talking.
