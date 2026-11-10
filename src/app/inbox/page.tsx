@@ -21,10 +21,9 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
     <AppShell profile={profile}>
       <div className="page-head">
         <div>
-          <span className="eyebrow">Messages</span>
           <h1>Messages</h1>
           <p className="muted">
-            {member ? "Talk with the church staff and the kids team. Only the people in a conversation can read it." : "Talk with your co-laborers and with parents, for example about a child during a service. Only the people in a conversation can read it."}
+            {member ? "Talk with the church staff and the kids team." : "Talk with your co-laborers, and with parents during a service."}
           </p>
         </div>
       </div>

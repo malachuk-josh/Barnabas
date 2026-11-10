@@ -21,6 +21,57 @@ function when(ms: number) {
   return sameDay ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function dayLabel(ms: number) {
+  const d = new Date(ms);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  const sameYear = d.getFullYear() === today.getFullYear();
+  return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) });
+}
+
+const clock = (ms: number) => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+/** "AB" from "Ann Brown"; one letter for a single name. */
+function initials(name: string) {
+  const parts = name.replace(/[^\p{L}\p{N}\s'-]/gu, "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return ((parts[0]![0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1]![0] ?? "") : "")).toUpperCase();
+}
+
+/** One person's initials, or a count for a group conversation. */
+function Avatar({ people, size }: { people: { name: string }[]; size?: "lg" }) {
+  const group = people.length > 1;
+  return (
+    <span className={`inbox-avatar${group ? " is-group" : ""}${size === "lg" ? " is-lg" : ""}`} aria-hidden="true">
+      {group ? people.length : initials(people[0]?.name ?? "You")}
+    </span>
+  );
+}
+
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" />
+  </svg>
+);
+
+/** Messages in runs: a new run starts with a new day, a new sender, or a pause of ten minutes. */
+function runs(messages: Message[]) {
+  const out: { day?: string; first: boolean; last: boolean; m: Message }[] = [];
+  messages.forEach((m, i) => {
+    const prev = messages[i - 1];
+    const next = messages[i + 1];
+    const newDay = !prev || new Date(prev.at).toDateString() !== new Date(m.at).toDateString();
+    const first = newDay || !prev || prev.mine !== m.mine || prev.name !== m.name || m.at - prev.at > 600_000;
+    const nextNewDay = !next || new Date(next.at).toDateString() !== new Date(m.at).toDateString();
+    const last = nextNewDay || !next || next.mine !== m.mine || next.name !== m.name || next.at - m.at > 600_000;
+    out.push({ day: newDay ? dayLabel(m.at) : undefined, first, last, m });
+  });
+  return out;
+}
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { cache: "no-store", ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) } });
   const json = await res.json().catch(() => ({}));
@@ -120,11 +171,24 @@ export function Inbox({ initialThreads, initialOpen, compose }: { initialThreads
     setUrl("/inbox");
   };
 
+  const [filter, setFilter] = useState("");
+  const shown = useMemo(() => {
+    const f = filter.trim().toLowerCase();
+    if (!f) return threads;
+    return threads.filter((t) => names(t).toLowerCase().includes(f) || (t.about ?? "").toLowerCase().includes(f) || (t.last?.text ?? "").toLowerCase().includes(f));
+  }, [threads, filter]);
+
   const paneOpen = view.kind !== "none";
   return (
     <div className={`inbox${paneOpen ? " inbox-pane-open" : ""}`}>
       <section className="inbox-list" aria-label="Conversations">
         <div className="inbox-list-head">
+          <div className="search-field inbox-search">
+            <label className="sr-only" htmlFor="inbox-search">
+              Search conversations
+            </label>
+            <input id="inbox-search" type="search" autoComplete="off" placeholder="Search" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          </div>
           <button
             className="btn btn-primary"
             type="button"
@@ -138,24 +202,32 @@ export function Inbox({ initialThreads, initialOpen, compose }: { initialThreads
           </button>
         </div>
         {threads.length === 0 ? (
-          <p className="small muted inbox-empty">No conversations yet. Start one with New message.</p>
+          <div className="inbox-empty">
+            <p>No conversations yet.</p>
+            <p className="small muted">Start one with New message. Only the people in a conversation can read it.</p>
+          </div>
+        ) : shown.length === 0 ? (
+          <p className="small muted inbox-empty">No conversation matches “{filter.trim()}”.</p>
         ) : (
           <ul>
-            {threads.map((t) => (
+            {shown.map((t) => (
               <li key={t.id}>
-                <button type="button" className="inbox-thread" aria-current={openId === t.id ? "true" : undefined} onClick={() => show(t.id)}>
-                  <span className="inbox-thread-top">
-                    <strong>{names(t)}</strong>
-                    <span className="small muted">{when(t.updatedAt)}</span>
-                  </span>
-                  {t.about && <span className="small inbox-about">About {t.about}</span>}
-                  <span className="inbox-thread-bottom">
-                    <span className="small muted inbox-preview">{t.last ? `${t.last.mine ? "You: " : ""}${t.last.text}` : ""}</span>
-                    {t.unread > 0 && (
-                      <span className="inbox-dot" aria-label={`${t.unread} unread`}>
-                        {t.unread > 9 ? "9+" : t.unread}
-                      </span>
-                    )}
+                <button type="button" className={`inbox-thread${t.unread > 0 ? " is-unread" : ""}`} aria-current={openId === t.id ? "true" : undefined} onClick={() => show(t.id)}>
+                  <Avatar people={t.with} />
+                  <span className="inbox-thread-body">
+                    <span className="inbox-thread-top">
+                      <strong>{names(t)}</strong>
+                      <span className="small muted">{when(t.updatedAt)}</span>
+                    </span>
+                    {t.about && <span className="inbox-about">About {t.about}</span>}
+                    <span className="inbox-thread-bottom">
+                      <span className="small muted inbox-preview">{t.last ? `${t.last.mine ? "You: " : ""}${t.last.text}` : ""}</span>
+                      {t.unread > 0 && (
+                        <span className="inbox-dot" aria-label={`${t.unread} unread`}>
+                          {t.unread > 9 ? "9+" : t.unread}
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </button>
               </li>
@@ -184,7 +256,10 @@ export function Inbox({ initialThreads, initialOpen, compose }: { initialThreads
             }}
           />
         ) : (
-          <p className="muted inbox-placeholder">Choose a conversation, or start a new message.</p>
+          <div className="inbox-placeholder">
+            <p>Choose a conversation, or start a new message.</p>
+            <p className="small muted">Only the people in a conversation can read it.</p>
+          </div>
         )}
       </section>
     </div>
@@ -219,6 +294,8 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
     try {
       await api(`/api/inbox/${encodeURIComponent(open.thread.id)}`, { method: "POST", body: JSON.stringify({ text }) });
       setText("");
+      const el = document.getElementById("inbox-reply");
+      if (el) el.style.height = "";
       await onSent();
     } catch (err) {
       setSendError((err as Error).message);
@@ -226,22 +303,48 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
       setBusy(false);
     }
   }
+  const group = open.thread.with.length > 1;
   return (
     <div className="inbox-thread-view">
       <header className="inbox-thread-head">
         <button className="linklike inbox-back" type="button" onClick={onBack}>
           ← All messages
         </button>
-        <h2>{names(open.thread)}</h2>
-        {open.thread.about && <span className="small inbox-about">About {open.thread.about}</span>}
+        <div className="inbox-thread-who">
+          <Avatar people={open.thread.with} size="lg" />
+          <div>
+            <h2>{names(open.thread)}</h2>
+            <span className="small muted">
+              {group ? `${open.thread.with.length + 1} people` : "Just the two of you"}
+              {open.thread.about && (
+                <>
+                  {" · "}
+                  <span className="inbox-about">About {open.thread.about}</span>
+                </>
+              )}
+            </span>
+          </div>
+        </div>
       </header>
       <div className="inbox-messages" aria-live="polite">
-        {open.messages.map((m) => (
-          <div key={m.id} className={`inbox-msg${m.mine ? " mine" : ""}`}>
-            <span className="small muted">
-              {m.mine ? "You" : m.name} · {when(m.at)}
-            </span>
-            <p>{m.text}</p>
+        {open.messages.length === 0 && <p className="small muted inbox-placeholder">No messages yet.</p>}
+        {runs(open.messages).map(({ day, first, last, m }) => (
+          <div key={m.id} className="inbox-run-item">
+            {day && (
+              <p className="inbox-day">
+                <span>{day}</span>
+              </p>
+            )}
+            <div className={`inbox-msg${m.mine ? " mine" : ""}${first ? " is-first" : ""}${last ? " is-last" : ""}`}>
+              {first && !m.mine && group && <span className="inbox-msg-name">{m.name}</span>}
+              <p>{m.text}</p>
+              {last && (
+                <span className="inbox-msg-time">
+                  <span className="sr-only">{m.mine ? "You" : m.name}, </span>
+                  {clock(m.at)}
+                </span>
+              )}
+            </div>
           </div>
         ))}
         <div ref={end} />
@@ -253,17 +356,22 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
         </label>
         <textarea
           id="inbox-reply"
-          rows={2}
+          rows={1}
           maxLength={MAX}
-          placeholder="Write a reply"
+          placeholder={group ? "Write to everyone here" : `Write to ${open.thread.with[0]?.name.split(" ")[0] ?? "them"}`}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            const el = e.target;
+            el.style.height = "auto";
+            el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send();
           }}
         />
-        <button className="btn btn-primary" type="submit" disabled={busy || !text.trim()}>
-          {busy ? "Sending…" : "Send"}
+        <button className="inbox-send" type="submit" disabled={busy || !text.trim()} aria-label={busy ? "Sending" : "Send"} title="Send (Ctrl or ⌘ + Enter)">
+          <SendIcon />
         </button>
       </form>
     </div>
@@ -326,6 +434,7 @@ function Compose({ initial, onBack, onSent }: { initial?: { to: string[]; about:
           <ul className="inbox-chips">
             {to.map((id) => (
               <li key={id}>
+                <Avatar people={[{ name: byId.get(id)?.name ?? "?" }]} />
                 <span>{byId.get(id)?.name ?? "…"}</span>
                 <button type="button" aria-label={`Remove ${byId.get(id)?.name ?? "this person"}`} onClick={() => setTo(to.filter((x) => x !== id))}>
                   ×
@@ -350,8 +459,11 @@ function Compose({ initial, onBack, onSent }: { initial?: { to: string[]; about:
                     setQ("");
                   }}
                 >
-                  <span>{p.name}</span>
-                  <span className="small muted">{p.label}</span>
+                  <Avatar people={[p]} />
+                  <span className="inbox-person">
+                    <span>{p.name}</span>
+                    <span className="small muted">{p.label}</span>
+                  </span>
                 </button>
               </li>
             ))}
