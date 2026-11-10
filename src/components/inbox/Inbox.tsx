@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ThreadSummary } from "@/lib/inbox/service";
 
 type Person = { leaderId: string; name: string; label: string };
-type Message = { id: string; mine: boolean; name: string; text: string; at: number };
+type Message = { id: string; mine: boolean; name: string; text: string; at: number; href?: string };
 type Open = { thread: ThreadSummary; messages: Message[] };
 type View = { kind: "none" } | { kind: "thread"; id: string } | { kind: "compose" };
 
@@ -42,8 +43,18 @@ function initials(name: string) {
 }
 
 /** One person's initials, or a count for a group conversation. */
-function Avatar({ people, size }: { people: { name: string }[]; size?: "lg" }) {
+function Avatar({ people, size, system }: { people: { name: string }[]; size?: "lg"; system?: boolean }) {
   const group = people.length > 1;
+  if (system) {
+    return (
+      <span className={`inbox-avatar is-system${size === "lg" ? " is-lg" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z" />
+          <path d="M10 20.5a2 2 0 0 0 4 0" />
+        </svg>
+      </span>
+    );
+  }
   return (
     <span className={`inbox-avatar${group ? " is-group" : ""}${size === "lg" ? " is-lg" : ""}`} aria-hidden="true">
       {group ? people.length : initials(people[0]?.name ?? "You")}
@@ -213,7 +224,7 @@ export function Inbox({ initialThreads, initialOpen, compose }: { initialThreads
             {shown.map((t) => (
               <li key={t.id}>
                 <button type="button" className={`inbox-thread${t.unread > 0 ? " is-unread" : ""}`} aria-current={openId === t.id ? "true" : undefined} onClick={() => show(t.id)}>
-                  <Avatar people={t.with} />
+                  <Avatar people={t.with} system={Boolean(t.system)} />
                   <span className="inbox-thread-body">
                     <span className="inbox-thread-top">
                       <strong>{names(t)}</strong>
@@ -311,11 +322,11 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
           ← All messages
         </button>
         <div className="inbox-thread-who">
-          <Avatar people={open.thread.with} size="lg" />
+          <Avatar people={open.thread.with} size="lg" system={Boolean(open.thread.system)} />
           <div>
             <h2>{names(open.thread)}</h2>
             <span className="small muted">
-              {group ? `${open.thread.with.length + 1} people` : "Just the two of you"}
+              {open.thread.system ? "From Barnabas" : group ? `${open.thread.with.length + 1} people` : "Just the two of you"}
               {open.thread.about && (
                 <>
                   {" · "}
@@ -338,6 +349,11 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
             <div className={`inbox-msg${m.mine ? " mine" : ""}${first ? " is-first" : ""}${last ? " is-last" : ""}`}>
               {first && !m.mine && group && <span className="inbox-msg-name">{m.name}</span>}
               <p>{m.text}</p>
+              {m.href && (
+                <Link href={m.href} className="bubble-link">
+                  Open
+                </Link>
+              )}
               {last && (
                 <span className="inbox-msg-time">
                   <span className="sr-only">{m.mine ? "You" : m.name}, </span>
@@ -349,6 +365,9 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
         ))}
         <div ref={end} />
       </div>
+      {open.thread.system ? (
+        <p className="small muted inbox-system-note">Your notifications from Barnabas land here too. Choose which ones you get in Settings → Notifications.</p>
+      ) : (
       <form className="inbox-reply" onSubmit={(e) => void send(e)}>
         {sendError && <p className="notice notice-danger">{sendError}</p>}
         <label className="sr-only" htmlFor="inbox-reply">
@@ -374,6 +393,7 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
           <SendIcon />
         </button>
       </form>
+      )}
     </div>
   );
 }

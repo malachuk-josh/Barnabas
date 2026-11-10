@@ -1704,6 +1704,9 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 }
 .inbox-avatar.is-group { background: var(--surface-2); color: var(--fg); box-shadow: inset 0 0 0 1.5px var(--line); }
 .inbox-avatar.is-lg { width: 44px; height: 44px; font-size: 0.9rem; }
+.inbox-avatar.is-system { background: var(--brass); color: var(--night); }
+.inbox-avatar.is-system svg { width: 55%; height: 55%; }
+.inbox-system-note { margin: 0; padding: 12px 18px; border-top: 1px solid var(--line-soft); text-align: center; }
 
 .inbox-pane { padding: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .inbox-pane > * { flex: 1 1 auto; min-height: 0; }
