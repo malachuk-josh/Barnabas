@@ -15,6 +15,8 @@ import { familiesForEmail, kidsTeamIds } from "@/lib/kids/parents";
 import { checkInChildren, kidsActor, saveHousehold } from "@/lib/kids/service";
 import { loadKids } from "@/lib/kids/store";
 import { directMessagePayload } from "@/lib/notifications/notify";
+import { notifyLeaders } from "@/lib/notifications/send";
+import { getProfile, saveProfile } from "@/lib/profile";
 import { accessFor, addPerson, listLeaders, removePerson, setPersonLevel } from "@/lib/team";
 import { GET as listRoute, POST as startRoute } from "@/app/api/inbox/route";
 import { GET as threadRoute, POST as replyRoute } from "@/app/api/inbox/[id]/route";
@@ -240,3 +242,31 @@ describe("kids check-in and a member's child care", () => {
     expect(levelMayUse(memberAccess, "/kids/rooms")).toBe(false);
   });
 });
+
+describe("notifications land in Messages", () => {
+  beforeEach(setup);
+
+  it("saves each notification to the person's Notifications conversation, even without push, with its link and no replies", async () => {
+    const payload = { title: "Checked in", body: "Emma is checked in to Preschool.", url: "/kids", tag: "t" };
+    await notifyLeaders("demo", [parentA.leaderId], "childcare", payload);
+    await notifyLeaders("demo", [parentA.leaderId], "childcare", { ...payload, title: "Picked up", body: "Emma was checked out." });
+    const list = await as<List>(parentA, () => listRoute(req()));
+    const feed = list.json.threads.find((t) => t.with[0]?.name === "Notifications")!;
+    expect(feed).toMatchObject({ unread: 2, last: { text: "Picked up: Emma was checked out." } });
+    const open = await as<{ thread: { system?: string }; messages: { name: string; text: string; href?: string }[] }>(parentA, () => threadRoute(req(), params(feed.id)));
+    expect(open.json.thread.system).toBe("notifications");
+    expect(open.json.messages[0]).toMatchObject({ name: "Barnabas", text: "Checked in: Emma is checked in to Preschool.", href: "/kids" });
+    expect((await as(parentA, () => replyRoute(req({ text: "thanks" }), params(feed.id)))).status).toBe(400);
+    // Nobody else can open it.
+    expect((await as(parentB, () => threadRoute(req(), params(feed.id)))).status).toBe(404);
+  });
+
+  it("follows the person's switch for that type, and doesn't copy a message notification", async () => {
+    const p = await getProfile(parentA);
+    await saveProfile(parentA, { ...p, notifications: { ...p.notifications, types: { ...p.notifications.types, childcare: false } } });
+    await notifyLeaders("demo", [parentA.leaderId], "childcare", { title: "Checked in", body: "x", url: "/kids", tag: "t" });
+    await notifyLeaders("demo", [parentA.leaderId], "messages", { title: "Pastor", body: "Pastor sent you a message.", url: "/inbox", tag: "m" });
+    expect((await as<List>(parentA, () => listRoute(req()))).json.threads).toHaveLength(0);
+  });
+});
+

@@ -3,6 +3,7 @@ import type { Leader } from "../auth/session";
 import { LEVEL_LABELS, TEAM_ROLE_LABELS, type Access } from "../auth/roles";
 import { newId } from "../data/ids";
 import { directMessage } from "../notifications/notify";
+import { NOTICE_SENDER } from "./notices";
 import { accessFor, getLeaderRecord, levelOf, listLeaders, type LeaderRecord } from "../team";
 import {
   loadIndex,
@@ -151,6 +152,7 @@ export async function reply(actor: InboxActor, id: string, input: z.input<typeof
   const v = ReplyInput.parse(input);
   const church = actor.leader.churchId;
   await threadFor(actor, id);
+  if ((await loadThread(church, id))?.system) fail("Notifications can't be replied to.", 400);
   const out = await withInboxLock(church, async () => {
     const t = (await loadThread(church, id))!;
     const message = await append(church, t, actor.leader.leaderId, v.text);
@@ -179,16 +181,19 @@ export type ThreadSummary = {
   updatedAt: number;
   unread: number;
   last?: { mine: boolean; name: string; text: string; at: number };
+  /** The person's Notifications from Barnabas: no replies. */
+  system?: "notifications";
 };
 
 function summarize(t: InboxThread, me: string, names: Map<string, string>, read: Record<string, number>): ThreadSummary {
   return {
     id: t.id,
     about: t.about,
-    with: t.participants.filter((p) => p !== me).map((p) => ({ leaderId: p, name: names.get(p) ?? "Someone" })),
+    with: t.system ? [{ leaderId: NOTICE_SENDER, name: "Notifications" }] : t.participants.filter((p) => p !== me).map((p) => ({ leaderId: p, name: names.get(p) ?? "Someone" })),
+    ...(t.system ? { system: t.system } : {}),
     updatedAt: t.updatedAt,
     unread: Math.max(0, t.seq - (read[t.id] ?? 0)),
-    last: t.last ? { mine: t.last.by === me, name: t.last.by === me ? "You" : (names.get(t.last.by) ?? "Someone"), text: t.last.text.slice(0, 120), at: t.last.at } : undefined,
+    last: t.last ? { mine: t.last.by === me, name: t.last.by === me ? "You" : t.last.by === NOTICE_SENDER ? "Barnabas" : (names.get(t.last.by) ?? "Someone"), text: t.last.text.slice(0, 120), at: t.last.at } : undefined,
   };
 }
 
@@ -218,7 +223,7 @@ export async function openThread(actor: InboxActor, id: string) {
   const read = { [t.id]: t.seq };
   return {
     thread: summarize(t, me, names, read),
-    messages: msgs.map((m) => ({ id: m.id, mine: m.by === me, by: m.by, name: m.by === me ? "You" : (names.get(m.by) ?? "Someone"), text: m.text, at: m.at })),
+    messages: msgs.map((m) => ({ id: m.id, mine: m.by === me, by: m.by, name: m.by === me ? "You" : m.by === NOTICE_SENDER ? "Barnabas" : (names.get(m.by) ?? "Someone"), text: m.text, at: m.at, ...(m.href ? { href: m.href } : {}) })),
   };
 }
 

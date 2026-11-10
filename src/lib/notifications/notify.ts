@@ -6,7 +6,6 @@ import type { CareCase, GuestCard, PrayerRequest, TeamMember } from "../care/typ
 import { canSeePrayer } from "../care/visibility";
 import { loadEvents } from "../events/store";
 import type { RegEvent } from "../events/types";
-import { pushConfig } from "../push/vapid";
 import { loadServe } from "../serve/store";
 import type { ServeBook, SwapRequest } from "../serve/types";
 import { accessFor, listLeaders, type LeaderRecord } from "../team";
@@ -24,7 +23,7 @@ import type { Household } from "../kids/types";
 
 /** Runs `task` after the response when inside a request (next/server `after`), otherwise in the background. */
 export function later(task: () => Promise<unknown>) {
-  if (!pushConfig()) return;
+  // Runs even without push: notifications also land in Messages.
   const run = () => task().catch((err) => console.error("[barnabas] notification failed", err instanceof Error ? err.message : "unknown"));
   try {
     after(run);

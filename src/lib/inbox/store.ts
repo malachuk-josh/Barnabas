@@ -23,9 +23,11 @@ export type InboxThread = {
   /** Counts every message ever sent in the thread; unread = seq - the reader's marker. */
   seq: number;
   last?: { by: string; text: string; at: number };
+  /** "notifications": the person's own feed of notifications from Barnabas (no replies). */
+  system?: "notifications";
 };
 
-export type InboxMessage = { id: string; seq: number; by: string; text: string; at: number };
+export type InboxMessage = { id: string; seq: number; by: string; text: string; at: number; /** A page in the app this message opens (notifications). */ href?: string };
 export type ThreadRef = { id: string; at: number };
 
 export const MESSAGE_CAP = 500;

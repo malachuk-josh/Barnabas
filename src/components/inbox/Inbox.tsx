@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ThreadSummary } from "@/lib/inbox/service";
 
 type Person = { leaderId: string; name: string; label: string };
-type Message = { id: string; mine: boolean; name: string; text: string; at: number };
+type Message = { id: string; mine: boolean; name: string; text: string; at: number; href?: string };
 type Open = { thread: ThreadSummary; messages: Message[] };
 type View = { kind: "none" } | { kind: "thread"; id: string } | { kind: "compose" };
 
@@ -242,10 +243,18 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
               {m.mine ? "You" : m.name} · {when(m.at)}
             </span>
             <p>{m.text}</p>
+            {m.href && (
+              <Link href={m.href} className="bubble-link">
+                Open
+              </Link>
+            )}
           </div>
         ))}
         <div ref={end} />
       </div>
+      {open.thread.system ? (
+        <p className="small muted inbox-reply">Your notifications from Barnabas land here too. Choose which ones you get in Settings → Notifications.</p>
+      ) : (
       <form className="inbox-reply" onSubmit={(e) => void send(e)}>
         {sendError && <p className="notice notice-danger">{sendError}</p>}
         <label className="sr-only" htmlFor="inbox-reply">
@@ -266,6 +275,7 @@ function Thread({ open, error, onBack, onSent }: { open: Open | null; error: str
           {busy ? "Sending…" : "Send"}
         </button>
       </form>
+      )}
     </div>
   );
 }

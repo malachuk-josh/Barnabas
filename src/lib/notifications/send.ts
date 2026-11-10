@@ -4,6 +4,7 @@ import { notificationSettingsFor } from "../profile";
 import { pushConfig, sendWebPush } from "../push/vapid";
 import { accessFor, getLeaderRecord } from "../team";
 import { listSubscriptions, recordSends } from "./subscriptions";
+import { recordNotice } from "../inbox/notices";
 import { typesFor, type NotificationPayload, type NotificationType } from "./types";
 
 /**
@@ -22,7 +23,7 @@ const clean = (s: string, max: number) => s.replace(/\s+/g, " ").trim().slice(0,
 
 export async function notifyLeaders(churchId: string, leaderIds: string[], type: NotificationType, payload: NotificationPayload, opts: NotifyOptions = {}): Promise<NotifyResult> {
   const total: NotifyResult = { leaders: 0, sent: 0, failed: 0, pruned: 0, skipped: 0 };
-  if (!pushConfig()) return total;
+  const canPush = Boolean(pushConfig());
   const ids = [...new Set(leaderIds.filter(Boolean))];
   const body = JSON.stringify({
     title: clean(payload.title, 80),
@@ -30,17 +31,21 @@ export async function notifyLeaders(churchId: string, leaderIds: string[], type:
     url: payload.url.startsWith("/") && !payload.url.startsWith("//") ? payload.url : "/",
     tag: clean(payload.tag, 64) || type,
   } satisfies NotificationPayload);
+  const saveToMessages: string[] = [];
   await Promise.all(
     ids.map(async (leaderId) => {
       try {
         const who = { churchId, leaderId };
         const [settings, record] = await Promise.all([notificationSettingsFor(churchId, leaderId), getLeaderRecord(churchId, leaderId)]);
-        if (!record || !settings.enabled) return void total.skipped++;
+        if (!record || record.removed) return void total.skipped++;
         if (!opts.test) {
           if (!settings.types[type]) return void total.skipped++;
           const access = await accessFor({ churchId, leaderId, email: record.email });
           if (!typesFor(access).includes(type)) return void total.skipped++;
+          // It also lands in their Messages (Notifications), after the push and whatever their devices.
+          if (type !== "messages") saveToMessages.push(leaderId);
         }
+        if (!canPush || !settings.enabled) return void total.skipped++;
         const subs = await listSubscriptions(who);
         if (!subs.length) return void total.skipped++;
         total.leaders++;
@@ -61,5 +66,13 @@ export async function notifyLeaders(churchId: string, leaderIds: string[], type:
       }
     }),
   );
+  if (saveToMessages.length) {
+    const p = JSON.parse(body) as NotificationPayload;
+    for (const leaderId of saveToMessages) {
+      await recordNotice(churchId, leaderId, { title: p.title, body: p.body, url: p.url }).catch((err) =>
+        console.error("[barnabas] notification not saved to Messages", err instanceof Error ? err.message : "unknown"),
+      );
+    }
+  }
   return total;
 }
