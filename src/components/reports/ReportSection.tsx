@@ -1,35 +1,27 @@
-import { EmptyState } from "@/components/EmptyState";
+import Link from "next/link";
 import type { Section } from "@/lib/reports/types";
 import { ReportChart } from "./ReportChart";
 import { VerseNote } from "@/components/VerseNote";
 
-/** One report card: headline numbers, the chart, its plain-language summary, the table view and a CSV download. */
+/**
+ * One report with data: the summary and headline numbers beside its charts, then the table view and the source.
+ * Sections with no data yet use ReportWaiting instead.
+ */
 export function ReportSection({ section }: { section: Section }) {
-  if (!section.allowed) {
-    return (
-      <section className="fin-card report-card report-locked" aria-labelledby={`r-${section.id}`}>
-        <h2 id={`r-${section.id}`}>{section.title}</h2>
-        <p className="small muted">{section.locked}</p>
-      </section>
-    );
-  }
+  const charts = [section.chart, section.extra].filter((c): c is NonNullable<typeof c> => Boolean(c));
   return (
     <section className="fin-card report-card" aria-labelledby={`r-${section.id}`} id={section.id}>
-      <div className="fin-card-head">
-        <h2 id={`r-${section.id}`}>{section.title}</h2>
-        {!section.empty && (
-          <a className="btn btn-sm" href={`/api/reports/csv?section=${section.id}`} download>
-            Download CSV
-          </a>
-        )}
+      <div className="report-card-head">
+        <div className="report-card-title">
+          <h2 id={`r-${section.id}`}>{section.title}</h2>
+          {section.verse && <VerseNote verse={section.verse} short />}
+        </div>
+        <a className="btn btn-sm btn-quiet" href={`/api/reports/csv?section=${section.id}`} download>
+          Download CSV
+        </a>
       </div>
-      {section.verse && <VerseNote verse={section.verse} />}
-      {section.empty ? (
-        <EmptyState compact title={section.empty.title} actions={section.empty.actions.map((a, i) => ({ ...a, primary: i === 0 }))}>
-          {section.empty.text}
-        </EmptyState>
-      ) : (
-        <>
+      <div className={`report-body${charts.length ? "" : " no-chart"}`}>
+        <div className="report-text">
           <p className="report-summary">{section.summary}</p>
           {section.stats.length > 0 && (
             <dl className="report-stats">
@@ -42,38 +34,63 @@ export function ReportSection({ section }: { section: Section }) {
               ))}
             </dl>
           )}
-          {section.chart && <ReportChart chart={section.chart} />}
-          {section.extra && <ReportChart chart={section.extra} />}
-          <details className="report-table">
-            <summary>Show the numbers as a table</summary>
-            <div className="fin-table-wrap">
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    {section.table.header.map((h) => (
-                      <th key={h} scope="col">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {section.table.rows.map((r, i) => (
-                    <tr key={i}>
-                      {r.map((c, j) => (
-                        <td key={j} className={typeof c === "number" ? "num" : undefined}>
-                          {c}
-                        </td>
-                      ))}
-                    </tr>
+        </div>
+        {charts.length > 0 && (
+          <div className="report-charts">
+            {charts.map((c) => (
+              <ReportChart key={c.title} chart={c} />
+            ))}
+          </div>
+        )}
+      </div>
+      <details className="report-table">
+        <summary>Show the numbers as a table</summary>
+        <div className="fin-table-wrap">
+          <table className="fin-table">
+            <thead>
+              <tr>
+                {section.table.header.map((h) => (
+                  <th key={h} scope="col">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {section.table.rows.map((r, i) => (
+                <tr key={i}>
+                  {r.map((c, j) => (
+                    <td key={j} className={typeof c === "number" ? "num" : undefined}>
+                      {c}
+                    </td>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
-        </>
-      )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
       <p className="fin-source">{section.source}</p>
+    </section>
+  );
+}
+
+/** A report that has nothing to count yet: what it will show, and the first step. */
+export function ReportWaiting({ section }: { section: Section }) {
+  if (!section.empty) return null;
+  return (
+    <section className="report-waiting" aria-labelledby={`r-${section.id}`} id={section.id}>
+      <h3 id={`r-${section.id}`}>{section.title}</h3>
+      <p className="small muted">{section.empty.text}</p>
+      {section.empty.actions.length > 0 && (
+        <div className="report-waiting-actions">
+          {section.empty.actions.map((a, i) => (
+            <Link key={a.href + a.label} href={a.href} className={`btn btn-sm${i === 0 ? " btn-primary" : ""}`}>
+              {a.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

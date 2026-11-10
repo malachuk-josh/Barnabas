@@ -9,27 +9,32 @@ export default async function ExportsPage() {
   const { leader, profile } = await requirePageLeader();
   const access = await accessFor(leader);
   return (
-    <ReportsFrame profile={profile} title="Exports" intro="Download your church's data as CSV for a spreadsheet, the board or another system. Each download is recorded in the audit log.">
-      <div className="fin-grid">
+    <ReportsFrame profile={profile} title="Exports" intro="Your church's data as CSV, for a spreadsheet, the board or another system. Each download is recorded in the audit log.">
+      <ul className="export-list">
         {EXPORT_KINDS.map((k) => {
           const info = EXPORT_INFO[k];
           const ok = canExport(access, k);
           return (
-            <section key={k} className="fin-card">
-              <h2 style={{ fontSize: "1.1rem" }}>{info.label}</h2>
-              <p className="small muted">{info.description}</p>
+            <li key={k} className={ok ? undefined : "is-locked"}>
+              <span className="export-file" aria-hidden="true">
+                CSV
+              </span>
+              <div className="export-text">
+                <h2>{info.label}</h2>
+                <p className="small muted">{info.description}</p>
+              </div>
               {ok ? (
-                <a className="btn" href={`/api/export/${k}`} download>
-                  Download CSV
+                <a className="btn btn-sm" href={`/api/export/${k}`} download>
+                  Download
                 </a>
               ) : (
-                <p className="small muted">Your role doesn&apos;t include this one.</p>
+                <span className="small muted export-locked">Not in your role</span>
               )}
-            </section>
+            </li>
           );
         })}
-      </div>
-      <p className="small muted" style={{ marginTop: 16 }}>Every chart on the Reports page also has its own CSV download.</p>
+      </ul>
+      <p className="small muted export-foot">Every report on How we&apos;re doing also has its own CSV download.</p>
     </ReportsFrame>
   );
 }
