@@ -20,6 +20,10 @@ export type LeaderRecord = {
   teamRole?: TeamRole;
   /** An admin removed them: they can't sign in, and any open session stops working. */
   removed?: boolean;
+  /** Mobile number, for a texted invite. */
+  phone?: string;
+  /** The latest invite (Admin page). Only a hash of its link is kept. */
+  invite?: { tokenHash: string; createdAt: number; expiresAt: number; by: string; sends: { via: "email" | "text"; to: string; ok: boolean; message?: string; at: number }[]; acceptedAt?: number };
   /** Added by an admin and not signed in yet. */
   addedBy?: string;
   addedAt?: number;
@@ -106,7 +110,7 @@ export async function maySignIn(churchId: string, leaderId: string, email: strin
 export async function addPerson(
   churchId: string,
   leaderId: string,
-  input: { name: string; email: string; level: Level; finance?: boolean; teamRole?: TeamRole },
+  input: { name: string; email: string; phone?: string; level: Level; finance?: boolean; teamRole?: TeamRole },
   by: string,
 ): Promise<LeaderRecord> {
   const existing = await getLeaderRecord(churchId, leaderId);
@@ -120,6 +124,7 @@ export async function addPerson(
     signedInAt: existing?.signedInAt ?? 0,
     addedBy: existing?.addedBy ?? by,
     addedAt: existing?.addedAt ?? Date.now(),
+    ...(input.phone ? { phone: input.phone } : {}),
   };
   delete record.removed;
   applyLevel(record, input, by);
@@ -135,6 +140,17 @@ function applyLevel(record: LeaderRecord, input: { level: Level; finance?: boole
   record.access = roleForLevel(input.level, Boolean(input.finance), record.teamRole);
   record.accessSetBy = by;
   record.accessSetAt = Date.now();
+}
+
+/** Save (or clear) someone's mobile number, for texted invites. Nothing else changes. */
+export async function setPersonPhone(churchId: string, leaderId: string, phone: string | undefined) {
+  const record = await getLeaderRecord(churchId, leaderId);
+  if (!record || record.removed) return null;
+  const next: LeaderRecord = { ...record };
+  if (phone) next.phone = phone;
+  else delete next.phone;
+  await setJSON(leaderKey(churchId, leaderId), next);
+  return next;
 }
 
 /** Change someone's level, finance switch or team role. */

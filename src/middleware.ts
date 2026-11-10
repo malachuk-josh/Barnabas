@@ -9,7 +9,7 @@ const PATH_HEADER = "x-barnabas-path";
 // signature or Resend's svix signature on every call; unsubscribe links carry a signed token. Stripe's
 // webhook verifies the Stripe-Signature header against the raw body with STRIPE_WEBHOOK_SECRET.
 const PUBLIC_PATHS = [
-  "/signin", "/api/auth/signin", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg",
+  "/signin", "/api/auth/signin", "/api/auth/invite", "/api/calendar/ics", "/welcome", "/api/welcome", "/register", "/api/register", "/manifest.webmanifest", "/icon.svg",
   "/api/messages/twilio/status", "/api/messages/twilio/inbound", "/api/messages/resend", "/api/messages/unsubscribe",
   "/api/stripe/webhook",
   // The leader app's service worker script (it holds no data), and Vercel Cron, which checks CRON_SECRET itself.
