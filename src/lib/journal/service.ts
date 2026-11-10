@@ -211,7 +211,7 @@ export async function setShared(actor: JournalActor, id: string, shared: boolean
   return e;
 }
 
-/** Deletes for good. Only the owner, from the app (Barnabas has no tool for it). Audited. */
+/** Deletes for good. Only the owner, from the app or through Barnabas (delete_journal_entry, confirmed first). Audited. */
 export async function deleteEntry(actor: JournalActor, id: string) {
   const e = await ownEntry(actor, id);
   await removeEntry(owner(actor), id);

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playEarcon, unlockEarcons } from "@/lib/voice/earcons";
 import { SentenceChunker } from "@/lib/speech/chunker";
@@ -15,7 +16,7 @@ import {
   type Speaker,
 } from "@/lib/voice/client";
 
-type Turn = { id: number; role: "leader" | "barnabas"; text: string; unheard: string; tools: string[] };
+type Turn = { id: number; role: "leader" | "barnabas"; text: string; unheard: string; tools: string[]; links?: { label: string; href: string }[] };
 type Status = "idle" | "listening" | "thinking" | "speaking";
 type Lang = "en-US" | "es-US" | "ko-KR";
 
@@ -298,6 +299,7 @@ export function Talk({
           const event = JSON.parse(line) as
             | { type: "text"; text: string }
             | { type: "tool"; name: string; phrase?: string }
+            | { type: "link"; label: string; href: string }
             | { type: "notice"; text: string }
             | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null }
             | { type: "done" }
@@ -316,6 +318,10 @@ export function Talk({
           } else if (event.type === "tool") {
             update((t) => ({ ...t, tools: [...t.tools, event.name] }));
             if (event.phrase && !speaker.current?.busy()) say(event.phrase);
+          } else if (event.type === "link") {
+            if (event.href.startsWith("/") && !event.href.startsWith("//")) {
+              update((t) => (t.links?.some((l) => l.href === event.href) ? t : { ...t, links: [...(t.links ?? []), { label: event.label, href: event.href }] }));
+            }
           } else if (event.type === "notice") {
             setNotice(event.text);
           } else if (event.type === "error") {
@@ -561,6 +567,15 @@ export function Talk({
             {t.tools.length > 0 && t.role === "barnabas" && !t.text && !t.unheard && <span className="tool-line">Looking that up…</span>}
             {t.text}
             {t.unheard && <span className="bubble-unheard"> {t.unheard}</span>}
+            {t.links && t.links.length > 0 && (
+              <span className="bubble-links">
+                {t.links.map((l) => (
+                  <Link key={l.href} href={l.href} className="bubble-link">
+                    {l.label}
+                  </Link>
+                ))}
+              </span>
+            )}
           </div>
         ))}
         {interim && <div className="bubble bubble-leader bubble-unheard">{interim}</div>}

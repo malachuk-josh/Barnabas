@@ -1674,3 +1674,11 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 @media print {
   .fin-card { box-shadow: none; border: 1px solid #ccc; }
 }
+
+/* Action links under Barnabas's reply ("Open Ruth's record") */
+.bubble-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.bubble-link:where(:not(.word-root *)) {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border-radius: 999px; font-size: 0.86rem; font-weight: 600;
+  text-decoration: none; background: var(--surface); color: var(--accent); box-shadow: 0 0 0 1px var(--line);
+}
+.bubble-link:hover:where(:not(.word-root *)) { box-shadow: 0 0 0 1px var(--accent); }

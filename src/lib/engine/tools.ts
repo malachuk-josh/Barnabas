@@ -23,11 +23,15 @@ import { KNOW_TOOLS } from "./know";
 import { THORN_TOOLS } from "./thorn";
 import { SITE_TOOLS } from "./site-tools";
 import { JOURNAL_TOOLS } from "./journal-tools";
+import { APP_TOOLS } from "./app-tools";
+import { PEOPLE_TOOLS } from "./people-tools";
+import { WORD_TOOLS } from "./word-tools";
 import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
 import { followUps, radarNow } from "./briefing";
 import { INBOX_PATH } from "./prompt";
 import { can, isLimited, type Access } from "../auth/roles";
+import type { ActionLink } from "./links";
 import { accessFor } from "../team";
 import { HEALTH_LABELS } from "../finance/budget";
 import { donorSummaries, lastMonths, monthLabel } from "../finance/giving";
@@ -56,7 +60,12 @@ export type ToolContext = {
   toolNames?: string[] | null;
 };
 
-export type ToolResult = { content: string; isError: boolean };
+export type ToolResult = {
+  content: string;
+  isError: boolean;
+  /** Buttons for the leader under the reply, e.g. "Open Ruth's record" (paths inside the app only). */
+  links?: ActionLink[];
+};
 
 export type ToolSpec<S extends z.ZodTypeAny> = {
   def: Anthropic.Beta.BetaTool;
@@ -115,7 +124,8 @@ const findPerson = tool({
   async run({ name }) {
     const matches = await churchData().findPeople(name);
     if (!matches.length) return ok({ matches: [], note: `No one named "${name}" is in the directory. Say so, and don't guess at someone else. The leader can add them, or import the church's list.` });
-    return ok({ matches: matches.slice(0, 6).map(personCard) });
+    const shown = matches.slice(0, 6);
+    return { ...ok({ matches: shown.map((p) => ({ ...personCard(p), page: `/people/${encodeURIComponent(p.id)}` })) }), links: shown.slice(0, 4).map((p) => ({ label: `Open ${p.name}'s record`, href: `/people/${encodeURIComponent(p.id)}` })) };
   },
 });
 
@@ -155,17 +165,20 @@ const getPersonSummary = tool({
     const follow = (await followUps(ctx.leader)).filter((f) => f.personId === person_id).map((f) => f.reason);
     const memoryFile = `/memories/people/${slug(person.name)}.md`;
     const hasNotes = (await memoryFor(ctx).read(memoryFile)) !== null;
-    return ok({
-      ...personCard(person),
-      serving_last_8_weeks: byTeam,
-      worship_last_4_sundays: `${worship.filter((a) => a.present).length} of ${worship.length}`,
-      small_group_last_meetings: groups.length ? `${groups.filter((g) => g.present).length} of ${groups.length}` : "not in a group",
-      upcoming_assignments: upcoming,
-      last_thanked: person.lastThanked ? friendlyDate(person.lastThanked) : "no record",
-      burnout_signals: signal && signal.band !== "ok" ? { level: signal.band, reasons: signal.drivers, suggestion: signal.suggestion } : "none",
-      open_follow_ups: follow,
-      your_notes_file: hasNotes ? memoryFile : null,
-    });
+    return {
+      ...ok({
+        ...personCard(person),
+        serving_last_8_weeks: byTeam,
+        worship_last_4_sundays: `${worship.filter((a) => a.present).length} of ${worship.length}`,
+        small_group_last_meetings: groups.length ? `${groups.filter((g) => g.present).length} of ${groups.length}` : "not in a group",
+        upcoming_assignments: upcoming,
+        last_thanked: person.lastThanked ? friendlyDate(person.lastThanked) : "no record",
+        burnout_signals: signal && signal.band !== "ok" ? { level: signal.band, reasons: signal.drivers, suggestion: signal.suggestion } : "none",
+        open_follow_ups: follow,
+        your_notes_file: hasNotes ? memoryFile : null,
+      }),
+      links: [{ label: `Open ${person.name}'s record`, href: `/people/${encodeURIComponent(person.id)}` }],
+    };
   },
 });
 
@@ -1330,6 +1343,9 @@ const ALL: ToolSpec<any>[] = [
   ...SITE_TOOLS,
   onlineGivingTool,
   ...JOURNAL_TOOLS,
+  ...APP_TOOLS,
+  ...PEOPLE_TOOLS,
+  ...WORD_TOOLS,
 ];
 
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
@@ -1347,8 +1363,16 @@ const MEMBER_TOOLS = [
   "ask_permission_to_know",
   "record_to_know",
   "remember_thorn",
+  "send_app_message",
+  "list_app_messages",
+  "read_app_message",
+  "update_my_settings",
+  "read_scripture",
+  "search_scripture",
+  "save_verse",
+  "add_verse_note",
 ];
-const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving"];
+const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving", "search_journal", "append_to_journal_entry", "tag_journal_entry", "delete_journal_entry"];
 const TEAM_ROLE_TOOLS: Record<string, string[]> = {
   kids: ["kids_checkin_counts"],
   checkin: ["kids_checkin_counts"],
