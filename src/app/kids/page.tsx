@@ -25,7 +25,7 @@ export default async function KidsStationPage({ searchParams }: { searchParams: 
   const options = gatheringsOn(date).filter((g) => g.kids);
   const g = options.find((x) => x.key === q.g)?.key ?? options[0].key;
   return (
-    <OpsFrame profile={profile} eyebrow="Kids" title="Check-in station" intro="Find a family by last name or the last four digits of a phone number, check children in, print their labels, and check them out with the code on the parent's tag." tabs={KIDS_TABS}>
+    <OpsFrame profile={profile} eyebrow="Kids" title="Check-in station" intro="Search a family, check children in and print labels. Check out with the code on the parent's tag." tabs={KIDS_TABS}>
       <CheckInStation
         date={date}
         gathering={g}

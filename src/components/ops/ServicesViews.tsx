@@ -7,6 +7,16 @@ import { wordHref } from "@/lib/services/scripture";
 import { ITEM_KINDS, ITEM_LABELS, type ItemKind, type SermonSeries, type ServiceItem } from "@/lib/services/types";
 import { localToday, shortDate, Status, useOps } from "./client";
 
+const tileMonth = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+const tileDay = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { day: "numeric", timeZone: "UTC" });
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+
 type Row = { date: string; preacher: string | null; passage: string | null; passageHref: string | null; title: string | null; series: { id: string; title: string } | null; plans: string[] };
 
 /** The next twelve Sundays: who preaches, the series and passage, and whether each service is planned. */
@@ -21,16 +31,49 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
         <Status error={ops.error} notice={ops.notice} />
         <ul className="ops-rotation">
           {rows.map((r) => (
-            <li key={r.date}>
-              <div className="ops-rot-head">
-                <strong>{shortDate(r.date)}</strong>
-                {r.preacher ? <span>{r.preacher}</span> : <span className="muted">No one yet</span>}
+            <li key={r.date} className="rot-row">
+              <span className="date-tile" aria-hidden="true">
+                <small>{tileMonth(r.date)}</small>
+                <strong>{tileDay(r.date)}</strong>
+              </span>
+              <div className="rot-main">
+                <span className="sr-only">{shortDate(r.date)}: </span>
+                <span className="rot-preacher">
+                  {r.preacher ? (
+                    <>
+                      <span className="ops-avatar" aria-hidden="true">
+                        {initials(r.preacher)}
+                      </span>
+                      <strong>{r.preacher}</strong>
+                    </>
+                  ) : (
+                    <span className="muted">No one preaching yet</span>
+                  )}
+                </span>
+                {(r.series || r.title || r.passage) && (
+                  <span className="small muted ops-rot-meta">
+                    {r.series && <span className="care-type">{r.series.title}</span>}
+                    {r.title && <span>&ldquo;{r.title}&rdquo;</span>}
+                    {r.passage && (r.passageHref ? <Link href={r.passageHref}>{r.passage}</Link> : <span>{r.passage}</span>)}
+                  </span>
+                )}
               </div>
-              <div className="small muted ops-rot-meta">
-                {r.series && <span className="care-type">{r.series.title}</span>}
-                {r.title && <span>{r.title}</span>}
-                {r.passage && (r.passageHref ? <Link href={r.passageHref}>{r.passage}</Link> : <span>{r.passage}</span>)}
-                <Link href={`/services/plan?date=${r.date}`}>{r.plans.length ? `Order of service (${r.plans.length === 2 ? "both services" : "one service"})` : "Plan the service"}</Link>
+              <div className="rot-actions">
+                <Link className={`btn btn-sm${r.plans.length ? " is-planned" : ""}`} href={`/services/plan?date=${r.date}`}>
+                  {r.plans.length === 2 ? "Planned" : r.plans.length === 1 ? "1 of 2 planned" : "Plan service"}
+                </Link>
+                {planner && editing !== r.date && (
+                  <button
+                    className="btn btn-sm"
+                    type="button"
+                    onClick={() => {
+                      setEditing(r.date);
+                      setF({ preacher: r.preacher ?? "", passage: r.passage ?? "", title: r.title ?? "", seriesId: "" });
+                    }}
+                  >
+                    {r.preacher ? "Change" : "Add preacher"}
+                  </button>
+                )}
               </div>
               {planner &&
                 (editing === r.date ? (
@@ -85,18 +128,7 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
                       )}
                     </div>
                   </form>
-                ) : (
-                  <button
-                    className="linklike small"
-                    type="button"
-                    onClick={() => {
-                      setEditing(r.date);
-                      setF({ preacher: r.preacher ?? "", passage: r.passage ?? "", title: r.title ?? "", seriesId: "" });
-                    }}
-                  >
-                    {r.preacher ? "Change" : "Add preacher"}
-                  </button>
-                ))}
+                ) : null)}
             </li>
           ))}
         </ul>
@@ -185,13 +217,20 @@ function NewSeries() {
 /* ---------- Order of service ---------- */
 
 type EditItem = Omit<ServiceItem, "id"> & { id?: string; key: string };
+// New items get keys from a counter. Items first drawn on the server use their position instead, so the
+// server's HTML and the browser's first render agree (a shared counter keeps counting across requests).
 let keySeq = 0;
 const k = () => `i${keySeq++}`;
+const keyed = (gathering: string, items: ServiceItem[]): EditItem[] => items.map((i, n) => ({ ...i, key: `${gathering}-${n}` }));
 
 export function PlanEditor({ date, gathering, label, items, planner, otherGathering }: { date: string; gathering: string; label: string; items: ServiceItem[]; planner: boolean; otherGathering: { key: string; label: string; planned: boolean } }) {
   const ops = useOps("services");
-  const [list, setList] = useState<EditItem[]>(() => items.map((i) => ({ ...i, key: k() })));
+  const [list, setList] = useState<EditItem[]>(() => keyed(gathering, items));
+  const [saved, setSaved] = useState<EditItem[]>(list);
   const [dirty, setDirty] = useState(false);
+  // Planners read the order like everyone else, and switch to editing when they mean to change it.
+  const [editing, setEditing] = useState(false);
+  const edit = planner && editing;
   const total = list.reduce((n, i) => n + (Number(i.minutes) || 0), 0);
   const set = (next: EditItem[]) => {
     setList(next);
@@ -214,15 +253,15 @@ export function PlanEditor({ date, gathering, label, items, planner, otherGather
         </EmptyState>
         {planner && (
           <div className="row">
-            <button className="btn btn-primary" type="button" disabled={ops.busy} onClick={() => void ops.act<{ items: ServiceItem[] }>({ action: "plan-start", date, gathering }, (o) => { setList(o.items.map((i) => ({ ...i, key: k() }))); setDirty(false); return "Outlined from the usual order. Adjust anything below."; })}>
+            <button className="btn btn-primary" type="button" disabled={ops.busy} onClick={() => void ops.act<{ items: ServiceItem[] }>({ action: "plan-start", date, gathering }, (o) => { const next = o.items.map((i) => ({ ...i, key: k() })); setList(next); setSaved(next); setDirty(false); setEditing(true); return "Outlined from the usual order. Adjust anything below."; })}>
               Start from the usual order
             </button>
             {otherGathering.planned && (
-              <button className="btn" type="button" disabled={ops.busy} onClick={() => void ops.act<{ items: ServiceItem[] }>({ action: "plan-copy", date, from: otherGathering.key, to: gathering }, (o) => { setList(o.items.map((i) => ({ ...i, key: k() }))); setDirty(false); return `Copied from the ${otherGathering.label}.`; })}>
+              <button className="btn" type="button" disabled={ops.busy} onClick={() => void ops.act<{ items: ServiceItem[] }>({ action: "plan-copy", date, from: otherGathering.key, to: gathering }, (o) => { const next = o.items.map((i) => ({ ...i, key: k() })); setList(next); setSaved(next); setDirty(false); setEditing(true); return `Copied from the ${otherGathering.label}.`; })}>
                 Copy the {otherGathering.label}
               </button>
             )}
-            <button className="btn" type="button" onClick={() => set([{ key: k(), kind: "welcome", title: "Welcome", minutes: 3 }])}>
+            <button className="btn" type="button" onClick={() => { set([{ key: k(), kind: "welcome", title: "Welcome", minutes: 3 }]); setEditing(true); }}>
               Start blank
             </button>
           </div>
@@ -233,14 +272,23 @@ export function PlanEditor({ date, gathering, label, items, planner, otherGather
   return (
     <section className="fin-card">
       <div className="fin-card-head">
-        <h2>{label}</h2>
-        <span className="pill pill-ok">{total} minutes</span>
+        <div className="plan-title">
+          <h2>{label}</h2>
+          <span className="small muted">
+            {list.length} {list.length === 1 ? "item" : "items"} · about {total} minutes
+          </span>
+        </div>
+        {planner && !editing && (
+          <button className="btn btn-sm" type="button" onClick={() => setEditing(true)}>
+            Edit order
+          </button>
+        )}
       </div>
       <Status error={ops.error} notice={ops.notice} />
       <ol className="ops-order">
         {list.map((it, i) => (
-          <li key={it.key} className={`ops-item ops-item-${it.kind}`}>
-            {planner ? (
+          <li key={it.key} className={`ops-item ops-item-${it.kind}${edit ? "" : " is-reading"}`}>
+            {edit ? (
               <div className="ops-item-edit">
                 <div className="ops-item-move">
                   <button className="icon-btn" type="button" aria-label={`Move ${it.title} up`} disabled={i === 0} onClick={() => move(i, -1)}>
@@ -308,19 +356,33 @@ export function PlanEditor({ date, gathering, label, items, planner, otherGather
           </li>
         ))}
       </ol>
-      {planner && (
-        <div className="row">
+      {edit && (
+        <div className="row plan-edit-bar">
           <button className="btn" type="button" onClick={() => set([...list, { key: k(), kind: "song", title: "Song", minutes: 4 }])}>
             Add an item
           </button>
-          <button
-            className="btn btn-primary"
-            type="button"
-            disabled={ops.busy || !dirty}
-            onClick={() => void ops.act({ action: "plan", plan: { date, gathering, items: list.map(({ key: _k, ...x }) => ({ ...x, person: x.person || undefined, passage: x.passage || undefined, notes: x.notes || undefined })) } }, () => { setDirty(false); return "Order of service saved."; })}
-          >
-            {dirty ? "Save changes" : "Saved"}
-          </button>
+          <span className="plan-edit-end">
+            <button
+              className="btn"
+              type="button"
+              disabled={ops.busy}
+              onClick={() => {
+                setList(saved);
+                setDirty(false);
+                setEditing(false);
+              }}
+            >
+              {dirty ? "Cancel" : "Done"}
+            </button>
+            <button
+              className="btn btn-primary"
+              type="button"
+              disabled={ops.busy || !dirty}
+              onClick={() => void ops.act({ action: "plan", plan: { date, gathering, items: list.map(({ key: _k, ...x }) => ({ ...x, person: x.person || undefined, passage: x.passage || undefined, notes: x.notes || undefined })) } }, () => { setSaved(list); setDirty(false); setEditing(false); return "Order of service saved."; })}
+            >
+              {dirty ? "Save changes" : "Saved"}
+            </button>
+          </span>
         </div>
       )}
     </section>

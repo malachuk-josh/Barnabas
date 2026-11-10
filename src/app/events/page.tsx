@@ -11,6 +11,10 @@ import { counts, eventsActor, loadEvents } from "@/lib/events/service";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Events · Barnabas" };
 
+const tileMonth = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+const tileDay = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { day: "numeric", timeZone: "UTC" });
+const tileWeekday = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+
 export default async function EventsPage() {
   const { leader, profile } = await requirePageLeader();
   const [actor, book] = await Promise.all([eventsActor(leader), loadEvents(leader.churchId)]);
@@ -24,14 +28,22 @@ export default async function EventsPage() {
     const pct = e.capacity ? Math.min(100, Math.round((c.registered / e.capacity) * 100)) : null;
     return (
       <Link key={e.id} href={`/events/${e.id}`} className="fin-card ops-event-card">
-        <div className="fin-card-head">
-          <h2>{e.title}</h2>
+        <div className="event-card-head">
+          <span className="date-tile" aria-hidden="true">
+            <small>{tileMonth(e.date)}</small>
+            <strong>{tileDay(e.date)}</strong>
+          </span>
+          <span className="event-card-title">
+            <h2>{e.title}</h2>
+            <span className="small muted">
+              <span className="sr-only">{friendlyDate(e.date)}, </span>
+              {tileWeekday(e.date)}
+              {e.time ? ` ${e.time}` : ""}
+              {e.location ? ` · ${e.location}` : ""}
+            </span>
+          </span>
           <span className={`pill ${e.open ? (c.spotsLeft === 0 ? "pill-watch" : "pill-ok") : "pill-high"}`}>{!e.open ? "Closed" : c.spotsLeft === 0 ? (e.waitlist ? "Full: waitlist" : "Full") : "Open"}</span>
         </div>
-        <span className="small muted">
-          {friendlyDate(e.date)}
-          {e.time ? `, ${e.time}` : ""} · {e.location}
-        </span>
         <div className="fin-sub">
           <span>Registered</span>
           <span>
@@ -58,11 +70,12 @@ export default async function EventsPage() {
       eyebrow="Events"
       title="Events and registrations"
       intro={actor.manager ? "Registration forms, capacity and waitlists, a public sign-up link for each event, attendee lists and event-day check-in." : "Events taking registrations and how they're filling. Pastors, deacons and staff manage them."}
+      actions={actor.manager ? <a className="btn btn-primary" href="#new-event">New event</a> : undefined}
       demo={book.meta.demo ? { text: <>These are real events from MGBC&apos;s calendar. <strong>No one has registered yet</strong>, and no registrant is made up.</>, clear: actor.manager && (actor.access.role === "pastor" || actor.access.role === "staff") ? { path: "/api/events", method: "POST", body: { action: "demo-clear", confirm: "CLEAR" }, label: "Clear the demo events" } : undefined } : undefined}
     >
       <div className="fin-stack">
         {upcoming.length ? (
-          <div className="fin-grid">{upcoming.map(card)}</div>
+          <div className="fin-grid event-cards">{upcoming.map(card)}</div>
         ) : (
           <EmptyState title="No upcoming events take registration" actions={actor.manager ? [{ label: "Create your first event", href: "#new-event", primary: true }] : []}>
             Add a registration form to anything on the church calendar: a retreat, a dinner, a class. Each event gets a link people can open on their phone.
@@ -72,7 +85,7 @@ export default async function EventsPage() {
         {past.length > 0 && (
           <details className="fin-details">
             <summary>Past events ({past.length})</summary>
-            <div className="fin-grid">{past.map(card)}</div>
+            <div className="fin-grid event-cards">{past.map(card)}</div>
           </details>
         )}
         <p className="fin-source">Registrations in Barnabas. Events that take registration also show on the Calendar with their status.</p>

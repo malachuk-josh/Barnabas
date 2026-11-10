@@ -11,7 +11,8 @@ import { loadServices, servicesActor } from "@/lib/services/service";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Order of service · Barnabas" };
 
-const chip = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const tileNum = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { day: "numeric", timeZone: "UTC" });
+const tileMonth = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 
 export default async function PlanPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const { leader, profile } = await requirePageLeader();
@@ -26,12 +27,18 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const preachHref = wordHref(preach?.passage ?? null);
   return (
     <OpsFrame profile={profile} eyebrow="Services" title={`Order of service: ${friendlyDate(date)}`} intro={preach ? <>Preaching: <strong>{preach.preacher}</strong>{preach.passage ? <> from {preachHref ? <Link href={preachHref}>{preach.passage}</Link> : preach.passage}</> : null}{preach.title ? `, "${preach.title}"` : ""}.</> : "No one is on the rotation for this Sunday yet."} tabs={SERVICES_TABS}>
-      <nav className="care-chips ops-dates" aria-label="Sunday">
-        {sundays.map((d) => (
-          <Link key={d} className="care-chip" href={`/services/plan?date=${d}`} aria-current={d === date ? "page" : undefined}>
-            {chip(d)}
-          </Link>
-        ))}
+      <nav className="date-tiles" aria-label="Sunday">
+        {sundays.map((d) => {
+          const planned = worship.filter((g) => book.plans.some((p) => p.date === d && p.gathering === g.key && p.items.length)).length;
+          return (
+            <Link key={d} className="date-tile-link" href={`/services/plan?date=${d}`} aria-current={d === date ? "page" : undefined}>
+              <small>Sun</small>
+              <strong>{tileNum(d)}</strong>
+              <span className="date-tile-month">{tileMonth(d)}</span>
+              <span className={`date-tile-open${planned === worship.length ? " is-full" : ""}`}>{planned === worship.length ? "Planned" : planned ? `${planned} of ${worship.length}` : "Not yet"}</span>
+            </Link>
+          );
+        })}
       </nav>
       <div className="fin-grid-2">
         {plans.map(({ g, plan }, i) => {

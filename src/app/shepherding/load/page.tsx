@@ -39,9 +39,12 @@ export default async function LoadPage() {
               Barnabas can suggest a day off on your calendar. <Link href="/calendar">Open the calendar</Link> to see it, or ask Barnabas to block one.
             </p>
           )}
-          <p className="fin-source">
+          <details className="care-how">
+            <summary>How this is worked out</summary>
+            <p className="fin-source">
             Steady unless something is full; full when one thing is; stretched when one thing is heavy or two are full. Full and heavy: weighted load {LOAD_THRESHOLDS.weighted.full} and {LOAD_THRESHOLDS.weighted.stretched}; days without a day off {LOAD_THRESHOLDS.noDayOff.full} and {LOAD_THRESHOLDS.noDayOff.stretched}; contacts in 7 days {LOAD_THRESHOLDS.contacts.full} and {LOAD_THRESHOLDS.contacts.stretched}; open crisis needs {LOAD_THRESHOLDS.crisis.full} and {LOAD_THRESHOLDS.crisis.stretched}; overdue next steps {LOAD_THRESHOLDS.overdue.full} and {LOAD_THRESHOLDS.overdue.stretched}.
-          </p>
+            </p>
+          </details>
         </section>
 
         <div className="fin-grid">

@@ -56,7 +56,15 @@ export function CheckInStation({ date, gathering, gatherings, rooms, allRooms, f
   return (
     <div className="kids-station" data-no-pull>
       <div className="kids-station-main fin-stack">
-        <form className="fin-card kids-when" onSubmit={(e) => e.preventDefault()}>
+        <details className="kids-when-bar">
+          <summary>
+            <span>
+              <strong>{longDate(date)}</strong>
+              <span className="muted"> · {gatherings.find((g) => g.key === gathering)?.label ?? ""}</span>
+            </span>
+            <span className="kids-when-change">Change</span>
+          </summary>
+          <form className="kids-when" onSubmit={(e) => e.preventDefault()}>
           <div className="fin-form-row">
             <div className="field">
               <label htmlFor="ks-date">Date</label>
@@ -73,8 +81,8 @@ export function CheckInStation({ date, gathering, gatherings, rooms, allRooms, f
               </select>
             </div>
           </div>
-          <span className="small muted">{longDate(date)}</span>
-        </form>
+          </form>
+        </details>
 
         <section className="fin-card">
           <label className="kids-search-label" htmlFor="ks-search">
@@ -193,11 +201,14 @@ function FamilyCard({ family, rooms, date, gathering, onCheckedIn, onCheckedOut,
               <li key={c.id} className={on ? "on" : ""}>
                 <label className="check kids-child">
                   <input type="checkbox" checked={on} onChange={(e) => setPicked((p) => { const n = { ...p }; if (e.target.checked) n[c.id] = defaultRoom(c); else delete n[c.id]; return n; })} />
-                  <span>
+                  <span className="kids-initial" aria-hidden="true">
+                    {c.firstName.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="kids-child-text">
                     <strong>
                       {c.firstName} {c.lastName}
                     </strong>
-                    {c.grade && <span className="small muted"> · {c.grade}</span>}
+                    {c.grade && <span className="small muted">{c.grade}</span>}
                     {c.allergies && <span className="kids-allergy">Allergy: {c.allergies}</span>}
                   </span>
                 </label>
@@ -222,7 +233,7 @@ function FamilyCard({ family, rooms, date, gathering, onCheckedIn, onCheckedOut,
       )}
       {waiting.length > 0 && (
         <button className="btn btn-primary kids-big" type="button" disabled={busy || !Object.keys(picked).length || !rooms.length} onClick={() => void checkIn()}>
-          {Object.keys(picked).length ? `Check in ${Object.keys(picked).length} and print labels` : "Pick children to check in"}
+          {Object.keys(picked).length ? `Check in ${Object.keys(picked).length} ${Object.keys(picked).length === 1 ? "child" : "children"} and print labels` : "Tap the children to check in"}
         </button>
       )}
       {inside.length > 0 && (

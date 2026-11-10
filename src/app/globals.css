@@ -1247,8 +1247,6 @@ input.kids-code-input:where(:not(.word-root *)) { font-family: ui-monospace, Men
 .know-meter { display: block; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 4px; max-width: 320px; }
 .know-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--brass); }
 
-/* Sliders in the brand colour */
-input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 /* ---------- Serve: rosters ---------- */
 /* Dates as tiles that show where help is needed; one row that scrolls sideways */
 .date-tiles { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 16px; padding: 2px 2px 4px; }
@@ -1346,6 +1344,226 @@ input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 /* Nothing to save: the bar rests at the end of the form instead of floating over it */
 .save-bar:not(.is-dirty) { position: static; background: transparent; box-shadow: none; padding-left: 4px; }
 
+/* Sliders in the brand colour */
+input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
+
+/* ---------- Calendar ---------- */
+.cal-tz { color: var(--muted); text-decoration: none; }
+.cal-tz:hover { color: var(--fg); text-decoration: underline; }
+.cal-side { display: grid; gap: 16px; min-width: 0; align-content: start; }
+.month { border: 0; box-shadow: var(--shadow-card); }
+.month-head div { border-bottom-color: var(--line-soft); }
+.day { border-color: var(--line-soft); }
+.day:hover { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+/* Days outside the month fade back instead of turning grey */
+.day.other-month { background: var(--surface); color: var(--muted); }
+.day.other-month .num, .day.other-month .chip:where(:not(.word-root *)) { opacity: 0.45; }
+/* Events in a day: a coloured dot, then time and title */
+.day .chip:where(:not(.word-root *)) { border-left: 0; background: transparent; padding: 1px 2px 1px 12px; position: relative; color: var(--fg); }
+.day .chip:where(:not(.word-root *))::before { content: ""; position: absolute; left: 3px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--chip-color); }
+.event-row { border: 0; border-left: 0; box-shadow: var(--shadow-card); position: relative; padding-left: 26px; }
+.event-row:hover { border-color: transparent; box-shadow: 0 0 0 1px var(--muted); }
+.event-row::before { content: ""; position: absolute; left: 12px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--chip-color); }
+.cal-day-panel .agenda .event-row { box-shadow: none; background: var(--surface-2); }
+.cal-suggest { gap: 10px; }
+.cal-suggest-head { display: grid; gap: 2px; }
+.cal-suggest-head h2 { font-size: 1.1rem; }
+.care-suggest-list li { border-left: 0; background: var(--surface-2); position: relative; padding-left: 24px; }
+.care-suggest-list li::before { content: ""; position: absolute; left: 10px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--chip-color); }
+@media (max-width: 1100px) {
+  /* Stacked: the selected day first, then the month, then Shepherding's suggestions */
+  .cal-side { display: contents; }
+  .cal-suggest { order: 1; }
+}
+@media (max-width: 640px) {
+  .day .chip:where(:not(.word-root *)) { padding: 0; }
+  .day .chip:where(:not(.word-root *))::before { display: none; }
+  .day.other-month .chip:where(:not(.word-root *)) { opacity: 0.35; }
+  .cal-tz { order: 5; flex-basis: 100%; }
+}
+@media (max-width: 1100px) { .cal-side > .cal-day-panel { order: -1; scroll-margin-top: 80px; } }
+@media (max-width: 640px) {
+  /* The month's dots come back on phones (one per event, up to three) */
+  .day .chip:where(:not(.word-root *)) { background: var(--chip-color); }
+  /* Toolbar in two rows: month and arrows, then view and time zone */
+  .cal-toolbar h2 { flex: 1 1 auto; font-size: 1.3rem; }
+  .cal-toolbar .seg { order: 4; }
+  .cal-tz { order: 5; flex-basis: auto; margin-left: auto; }
+}
+.cal-nav { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 640px) { .cal-intro { display: none; } .cal-nav .btn:where(:not(.word-root *)) { padding: 7px 12px; } }
+
+/* ---------- Services ---------- */
+/* Each Sunday in the rotation: a date tile, who preaches and what, and its actions on one row */
+.ops-rotation > li.rot-row { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 12px 0; border-top-color: var(--line-soft); }
+.ops-rotation > li.rot-row:first-child { padding-top: 4px; }
+.rot-main { display: grid; gap: 3px; min-width: 0; }
+.rot-preacher { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rot-preacher strong { overflow-wrap: anywhere; }
+.rot-preacher .ops-avatar { background: var(--surface-2); width: 26px; height: 26px; font-size: 0.68rem; }
+.rot-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.rot-actions .is-planned:where(:not(.word-root *)) { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border-color: transparent; color: var(--ok); }
+.rot-row .ops-rot-form { grid-column: 1 / -1; }
+@media (max-width: 560px) {
+  .ops-rotation > li.rot-row { grid-template-columns: 46px minmax(0, 1fr); }
+  .rot-actions { grid-column: 2; justify-content: flex-start; }
+}
+
+/* Order of service: read as a run sheet; edit only after Edit order */
+.plan-title { display: grid; gap: 2px; min-width: 0; }
+.ops-order:has(.is-reading) { gap: 0; }
+.ops-item.is-reading { background: transparent; border-left: 0; border-radius: 0; padding: 10px 2px; border-top: 1px solid var(--line-soft); }
+.ops-item.is-reading:first-child { border-top: 0; }
+.ops-item.is-reading .ops-item-view { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.ops-item.is-reading .ops-item-min { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; position: relative; padding-left: 14px; }
+.ops-item.is-reading .ops-item-min::before { content: ""; position: absolute; left: 0; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--sea-glass); }
+.ops-item-sermon.is-reading .ops-item-min::before { background: var(--brass); }
+.ops-item-song.is-reading .ops-item-min::before { background: var(--accent); }
+.ops-item-communion.is-reading .ops-item-min::before, .ops-item-benediction.is-reading .ops-item-min::before { background: var(--highlight); }
+.ops-item.is-reading .ops-item-view > span:last-child { display: grid; gap: 1px; min-width: 0; }
+.plan-edit-bar { justify-content: space-between; }
+.plan-edit-end { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Kids check-in station ---------- */
+/* When: a slim bar; open it to change the date or gathering */
+.kids-when-bar { border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
+.kids-when-bar > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 18px; }
+.kids-when-bar > summary::-webkit-details-marker { display: none; }
+.kids-when-change { font-weight: 700; color: var(--accent); text-decoration: underline; flex: none; }
+.kids-when-bar[open] .kids-when-change { text-decoration: none; }
+.kids-when-bar .kids-when { padding: 0 18px 16px; }
+/* Families and children: big, calm touch targets for the welcome desk */
+.kids-family { border: 0; box-shadow: var(--shadow-card); background: var(--surface); }
+.kids-children > li { border-color: var(--line-soft); background: var(--surface); min-height: 64px; }
+.kids-children > li.on:where(:not(.word-root *)) { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.kids-child { align-items: center; gap: 12px; cursor: pointer; }
+.kids-child input { width: 24px; height: 24px; margin-top: 0; accent-color: var(--accent); }
+.kids-initial { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--accent); font-weight: 700; font-family: var(--font-display); font-size: 1.1rem; }
+.kids-children > li.on .kids-initial:where(:not(.word-root *)) { background: var(--accent); color: var(--accent-fg); }
+.kids-child > .kids-child-text { display: grid; gap: 1px; min-width: 0; overflow-wrap: anywhere; }
+.kids-child-text strong { font-size: 1.05rem; }
+.kids-allergy { justify-self: start; }
+.btn.kids-big:where(:not(.word-root *)) { justify-self: stretch; min-height: 52px; }
+/* Checked in: the pickup code is the one thing the volunteer must not miss */
+.kids-done { background: var(--talk-bg); color: var(--talk-fg); padding: 16px 18px; border-radius: var(--radius); }
+.kids-done .muted { color: var(--talk-muted); }
+.kids-done .kids-code { background: var(--brass); color: var(--night); border: 0; font-size: 2rem; padding: 6px 14px; }
+.kids-done .btn-primary:where(:not(.word-root *)) { background: var(--chalk); border-color: var(--chalk); color: var(--night); }
+/* Rooms: a summary strip; rooms that need adults get a red tag rather than a red edge */
+.kids-summary { margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kids-summary dd.is-warn { color: var(--danger); }
+@media (max-width: 640px) {
+  .kids-summary > div { padding: 10px 12px; }
+  .kids-summary > div:nth-child(3) { border-left: 1px solid var(--line-soft); }
+  .kids-summary > div:nth-child(n + 3) { border-top: 0; }
+}
+.kids-room-list > li.warn, .kids-room.warn { box-shadow: var(--shadow-card); }
+.kids-room-list > li.warn { box-shadow: none; background: var(--danger-bg); }
+.kids-room.warn .kids-warning { justify-self: start; padding: 2px 10px; border-radius: 999px; background: var(--danger-bg); }
+.kids-roster li { background: var(--surface-2); }
+
+/* ---------- Drafts ---------- */
+.drafts-setup .setup-card { margin: 0 12px 12px; box-shadow: none; }
+.btn-quiet:where(:not(.word-root *)) { background: transparent; border-color: transparent; color: var(--muted); }
+.btn-quiet:hover:where(:not(.word-root *)) { color: var(--fg); border-color: var(--line); }
+/* A draft is a message preview: who it goes to, the words, then Send */
+.draft-card { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); min-width: 0; }
+.draft-head { display: flex; align-items: center; gap: 12px; }
+.draft-title { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.draft-title strong { font-size: 1.05rem; }
+.draft-channel { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); color: var(--accent); }
+.draft-channel svg { width: 20px; height: 20px; }
+.draft-email { color: var(--highlight); }
+.draft-to { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.draft-to li { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--surface-2); font-size: 0.88rem; font-weight: 600; }
+.draft-to li.muted { padding-left: 10px; font-weight: 500; }
+.draft-avatar { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--accent); font-size: 0.66rem; font-weight: 700; }
+.draft-subject { font-weight: 600; overflow-wrap: anywhere; }
+.draft-subject .muted { font-weight: 500; margin-right: 6px; }
+.draft-message { display: grid; gap: 6px; min-width: 0; }
+/* A text reads like a text: a bubble; an email like a page */
+.draft-bubble { justify-self: start; max-width: 560px; padding: 12px 16px; border-radius: 18px 18px 18px 6px; background: var(--surface-2); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.draft-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.draft-actions .btn-primary:where(:not(.word-root *)) { min-height: 44px; padding-inline: 22px; }
+.draft-note { margin-top: -6px; text-align: right; }
+.draft-confirm { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) {
+  .draft-card { padding: 16px; }
+  .draft-actions { justify-content: stretch; }
+  .draft-actions .btn-primary:where(:not(.word-root *)) { flex: 1; }
+  .draft-note { text-align: left; }
+}
+/* Recent: one card of rows */
+.draft-recent-row { display: flex; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line-soft); min-width: 0; }
+.draft-recent-row:first-child { border-top: 0; }
+.draft-recent-row .draft-channel { width: 34px; height: 34px; border-radius: 10px; }
+.draft-recent-main { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.draft-recent-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.draft-recent-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.draft-status-sent { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
+.draft-status-partly_sent, .draft-status-queued { background: var(--watch-bg); color: var(--watch); }
+.draft-status-failed { background: var(--danger-bg); color: var(--danger); }
+
+/* ---------- Memory ---------- */
+.memory-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 960px) { .memory-layout { grid-template-columns: minmax(0, 1fr); } }
+.memory-card { display: grid; gap: 12px; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); min-width: 0; }
+.memory-card-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.memory-card-title { display: grid; gap: 2px; min-width: 0; flex: 1 1 220px; }
+.memory-card-title h3 { font-size: 1.2rem; }
+.memory-card-actions { display: flex; gap: 6px; }
+/* A memory file reads as notes, not code */
+.memory-text { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); overflow-wrap: anywhere; line-height: 1.55; }
+.memory-text h4 { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 6px 0 0; }
+.memory-text h4:first-child { margin-top: 0; }
+.memory-text ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.memory-text li::marker { color: var(--brass); }
+.memory-confirm, .conv-confirm { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: var(--danger-bg); color: var(--danger); }
+.conv-confirm { padding: 4px; background: transparent; flex: none; }
+.btn-danger-solid:where(:not(.word-root *)) { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.conv-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--line-soft); }
+.conv-row:first-child { border-top: 0; }
+.conv-main { display: grid; gap: 3px; flex: 1 1 220px; min-width: 0; }
+.conv-main strong { overflow-wrap: anywhere; }
+.conv-main .status-tag { justify-self: start; }
+.conv-done { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
+.conv-error { background: var(--danger-bg); color: var(--danger); }
+
+/* ---------- Shepherding: Prayer, Guests, My care load ---------- */
+/* Prayer: each request a quiet card; the request itself reads first */
+.care-prayers { gap: 12px; }
+.care-prayer.prayer-card { gap: 10px; padding: 14px 16px; border: 0; border-radius: 14px; background: var(--surface-2); }
+.care-prayer.prayer-card:first-child { padding-top: 14px; }
+.prayer-head { display: flex; align-items: center; gap: 10px; }
+.prayer-head .ppl-avatar { background: var(--surface); }
+.prayer-who { display: grid; gap: 0; flex: 1; min-width: 0; }
+.prayer-text { font-family: var(--font-display); font-size: 1.12rem; line-height: 1.45; overflow-wrap: anywhere; }
+.prayer-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.prayer-card.is-answered { background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
+/* Guests: who and when at the top, the follow-up as a checklist */
+.care-guest.waiting:where(:not(.word-root *)) { border-left: 0; }
+.care-guest { border: 0; box-shadow: var(--shadow-card); }
+.guest-head { display: flex; align-items: flex-start; gap: 12px; }
+.guest-who { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.guest-who h3 { font-size: 1.1rem; }
+.care-tasks > li.guest-task { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; background: transparent; padding: 10px 0; border-radius: 0; border-top: 1px solid var(--line-soft); }
+.guest-tick { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--line); display: grid; place-items: center; color: var(--accent-fg); }
+.guest-tick svg { width: 14px; height: 14px; }
+.guest-task.done .guest-tick { background: var(--ok); box-shadow: none; }
+.guest-task.overdue .guest-tick { box-shadow: inset 0 0 0 2px var(--watch); }
+.guest-task.done .guest-task-text strong { text-decoration: line-through; color: var(--muted); }
+.guest-task-text { display: grid; gap: 1px; min-width: 0; }
+@media (max-width: 520px) { .care-tasks > li.guest-task { grid-template-columns: 24px minmax(0, 1fr); } .care-tasks > li.guest-task > .row { grid-column: 2; } }
+.guest-visit { padding-top: 10px; border-top: 1px solid var(--line-soft); }
+/* My care load: a calm banner by signal, the rules behind a link */
+.care-signal:where(:not(.word-root *)) { border-left: 0; background: color-mix(in srgb, var(--ok) 9%, var(--surface)); box-shadow: none; }
+.care-signal-full:where(:not(.word-root *)) { background: var(--watch-bg); }
+.care-signal-stretched:where(:not(.word-root *)) { background: var(--danger-bg); }
+.care-how > summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); width: fit-content; }
+.care-how[open] > summary { margin-bottom: 6px; }
+.care-tasks > li.guest-task.overdue, .care-tasks > li.guest-task.done { box-shadow: none; opacity: 1; }
+
 /* ---------- Admin: people and access ---------- */
 .admin-add-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .admin-add-grid { grid-template-columns: 1fr; } }
@@ -1417,6 +1635,45 @@ input[type="range"]:where(:not(.word-root *)) { accent-color: var(--accent); }
 .kids-msg-none { font-size: 0.8rem; white-space: nowrap; }
 .kids-roster-end { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .child-care-list li { align-items: center; flex-wrap: wrap; padding: 10px 12px; }
+
+/* ---------- Events ---------- */
+.event-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.ops-event-card { border: 0; box-shadow: var(--shadow-card); }
+.ops-event-card:hover { box-shadow: 0 0 0 1px var(--muted); }
+.event-card-head { display: flex; align-items: flex-start; gap: 12px; }
+.event-card-head .date-tile { width: 50px; flex: none; }
+.event-card-title { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.event-card-title h2 { font-size: 1.15rem; overflow-wrap: anywhere; }
+.event-card-head .pill { flex: none; }
+.event-summary { margin-bottom: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.event-summary > div { display: grid; gap: 2px; align-content: start; }
+.event-summary dd { font-size: 1.35rem; }
+.event-summary dd .muted { font-size: 0.95rem; font-weight: 600; }
+@media (max-width: 640px) {
+  .event-summary > div { padding: 10px 12px; }
+  .event-summary > div:nth-child(3) { border-left: 1px solid var(--line-soft); }
+  .event-summary > div:nth-child(n + 3) { border-top: 0; }
+  .event-summary dd { font-size: 1.1rem; }
+  .event-summary .small { display: none; }
+}
+.ops-attendees > li { border-color: var(--line-soft); }
+.event-card-title > .small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 560px) { .event-card-title h2 { font-size: 1.05rem; } }
+
+/* ---------- Finance (and every card that shares its look) ---------- */
+.fin-card { border-color: transparent; box-shadow: var(--shadow-card); }
+.fin-table-wrap { border-color: var(--line-soft); }
+.fin-table th { background: color-mix(in srgb, var(--surface-2) 60%, var(--surface)); }
+/* A figure's source folds under one quiet link */
+.fin-source-fold > summary { cursor: pointer; width: fit-content; font-size: 0.8rem; font-weight: 600; color: var(--muted); list-style: none; }
+.fin-source-fold > summary::-webkit-details-marker { display: none; }
+.fin-source-fold > summary::before { content: "+ "; }
+.fin-source-fold[open] > summary::before { content: "\2013  "; }
+.fin-source-fold[open] > summary { margin-bottom: 4px; }
+.fin-overview-stats .fin-stat { margin-top: 2px; }
+@media print {
+  .fin-card { box-shadow: none; border: 1px solid #ccc; }
+}
 
 /* Action links under Barnabas's reply ("Open Ruth's record") */
 .bubble-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }

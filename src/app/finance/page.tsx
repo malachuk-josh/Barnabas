@@ -11,6 +11,16 @@ import { financeOverview } from "@/lib/finance/views";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Finance · Barnabas" };
 
+/** A figure's source, one tap away: the number leads, how it's counted stays on the card. */
+function SourceNote({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="fin-source-fold">
+      <summary>How this is counted</summary>
+      <p className="fin-source">{children}</p>
+    </details>
+  );
+}
+
 function Change({ now, then }: { now: number; then: number }) {
   if (!then) return null;
   const p = percent(now - then, then)!;
@@ -32,7 +42,7 @@ export default async function FinanceOverviewPage() {
   return (
     <FinanceFrame ctx={ctx} eyebrow="Finance" title="Overview" intro={`Where things stand for ${o.year}, through ${new Date(`${asOf}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}.`}>
       <div className="fin-stack">
-        <div className="fin-grid">
+        <div className="fin-grid fin-overview-stats">
           <section className="fin-card">
             <span className="label">Year to date</span>
             <div className="fin-stat">{wholeDollars(o.ytd.net)}</div>
@@ -45,7 +55,7 @@ export default async function FinanceOverviewPage() {
               <span>Expenses</span>
               <span>{wholeDollars(o.ytd.expenses)}</span>
             </div>
-            <p className="fin-source">{o.ytd.source}</p>
+            <SourceNote>{o.ytd.source}</SourceNote>
           </section>
 
           <section className="fin-card">
@@ -58,7 +68,7 @@ export default async function FinanceOverviewPage() {
                 <span>{wholeDollars(f.balance)}</span>
               </div>
             ))}
-            <p className="fin-source">{o.generalFund.source} Restricted funds are tracked the same way, each on its own.</p>
+            <SourceNote>{o.generalFund.source} Restricted funds are tracked the same way, each on its own.</SourceNote>
           </section>
 
           <section className="fin-card">
@@ -71,7 +81,7 @@ export default async function FinanceOverviewPage() {
               <span>All of {o.giving.monthLabel.replace(/\d{4}/, String(o.year - 1))}</span>
               <span>{wholeDollars(o.giving.lastYearMonth)}</span>
             </div>
-            <p className="fin-source">{o.giving.source}</p>
+            <SourceNote>{o.giving.source}</SourceNote>
           </section>
 
           <section className="fin-card">
@@ -97,7 +107,7 @@ export default async function FinanceOverviewPage() {
                 {wholeDollars(o.missions.paidToPartners)} of {wholeDollars(o.missions.committedToPartners)}
               </span>
             </div>
-            <p className="fin-source">{o.missions.source}</p>
+            <SourceNote>{o.missions.source}</SourceNote>
           </section>
         </div>
 

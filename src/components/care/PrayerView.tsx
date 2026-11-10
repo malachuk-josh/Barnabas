@@ -7,6 +7,14 @@ import { careApi, localToday, shortDate } from "./client";
 
 type Prayer = { id: string; name: string; request: string; shareable: boolean; prayedCount: number; prayedByMe: boolean; answered?: { date: string; note?: string }; createdByName: string; createdAt: number; guestId?: string };
 
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+
 export function PrayerView({ prayers, people }: { prayers: Prayer[]; people: { id: string; name: string }[] }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -30,32 +38,39 @@ export function PrayerView({ prayers, people }: { prayers: Prayer[]; people: { i
   const open = prayers.filter((p) => !p.answered);
   const answered = prayers.filter((p) => p.answered);
   const item = (p: Prayer) => (
-    <li key={p.id} className="care-prayer">
-      <div className="care-prayer-head">
-        <strong>{p.name}</strong>
+    <li key={p.id} className={`care-prayer prayer-card${p.answered ? " is-answered" : ""}`}>
+      <div className="prayer-head">
+        <span className="ppl-avatar" aria-hidden="true">
+          {initialsOf(p.name)}
+        </span>
+        <span className="prayer-who">
+          <strong>{p.name}</strong>
+          <span className="small muted">
+            Added {shortDate(new Date(p.createdAt).toISOString().slice(0, 10))} by {p.createdByName}
+          </span>
+        </span>
         <span className={`care-share ${p.shareable ? "" : "private"}`}>{p.shareable ? "Shareable" : "Private"}</span>
       </div>
-      <p>{p.request}</p>
-      <div className="care-meta">
-        <span>
-          Prayed for {p.prayedCount} {p.prayedCount === 1 ? "time" : "times"}
-          {p.prayedByMe ? ", including by you" : ""}
+      <p className="prayer-text">{p.request}</p>
+      <div className="prayer-foot">
+        <span className="small muted">
+          {p.answered
+            ? `Answered ${shortDate(p.answered.date)} · prayed for ${p.prayedCount} ${p.prayedCount === 1 ? "time" : "times"}`
+            : p.prayedCount
+              ? `Prayed for ${p.prayedCount} ${p.prayedCount === 1 ? "time" : "times"}${p.prayedByMe ? ", including by you" : ""}`
+              : "No one has marked praying yet"}
         </span>
-        <span>
-          Added {shortDate(new Date(p.createdAt).toISOString().slice(0, 10))} by {p.createdByName}
-        </span>
-        {p.answered && <span>Answered {shortDate(p.answered.date)}</span>}
+        {!p.answered && (
+          <span className="row">
+            <button className="btn btn-sm btn-quiet" type="button" disabled={busy} onClick={() => void act({ action: "answered", id: p.id, date: localToday() })}>
+              Mark answered
+            </button>
+            <button className={`btn btn-sm${p.prayedByMe ? "" : " btn-primary"}`} type="button" disabled={busy} onClick={() => void act({ action: "prayed", id: p.id })}>
+              {p.prayedByMe ? "Prayed again" : "I prayed"}
+            </button>
+          </span>
+        )}
       </div>
-      {!p.answered && (
-        <div className="row">
-          <button className="btn" type="button" disabled={busy} onClick={() => void act({ action: "prayed", id: p.id })}>
-            I prayed
-          </button>
-          <button className="btn" type="button" disabled={busy} onClick={() => void act({ action: "answered", id: p.id, date: localToday() })}>
-            Mark answered
-          </button>
-        </div>
-      )}
     </li>
   );
 

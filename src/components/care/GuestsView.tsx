@@ -49,21 +49,31 @@ function useAct() {
   return { act, error, busy };
 }
 
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+
 function GuestCardView({ g, selfIds, canAssign, timeZone }: { g: Guest; selfIds: string[]; canAssign: boolean; timeZone: string }) {
   const { act, error, busy } = useAct();
   const [visit, setVisit] = useState(localToday());
   return (
     <article className={`fin-card care-guest${g.contacted ? "" : " waiting"}`} id={g.id}>
-      <div className="fin-card-head">
-        <h3>{g.name}</h3>
-        <span className={`care-share ${g.contacted ? "" : "private"}`}>{g.contacted ? "Reached" : "Not reached yet"}</span>
-      </div>
-      <div className="care-meta">
-        <span>
-          {g.visits.length === 1 ? "First visit" : `${g.visits.length} visits`}: {g.visits.map(shortDate).join(", ")}
+      <div className="guest-head">
+        <span className="ppl-avatar" aria-hidden="true">
+          {initialsOf(g.name)}
         </span>
-        <span>Following up: {g.mine ? "you" : g.assigneeName}</span>
-        {g.source === "self" && <span>Filled in by the guest</span>}
+        <span className="guest-who">
+          <h3>{g.name}</h3>
+          <span className="small muted">
+            {g.visits.length === 1 ? "First visit" : `${g.visits.length} visits`} {g.visits.map(shortDate).join(", ")} · following up: {g.mine ? "you" : g.assigneeName}
+            {g.source === "self" ? " · filled in by the guest" : ""}
+          </span>
+        </span>
+        <span className={`care-share ${g.contacted ? "" : "private"}`}>{g.contacted ? "Reached" : "Not reached yet"}</span>
       </div>
       <dl className="care-dl">
         {g.phone && (
@@ -105,8 +115,15 @@ function GuestCardView({ g, selfIds, canAssign, timeZone }: { g: Guest; selfIds:
       </dl>
       <ul className="care-tasks">
         {g.tasks.map((t) => (
-          <li key={t.id} className={t.doneAt ? "done" : t.overdue ? "overdue" : undefined}>
-            <span>
+          <li key={t.id} className={`guest-task${t.doneAt ? " done" : t.overdue ? " overdue" : ""}`}>
+            <span className="guest-tick" aria-hidden="true">
+              {t.doneAt && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m5 12 4.5 4.5L19 7" />
+                </svg>
+              )}
+            </span>
+            <span className="guest-task-text">
               <strong>{t.label}</strong>
               <small className={t.overdue && !t.doneAt ? "care-overdue" : "muted"}>
                 {t.doneAt ? `Done ${when(t.doneAt, timeZone)}` : `${t.overdue ? "Overdue: was due" : "Due"} ${when(t.dueAt, timeZone)}`} · {t.mine ? "you" : t.assigneeName}
@@ -141,12 +158,13 @@ function GuestCardView({ g, selfIds, canAssign, timeZone }: { g: Guest; selfIds:
         ))}
       </ul>
       <form
-        className="row"
+        className="row guest-visit"
         onSubmit={(e) => {
           e.preventDefault();
           void act({ action: "visit", id: g.id, date: visit });
         }}
       >
+        <span className="small muted">Came back?</span>
         <label className="sr-only" htmlFor={`v-${g.id}`}>
           Visit date
         </label>
