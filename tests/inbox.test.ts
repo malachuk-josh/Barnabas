@@ -250,7 +250,7 @@ describe("notifications land in Messages", () => {
     const payload = { title: "Checked in", body: "Emma is checked in to Preschool.", url: "/kids", tag: "t" };
     await notifyLeaders("demo", [parentA.leaderId], "childcare", payload);
     await notifyLeaders("demo", [parentA.leaderId], "childcare", { ...payload, title: "Picked up", body: "Emma was checked out." });
-    const list = await as<List>(parentA, () => listRoute(req()));
+    const list = await as<List>(parentA, () => listRoute());
     const feed = list.json.threads.find((t) => t.with[0]?.name === "Notifications")!;
     expect(feed).toMatchObject({ unread: 2, last: { text: "Picked up: Emma was checked out." } });
     const open = await as<{ thread: { system?: string }; messages: { name: string; text: string; href?: string }[] }>(parentA, () => threadRoute(req(), params(feed.id)));
@@ -266,7 +266,7 @@ describe("notifications land in Messages", () => {
     await saveProfile(parentA, { ...p, notifications: { ...p.notifications, types: { ...p.notifications.types, childcare: false } } });
     await notifyLeaders("demo", [parentA.leaderId], "childcare", { title: "Checked in", body: "x", url: "/kids", tag: "t" });
     await notifyLeaders("demo", [parentA.leaderId], "messages", { title: "Pastor", body: "Pastor sent you a message.", url: "/inbox", tag: "m" });
-    expect((await as<List>(parentA, () => listRoute(req()))).json.threads).toHaveLength(0);
+    expect((await as<List>(parentA, () => listRoute())).json.threads).toHaveLength(0);
   });
 });
 

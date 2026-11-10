@@ -1682,3 +1682,95 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   text-decoration: none; background: var(--surface); color: var(--accent); box-shadow: 0 0 0 1px var(--line);
 }
 .bubble-link:hover:where(:not(.word-root *)) { box-shadow: 0 0 0 1px var(--accent); }
+
+/* Messages, redesigned: avatars, a search, day dividers, bubbles in runs, and a reply bar that stays in reach */
+.inbox { align-items: stretch; height: clamp(480px, calc(100dvh - 210px), 880px); }
+.inbox-list { max-height: none; overflow-y: auto; align-content: start; padding: 10px; }
+.inbox-list-head { position: sticky; top: -10px; z-index: 1; margin: -10px -10px 0; padding: 10px; background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; display: flex; gap: 8px; align-items: center; justify-content: stretch; border-bottom: 1px solid var(--line-soft); }
+.inbox-search { flex: 1 1 auto; min-width: 0; }
+.inbox-search input[type="search"] { min-height: 40px; }
+.inbox-list-head .btn:where(:not(.word-root *)) { flex: none; min-height: 42px; }
+.inbox-empty { padding: 20px 8px; text-align: center; display: grid; gap: 4px; }
+.inbox-empty p { margin: 0; }
+.inbox-thread { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 12px; padding: 10px; }
+.inbox-thread-body { display: grid; gap: 2px; min-width: 0; }
+.inbox-thread-top strong { font-weight: 600; }
+.inbox-thread.is-unread .inbox-thread-top strong { font-weight: 800; }
+.inbox-thread.is-unread .inbox-preview { color: var(--fg); }
+.inbox-about { font-size: 0.8rem; }
+.inbox-avatar {
+  width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--sea-glass); color: var(--night); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em;
+}
+.inbox-avatar.is-group { background: var(--surface-2); color: var(--fg); box-shadow: inset 0 0 0 1.5px var(--line); }
+.inbox-avatar.is-lg { width: 44px; height: 44px; font-size: 0.9rem; }
+.inbox-avatar.is-system { background: var(--brass); color: var(--night); }
+.inbox-avatar.is-system svg { width: 55%; height: 55%; }
+.inbox-system-note { margin: 0; padding: 12px 18px; border-top: 1px solid var(--line-soft); text-align: center; }
+
+.inbox-pane { padding: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.inbox-pane > * { flex: 1 1 auto; min-height: 0; }
+.inbox-placeholder { margin: auto; padding: 32px 16px; text-align: center; display: grid; gap: 4px; align-content: center; }
+.inbox-placeholder p { margin: 0; }
+.inbox-thread-view { display: flex; flex-direction: column; gap: 0; min-height: 0; }
+.inbox-thread-head { padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
+.inbox-thread-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.inbox-thread-who > div { min-width: 0; }
+.inbox-thread-who h2 { font-size: 1.15rem; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-messages { flex: 1 1 auto; max-height: none; min-height: 0; overflow-y: auto; padding: 16px 18px; gap: 0; display: flex; flex-direction: column; }
+.inbox-run-item { display: flex; flex-direction: column; }
+.inbox-day { margin: 14px 0 10px; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+.inbox-day::before, .inbox-day::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+.inbox-run-item:first-child .inbox-day { margin-top: 0; }
+.inbox-msg { margin-top: 3px; gap: 3px; align-self: flex-start; }
+.inbox-msg.mine { align-self: flex-end; }
+.inbox-msg.is-first { margin-top: 12px; }
+.inbox-run-item:first-child .inbox-msg, .inbox-day + .inbox-msg { margin-top: 0; }
+.inbox-msg-name { font-size: 0.78rem; font-weight: 700; color: var(--muted); padding-left: 14px; }
+.inbox-msg-time { font-size: 0.74rem; color: var(--muted); padding: 0 6px; }
+.inbox-msg p { border-radius: 18px; line-height: 1.45; }
+.inbox-msg:not(.mine).is-last p { border-bottom-left-radius: 6px; }
+.inbox-msg.mine p { border-radius: 18px; }
+.inbox-msg.mine.is-last p { border-bottom-right-radius: 6px; }
+
+.inbox-reply {
+  margin: 0; padding: 10px 12px; border-top: 1px solid var(--line-soft); background: var(--surface);
+  grid-template-columns: minmax(0, 1fr) auto; align-items: end;
+}
+.inbox-reply textarea {
+  resize: none; min-height: 44px; max-height: 180px; border-radius: 22px; padding: 11px 16px; line-height: 1.35;
+  background: var(--surface-2); border: 1px solid transparent;
+}
+.inbox-reply textarea:focus { border-color: var(--accent); background: var(--surface); }
+.inbox-send {
+  width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+  background: var(--accent); color: var(--accent-fg); flex: none;
+}
+.inbox-send svg { width: 20px; height: 20px; }
+.inbox-send:disabled { background: var(--surface-2); color: var(--muted); cursor: default; }
+.inbox-send:not(:disabled):hover { filter: brightness(1.08); }
+.inbox-send:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.inbox-compose { padding: 0 18px 18px; overflow-y: auto; align-content: start; }
+.inbox-compose .inbox-thread-head { margin: 0 -18px; }
+.inbox-chips li { padding: 3px 4px 3px 3px; gap: 6px; }
+.inbox-chips .inbox-avatar { width: 26px; height: 26px; font-size: 0.66rem; }
+.inbox-people button { align-items: center; justify-content: flex-start; gap: 10px; }
+.inbox-people .inbox-avatar { width: 32px; height: 32px; font-size: 0.72rem; }
+.inbox-person { display: flex; flex: 1; justify-content: space-between; gap: 8px; min-width: 0; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  .inbox { height: auto; }
+  .inbox-list { overflow: visible; }
+  .inbox-list-head { position: static; }
+  .inbox-pane { display: none; }
+  .inbox-pane-open .inbox-pane { display: flex; overflow: visible; }
+  /* In a conversation the page heading steps aside, so the messages get the room */
+  main:has(.inbox-pane-open) .page-head:where(:not(.word-root *)) { display: none; }
+  .inbox-thread-head { padding: 10px 14px 12px; }
+  .inbox-messages { max-height: none; overflow: visible; padding: 14px; min-height: 40vh; }
+  .inbox-msg { max-width: 86%; }
+  .inbox-reply { position: sticky; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 2; border-radius: 0 0 var(--radius) var(--radius); }
+  .inbox-compose { padding: 0 14px 16px; overflow: visible; }
+  .inbox-compose .inbox-thread-head { margin: 0 -14px; }
+}
