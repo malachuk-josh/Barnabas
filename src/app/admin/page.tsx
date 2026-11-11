@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell, requirePageLeader } from "@/components/AppShell";
 import { AdminPeople } from "@/components/AdminPeople";
-import { AiSettings } from "@/components/AiSettings";
+import Link from "next/link";
 import { can } from "@/lib/auth/roles";
 import { accessFor } from "@/lib/team";
 
@@ -19,13 +19,13 @@ export default async function AdminPage() {
         <div>
           <span className="eyebrow">Church office</span>
           <h1>Admin</h1>
-          <p className="muted">Add and remove people, set what each person can use, and choose how Barnabas answers. Only admins see this page.</p>
+          <p className="muted">Add and remove people, send invites, and set what each person can use. Only admins see this page.</p>
         </div>
       </div>
       <AdminPeople />
-      <div style={{ marginTop: 20 }}>
-        <AiSettings />
-      </div>
+      <p className="muted small" style={{ marginTop: 20 }}>
+        Barnabas&apos;s model, thinking, tone, web search and voice are in <Link href="/settings#ai">Settings → Barnabas and voice</Link>.
+      </p>
     </AppShell>
   );
 }
