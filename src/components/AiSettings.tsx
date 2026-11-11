@@ -6,8 +6,36 @@ import { EFFORT_CHOICES, MODEL_CHOICES, toneLabel, type AiSettingsView } from "@
 const label = (id: string) => MODEL_CHOICES.find((m) => m.id === id)?.label ?? id;
 const effortLabel = (id: string) => EFFORT_CHOICES.find((e) => e.id === id)?.label ?? id;
 
+/**
+ * Settings → Barnabas and voice (embedded, inside the profile form, so no nested <form>) or a card of its own.
+ */
+function Wrap({ embedded, children }: { embedded: boolean; children: React.ReactNode }) {
+  if (embedded)
+    return (
+      <div id="ai" className="stack" style={{ gap: 12 }}>
+        <h3 className="settings-group">How Barnabas thinks (admins)</h3>
+        {children}
+      </div>
+    );
+  return (
+    <section id="ai" className="card stack">
+      <h2>Barnabas AI</h2>
+      {children}
+    </section>
+  );
+}
+
+function Form({ embedded, onSave, children }: { embedded: boolean; onSave: (e?: React.FormEvent) => Promise<void>; children: React.ReactNode }) {
+  if (embedded) return <div className="stack">{children}</div>;
+  return (
+    <form className="stack" onSubmit={(e) => void onSave(e)}>
+      {children}
+    </form>
+  );
+}
+
 /** Settings → Barnabas AI (admins): which Claude model answers typed and spoken messages. */
-export function AiSettings() {
+export function AiSettings({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<AiSettingsView | null>(null);
   const [form, setForm] = useState({ textModel: "", voiceModel: "", textEffort: "", voiceEffort: "" });
   const [web, setWeb] = useState({ on: false, domains: "" });
@@ -30,8 +58,8 @@ export function AiSettings() {
       .catch(() => {});
   }, []);
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(e?: React.FormEvent) {
+    e?.preventDefault();
     setSaving(true);
     setState(null);
     const res = await fetch("/api/admin/ai", {
@@ -49,12 +77,11 @@ export function AiSettings() {
   }
 
   return (
-    <section id="ai" className="card stack">
-      <h2>Barnabas AI</h2>
-      <p className="muted small">Which Claude model answers, for everyone in the church. Only administrators see this.</p>
+    <Wrap embedded={embedded}>
+      <p className="muted small">Which Claude model answers, how much he thinks first, and his tone, for everyone in the church. Only administrators see this.</p>
       {!view && <p className="muted">Loading…</p>}
       {view && (
-        <form className="stack" onSubmit={save}>
+        <Form embedded={embedded} onSave={save}>
           <div className="field">
             <label htmlFor="ai-text">Typed messages</label>
             <select id="ai-text" value={form.textModel} onChange={(e) => setForm({ ...form, textModel: e.target.value })}>
@@ -152,8 +179,8 @@ export function AiSettings() {
             </p>
           )}
           <div className="row">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+            <button type={embedded ? "button" : "submit"} className="btn btn-primary" disabled={saving} onClick={embedded ? () => void save() : undefined}>
+              {saving ? "Saving…" : embedded ? "Save for everyone" : "Save"}
             </button>
             {view.updatedBy && (
               <span className="small muted">
@@ -162,9 +189,9 @@ export function AiSettings() {
               </span>
             )}
           </div>
-        </form>
+        </Form>
       )}
-    </section>
+    </Wrap>
   );
 }
 
