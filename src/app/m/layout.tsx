@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { MemberTabs } from "@/components/site/MemberApp";
+import { BackBar } from "@/components/site/SiteFrame";
+import { backToApp } from "@/lib/site/access";
 import { publicContext } from "@/lib/site/context";
 import { themeVars } from "@/lib/site/manifest";
 import "../s/site.css";
@@ -32,10 +34,14 @@ export default async function MemberLayout({ children }: { children: React.React
   const { app, theme } = ctx.doc;
   return (
     <div className="cs-root ma-root" style={themeVars(theme) as React.CSSProperties}>
-      {ctx.mode.banner && (
-        <p className="cs-banner" role="note">
-          Not published yet: only signed-in leaders can open the member app.
-        </p>
+      {backToApp(ctx.viewer, ctx.base) ? (
+        <BackBar href={backToApp(ctx.viewer, ctx.base)!} note={ctx.mode.banner ? "Not published yet: only signed-in leaders can open the member app." : undefined} />
+      ) : (
+        ctx.mode.banner && (
+          <p className="cs-banner" role="note">
+            Not published yet: only signed-in leaders can open the member app.
+          </p>
+        )
       )}
       <header className="ma-top">
         <div className="cs-wrap">
