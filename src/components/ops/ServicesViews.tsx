@@ -24,14 +24,64 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
   const ops = useOps("services");
   const [editing, setEditing] = useState<string | null>(null);
   const [f, setF] = useState({ preacher: "", passage: "", title: "", seriesId: "" });
+  const [seriesOpen, setSeriesOpen] = useState(false);
+  const next = rows[0];
+  const withPreacher = rows.filter((r) => r.preacher).length;
+  const planned = rows.filter((r) => r.plans.length === 2).length;
+  const planText = (n: number) => (n === 2 ? "Both services planned" : n === 1 ? "1 of 2 services planned" : "Not planned yet");
   return (
+    <div className="ops-services-wrap">
+      {next && (
+        <section className="rot-next" aria-labelledby="rot-next-h">
+          <span className="date-tile rot-next-tile" aria-hidden="true">
+            <small>{tileMonth(next.date)}</small>
+            <strong>{tileDay(next.date)}</strong>
+          </span>
+          <div className="rot-next-main">
+            <p className="rot-next-eyebrow" id="rot-next-h">
+              Next Sunday
+            </p>
+            <p className="rot-next-who">
+              {next.preacher ? (
+                <>
+                  <strong>{next.preacher}</strong> is preaching
+                </>
+              ) : (
+                <span className="rot-gap">No one is preaching yet</span>
+              )}
+            </p>
+            {(next.series || next.title || next.passage) && (
+              <p className="small muted rot-next-meta">
+                {[next.series?.title, next.title ? `\u201c${next.title}\u201d` : null].filter(Boolean).join(" · ")}
+                {next.passage && (
+                  <>
+                    {next.series || next.title ? " · " : ""}
+                    {next.passageHref ? <Link href={next.passageHref}>{next.passage}</Link> : next.passage}
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+          <div className="rot-next-plan">
+            <span className={`rot-plan-pill plans-${next.plans.length}`}>{planText(next.plans.length)}</span>
+            <Link className="btn btn-primary" href={`/services/plan?date=${next.date}`}>
+              {next.plans.length ? "Open the order of service" : "Plan this Sunday"}
+            </Link>
+          </div>
+        </section>
+      )}
     <div className="fin-grid-2 ops-services">
       <section className="fin-card">
-        <h2>Preaching rotation</h2>
+        <div className="fin-card-head">
+          <h2>Preaching rotation</h2>
+          <span className="small muted">
+            {withPreacher} of {rows.length} Sundays covered · {planned} fully planned
+          </span>
+        </div>
         <Status error={ops.error} notice={ops.notice} />
         <ul className="ops-rotation">
           {rows.map((r) => (
-            <li key={r.date} className="rot-row">
+            <li key={r.date} className={`rot-row${r.preacher ? "" : " is-gap"}`}>
               <span className="date-tile" aria-hidden="true">
                 <small>{tileMonth(r.date)}</small>
                 <strong>{tileDay(r.date)}</strong>
@@ -47,7 +97,7 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
                       <strong>{r.preacher}</strong>
                     </>
                   ) : (
-                    <span className="muted">No one preaching yet</span>
+                    <span className="rot-gap">No one preaching yet</span>
                   )}
                 </span>
                 {(r.series || r.title || r.passage) && (
@@ -59,12 +109,13 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
                 )}
               </div>
               <div className="rot-actions">
-                <Link className={`btn btn-sm${r.plans.length ? " is-planned" : ""}`} href={`/services/plan?date=${r.date}`}>
+                <Link className={`rot-plan-link plans-${r.plans.length}`} href={`/services/plan?date=${r.date}`}>
+                  <span className="rot-plan-dot" aria-hidden="true" />
                   {r.plans.length === 2 ? "Planned" : r.plans.length === 1 ? "1 of 2 planned" : "Plan service"}
                 </Link>
                 {planner && editing !== r.date && (
                   <button
-                    className="btn btn-sm"
+                    className={r.preacher ? "btn btn-sm btn-quiet" : "btn btn-sm"}
                     type="button"
                     onClick={() => {
                       setEditing(r.date);
@@ -141,7 +192,7 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
         <section className="fin-card">
           <h2>Sermon series</h2>
           {series.length ? (
-            <ul className="care-tasks">
+            <ul className="care-tasks rot-series">
               {series.map((s) => (
                 <li key={s.id}>
                   <span>
@@ -153,7 +204,7 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
                     </span>
                   </span>
                   {planner && (
-                    <button className="btn btn-danger" type="button" onClick={() => void ops.act({ action: "series-remove", id: s.id })}>
+                    <button className="btn btn-sm btn-quiet rot-remove" type="button" onClick={() => window.confirm(`Remove the series "${s.title}"? Sundays keep their preachers and passages.`) && void ops.act({ action: "series-remove", id: s.id })}>
                       Remove
                     </button>
                   )}
@@ -161,18 +212,30 @@ export function RotationView({ rows, series, planner }: { rows: Row[]; series: (
               ))}
             </ul>
           ) : (
-            <EmptyState compact title="No sermon series planned yet" actions={planner ? [{ label: "Plan your first series", href: "#new-series", primary: true }] : []}>
-              A series gathers Sundays around a book or theme, with its passage range linked into The Word.
-            </EmptyState>
+            <>
+              <EmptyState compact title="No sermon series planned yet">
+                A series gathers Sundays around a book or theme, with its passage range linked into The Word.
+              </EmptyState>
+              {planner && !seriesOpen && (
+                <button type="button" className="btn btn-primary rot-first-series" onClick={() => setSeriesOpen(true)}>
+                  Plan your first series
+                </button>
+              )}
+            </>
           )}
         </section>
-        {planner && <NewSeries />}
+        {planner && (seriesOpen ? <NewSeries onClose={() => setSeriesOpen(false)} /> : series.length > 0 && (
+          <button type="button" className="btn rot-add-series" onClick={() => setSeriesOpen(true)}>
+            + Plan a series
+          </button>
+        ))}
       </div>
+    </div>
     </div>
   );
 }
 
-function NewSeries() {
+function NewSeries({ onClose }: { onClose: () => void }) {
   const ops = useOps("services");
   const [f, setF] = useState({ title: "", passage: "", startDate: localToday(), endDate: localToday(), notes: "" });
   return (
@@ -207,9 +270,14 @@ function NewSeries() {
           <input id="ns-end" type="date" required value={f.endDate} min={f.startDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} />
         </div>
       </div>
-      <button className="btn btn-primary" type="submit" disabled={ops.busy}>
-        Add series
-      </button>
+      <div className="row">
+        <button className="btn btn-primary" type="submit" disabled={ops.busy}>
+          Add series
+        </button>
+        <button className="btn btn-quiet" type="button" onClick={onClose}>
+          Close
+        </button>
+      </div>
     </form>
   );
 }

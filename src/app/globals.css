@@ -2052,3 +2052,43 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .admin-server { text-align: left; }
   .admin-edit { margin-left: 0; }
 }
+
+/* Services, second pass: a "Next Sunday" card, rotation rows with a plan status, gaps flagged, and the series form folded */
+.ops-services-wrap { display: grid; gap: 16px; }
+.rot-next {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px 20px; align-items: center; padding: 18px 22px;
+  border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); border-left: 4px solid var(--brass);
+}
+.rot-next-tile { width: 64px; height: 68px; }
+.rot-next-tile strong { font-size: 1.6rem; }
+.rot-next-main { display: grid; gap: 2px; min-width: 0; }
+.rot-next-main p { margin: 0; }
+.rot-next-eyebrow { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--highlight); }
+.rot-next-who { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.25; }
+.rot-next-who strong { font-weight: 400; }
+.rot-next-plan { display: grid; gap: 8px; justify-items: end; }
+.rot-plan-pill { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--watch-bg); color: var(--watch); }
+.rot-plan-pill.plans-1 { background: color-mix(in srgb, var(--brass) 18%, var(--surface)); color: var(--highlight); }
+.rot-plan-pill.plans-2 { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
+.rot-gap { color: var(--watch); font-weight: 600; }
+
+.rot-row.is-gap .date-tile { box-shadow: inset 0 0 0 1.5px var(--watch); }
+.rot-actions { align-items: center; gap: 4px 10px; }
+.rot-plan-link { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 600; color: var(--muted); text-decoration: none; padding: 6px 8px; border-radius: 8px; white-space: nowrap; }
+.rot-plan-link:hover { background: var(--surface-2); color: var(--fg); }
+.rot-plan-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rot-plan-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+.rot-plan-link.plans-1 { color: var(--highlight); }
+.rot-plan-link.plans-1 .rot-plan-dot { box-shadow: none; background: linear-gradient(90deg, var(--brass) 50%, transparent 50%); outline: 1.5px solid var(--brass); outline-offset: -1.5px; }
+.rot-plan-link.plans-2 { color: var(--ok); }
+.rot-plan-link.plans-2 .rot-plan-dot { box-shadow: none; background: var(--ok); }
+.rot-add-series, .rot-first-series { justify-self: start; margin-top: 4px; }
+.rot-series li { border-left: 3px solid var(--brass); padding-left: 12px; }
+.rot-remove { color: var(--muted); }
+.rot-remove:hover:where(:not(.word-root *)) { color: var(--danger); }
+
+@media (max-width: 640px) {
+  .rot-next { grid-template-columns: auto minmax(0, 1fr); padding: 16px; }
+  .rot-next-plan { grid-column: 1 / -1; justify-items: start; grid-template-columns: auto; }
+  .rot-next-who { font-size: 1.15rem; }
+}
