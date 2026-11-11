@@ -19,7 +19,7 @@ export default async function AdminPage() {
         <div>
           <span className="eyebrow">Church office</span>
           <h1>Admin</h1>
-          <p className="muted">Add and remove people, send invites, and set what each person can use. Only admins see this page.</p>
+          <p className="muted">Who&apos;s on Barnabas, their invites, and what each person can use. Only admins see this page.</p>
         </div>
       </div>
       <AdminPeople />

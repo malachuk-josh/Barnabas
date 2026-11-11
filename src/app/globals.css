@@ -1980,3 +1980,75 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .mesa-churches li { grid-template-columns: auto minmax(0, 1fr); }
   .mesa-church-actions { grid-column: 2; justify-content: flex-start; }
 }
+
+/* Admin, redesigned: a count strip, a folding Add form with level cards, and people rows with avatars */
+.admin-counts { margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
+.admin-counts > div { padding: 12px 16px; border-left: 1px solid var(--line-soft); min-width: 0; }
+.admin-counts > div:first-child { border-left: 0; }
+.admin-counts dt { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+.admin-counts dd { margin: 2px 0 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.15; }
+.admin-counts .is-pending dd { color: var(--highlight); }
+.admin-level-mark { width: 9px; height: 9px; flex: none; border-radius: 50%; display: inline-block; background: var(--muted); }
+.admin-level-mark.admin-level-admin { background: var(--accent); }
+.admin-level-mark.admin-level-leader { background: var(--brass); }
+.admin-level-mark.admin-level-team { background: var(--sea-glass); }
+.admin-level-mark.admin-level-member { background: var(--line); }
+.admin-level-mark { padding: 0; }
+
+.admin-add { gap: 14px; }
+.admin-add-head { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
+.admin-add-head > div { display: grid; gap: 4px; flex: 1 1 320px; min-width: 0; }
+.admin-add-head h2, .admin-add-head p { margin: 0; }
+.admin-add.is-open .admin-add-head { padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
+.admin-add-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-levels { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 8px; }
+.admin-levels legend { padding: 0; margin-bottom: 6px; font-weight: 600; font-size: 0.92rem; }
+.admin-level-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.admin-level-card {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: 2px 8px; padding: 12px 14px; cursor: pointer;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+}
+.admin-level-card .admin-level-mark { margin-top: 6px; }
+.admin-level-card strong { font-size: 0.95rem; }
+.admin-level-card .small { grid-column: 1 / -1; line-height: 1.4; }
+.admin-level-card:hover { border-color: var(--accent); }
+.admin-level-card.is-picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.admin-level-card:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.admin-sub { padding-left: 12px; border-left: 3px solid var(--line); }
+
+.admin-people > li { padding: 14px 0; }
+.admin-person { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px 14px; }
+.admin-avatar {
+  width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 0.8rem; font-weight: 800;
+  background: var(--surface-2); color: var(--fg);
+}
+.admin-avatar-admin { background: var(--accent); color: var(--accent-fg); }
+.admin-avatar-leader { background: color-mix(in srgb, var(--brass) 35%, var(--surface)); }
+.admin-avatar-team { background: var(--sea-glass); color: var(--night); }
+.admin-avatar-unset { background: var(--watch-bg); color: var(--watch); }
+.admin-avatar.is-pending { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
+.admin-person-who { gap: 2px; }
+.admin-person .row { flex-wrap: nowrap; justify-content: flex-end; }
+.admin-server { text-align: right; }
+.admin-remove { border: 0; background: none; cursor: pointer; font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--muted); padding: 6px 10px; border-radius: 8px; min-height: 36px; }
+.admin-remove:hover:not(:disabled) { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
+.admin-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.admin-edit { margin: 12px 0 0 54px; }
+
+@media (max-width: 900px) {
+  .admin-level-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .admin-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .admin-counts > div { padding: 10px 12px; }
+  .admin-counts > div:last-child { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; }
+  .admin-counts > div:last-child dd { margin: 0; }
+  .admin-counts dd { font-size: 1.25rem; }
+  .admin-add-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-person { grid-template-columns: auto minmax(0, 1fr); }
+  .admin-person > .admin-level, .admin-person > .row, .admin-person > .admin-server { grid-column: 2; justify-self: start; }
+  .admin-person .row { flex-wrap: wrap; justify-content: flex-start; }
+  .admin-server { text-align: left; }
+  .admin-edit { margin-left: 0; }
+}
