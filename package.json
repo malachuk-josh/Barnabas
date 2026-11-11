@@ -9,7 +9,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "evals": "vitest run --config vitest.evals.config.mts"
   },
   "engines": {
     "node": ">=20"
