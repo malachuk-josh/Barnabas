@@ -195,12 +195,44 @@ describe("request shape", () => {
     freshStore();
     const meta = await newMeta();
     const params = turnParams(meta, []);
-    expect(params.thinking).toEqual({ type: "adaptive" });
+    // Stale thinking (after a deploy or a tone change mid-conversation) is dropped rather than failing the turn.
+    expect(params.thinking).toEqual({ type: "adaptive", block_binding: { prefix_mismatch_behavior: "drop_block" } });
     expect(params.output_config).toEqual({ effort: "low" });
     expect(params.fallbacks).toBe("default");
-    expect(params.betas).toEqual(["server-side-fallback-2026-07-01"]);
+    expect(params.betas).toEqual(["server-side-fallback-2026-07-01", "thinking-binding-controls-2026-08-01"]);
     expect(params.cache_control).toEqual({ type: "ephemeral" });
-    expect(params.tools?.every((t) => "eager_input_streaming" in t && t.eager_input_streaming)).toBe(true);
+    const own = (params.tools ?? []).filter((t) => !("type" in t && t.type?.startsWith("tool_search")));
+    expect(own.every((t) => "eager_input_streaming" in t && t.eager_input_streaming)).toBe(true);
+  });
+
+  it("loads about ten core tools and finds the rest with tool search", async () => {
+    const { CORE_TOOLS, TOOL_DEFS, toolsForRequest } = await import("@/lib/engine/tools");
+    const tools = toolsForRequest(null) as { name: string; type?: string; defer_loading?: boolean }[];
+    expect(tools[0]).toEqual({ type: "tool_search_tool_bm25_20251119", name: "tool_search_tool_bm25" });
+    // Every tool's full definition is still sent (the API searches them and expands what it finds).
+    expect(tools.length).toBe(TOOL_DEFS.length + 1);
+    const loaded = tools.filter((t) => !t.defer_loading).map((t) => t.name);
+    expect(loaded.sort()).toEqual(["tool_search_tool_bm25", ...CORE_TOOLS].sort());
+    for (const name of CORE_TOOLS) expect(TOOL_DEFS.map((t) => t.name)).toContain(name);
+    // The same request every time, so the prompt cache holds.
+    expect(JSON.stringify(toolsForRequest(null))).toBe(JSON.stringify(tools));
+    // A small toolset (a Member's) is simply loaded.
+    const few = toolsForRequest(["read_scripture", "recall_memory"]) as { defer_loading?: boolean }[];
+    expect(few.length).toBe(2);
+    expect(few.some((t) => t.defer_loading)).toBe(false);
+  });
+
+  it("finds tools quietly: no spoken phrase for the search itself", async () => {
+    freshStore();
+    const meta = await newMeta();
+    const searchUse = { type: "server_tool_use", id: "srvtoolu_1", name: "tool_search_tool_bm25", input: { query: "directory add person" } };
+    const searchResult = { type: "tool_search_tool_result", tool_use_id: "srvtoolu_1", content: { type: "tool_search_tool_search_result", tool_references: [{ type: "tool_reference", tool_name: "add_person" }] } };
+    scripted([() => ({ content: [searchUse, searchResult, { type: "text", text: "Who should I add?" }], stop_reason: "end_turn" })]);
+    const events = await collect(runTurn({ leader, meta, text: "Add someone to the directory" }));
+    expect(events.filter((e) => e.type === "tool")).toEqual([]);
+    // The search and its result stay in the history unchanged, for the next request.
+    const stored = (await getMessages(leader, meta.id)).at(-1) as { content: { type: string }[] };
+    expect(stored.content.map((b) => b.type)).toEqual(["server_tool_use", "tool_search_tool_result", "text"]);
   });
 
   it("drops declined-model blocks before a fallback boundary", () => {
@@ -208,6 +240,8 @@ describe("request shape", () => {
       { type: "thinking", thinking: "", signature: "a" },
       { type: "text", text: "Partial " },
       { type: "tool_use", id: "x", name: "find_person", input: {} },
+      { type: "server_tool_use", id: "s", name: "tool_search_tool_bm25", input: {} },
+      { type: "tool_search_tool_result", tool_use_id: "s", content: {} },
       { type: "fallback", from: { model: "a" }, to: { model: "b" } },
       { type: "thinking", thinking: "", signature: "b" },
       { type: "text", text: "rest" },
@@ -218,6 +252,54 @@ describe("request shape", () => {
   });
 });
 
+describe("a rejected newer request feature", () => {
+  it("retries the step the plain way (all tools loaded, no thinking binding) instead of failing", async () => {
+    const { resetRequestFeatures } = await import("@/lib/engine/claude");
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    freshStore();
+    const meta = await newMeta();
+    const calls: { tools: { defer_loading?: boolean; type?: string }[]; thinking: unknown }[] = [];
+    let first = true;
+    setClaude({
+      beta: {
+        messages: {
+          stream(params: { tools: { defer_loading?: boolean }[]; thinking: unknown }) {
+            calls.push(JSON.parse(JSON.stringify(params)));
+            if (first) {
+              first = false;
+              return {
+                async *[Symbol.asyncIterator]() {
+                  throw new Anthropic.BadRequestError(400, { type: "error", error: { type: "invalid_request_error", message: "tools.3.defer_loading: Extra inputs are not permitted" } }, "tools.3.defer_loading: Extra inputs are not permitted", new Headers());
+                },
+                finalMessage: async () => ({}),
+              };
+            }
+            const message = { id: "m", role: "assistant", model: "t", content: [{ type: "text", text: "Here you are." }], stop_reason: "end_turn" };
+            return {
+              async *[Symbol.asyncIterator]() {
+                yield { type: "content_block_delta", delta: { type: "text_delta", text: "Here you are." } };
+              },
+              finalMessage: async () => message,
+            };
+          },
+          async create() {
+            return { content: [], stop_reason: "end_turn" };
+          },
+        },
+      },
+    } as unknown as ClaudeClient);
+    try {
+      const events = await collect(runTurn({ leader, meta, text: "Hello" }));
+      expect(events.filter((e) => e.type === "error")).toEqual([]);
+      expect(events.some((e) => e.type === "text" && e.text === "Here you are.")).toBe(true);
+      expect(calls[0]!.tools.some((t) => t.defer_loading)).toBe(true);
+      expect(calls[1]!.tools.some((t) => t.defer_loading || t.type?.startsWith("tool_search"))).toBe(false);
+    } finally {
+      resetRequestFeatures();
+    }
+  });
+});
+
 describe("voice turns", () => {
   it("use the voice model with between_tools thinking at low effort; typed turns keep the main model", async () => {
     const { turnParams } = await import("@/lib/engine/claude");
@@ -225,11 +307,13 @@ describe("voice turns", () => {
     const meta = { id: "c1", context: "ctx", mode: "voice" } as unknown as Parameters<typeof turnParams>[0];
     const voice = turnParams(meta, [{ role: "user", content: "hi" }], "voice");
     expect(voice.model).toBe(config.voiceModel);
+    // between_tools takes no other field (and makes no thinking blocks to check).
     expect(voice.thinking).toEqual({ type: "between_tools" });
+    expect(voice.betas ?? []).not.toContain("thinking-binding-controls-2026-08-01");
     expect(voice.output_config?.effort).toBe("low");
     const text = turnParams(meta, [{ role: "user", content: "hi" }], "text");
     expect(text.model).toBe(config.model);
-    expect(text.thinking).toEqual({ type: "adaptive" });
+    expect(text.thinking).toEqual({ type: "adaptive", block_binding: { prefix_mismatch_behavior: "drop_block" } });
   });
 });
 

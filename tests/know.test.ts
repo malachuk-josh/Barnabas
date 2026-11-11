@@ -8,6 +8,7 @@ import {
   KNOW_QUESTIONS,
   KNOW_TOOLS,
   knowContext,
+  KNOW_RULES,
   readAnswers,
   resolvePermission,
 } from "@/lib/engine/know";
@@ -35,7 +36,15 @@ describe("the twenty questions", () => {
   it("registers the tools and the rules in Barnabas's instructions", () => {
     const names = TOOL_DEFS.map((t) => t.name);
     for (const t of KNOW_TOOLS) expect(names).toContain(t.def.name);
-    expect(BARNABAS_SYSTEM).toMatch(/Never in your first reply of a conversation\. At most two in a conversation, unless it has gone past 15 exchanges/);
+    expect(KNOW_RULES).toMatch(/Never in your first reply of a conversation\. At most two in a conversation, unless it has gone past 15 exchanges/);
+  });
+
+  it("carries the asking rules only while questions are open and the conversation is on the record", async () => {
+    freshStore();
+    expect(await knowContext(leader, false, 1)).toContain(KNOW_RULES);
+    expect(await knowContext(leader, true, 1)).not.toContain(KNOW_RULES);
+    // Not on every message for everyone: they're out of the shared instructions.
+    expect(BARNABAS_SYSTEM).not.toContain("Bridge from the help you just gave");
   });
 
   it("reads answered ids from the memory file", () => {
@@ -172,7 +181,7 @@ describe("eagerness, within the rules", () => {
   });
 
   it("Barnabas's instructions teach bridging and catching answers given in passing", () => {
-    expect(BARNABAS_SYSTEM).toMatch(/Bridge from the help you just gave/);
-    expect(BARNABAS_SYSTEM).toMatch(/"Mondays are my day off" answers k12/);
+    expect(KNOW_RULES).toMatch(/Bridge from the help you just gave/);
+    expect(KNOW_RULES).toMatch(/"Mondays are my day off" answers k12/);
   });
 });

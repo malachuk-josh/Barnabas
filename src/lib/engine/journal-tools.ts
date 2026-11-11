@@ -239,25 +239,55 @@ const startEntry = tool({
 
 /* ---------- list_journal / read_journal_entry ---------- */
 
+const KINDS = ["note", "sermon", "devotional", "setlist"] as const;
+
 const listJournal = tool({
   phrase: "Let me look in your Journal.",
   def: {
     name: "list_journal",
-    description: "Titles in the leader's Journal (or entries other leaders shared with them), newest first. Only when the leader asks about their journal. Returns ids for read_journal_entry.",
+    description:
+      "Find entries in the leader's Journal: newest first, or by words (titles, tags and text) and/or a tag. Their own entries, plus (when searching, or with shared_with_me) entries other leaders shared with them, read-only. Only when they ask about their Journal. Returns ids for read_journal_entry and update_journal_entry, snippets and links.",
     eager_input_streaming: true,
-    input_schema: { type: "object", properties: { query: str("Words to search for"), kind: { type: "string", enum: ["note", "sermon", "devotional", "setlist"] }, shared_with_me: { type: "boolean" } } },
+    input_schema: {
+      type: "object",
+      properties: {
+        query: str("Words to look for"),
+        tag: str("One tag, e.g. 'advent'"),
+        kind: { type: "string", enum: [...KINDS] },
+        shared_with_me: { type: "boolean", description: "Only entries other leaders shared with them" },
+      },
+    },
   },
-  schema: z.object({ query: S(100).optional(), kind: z.enum(["note", "sermon", "devotional", "setlist"]).optional(), shared_with_me: z.boolean().optional() }),
+  schema: z.object({ query: S(100).optional(), tag: S(30).optional(), kind: z.enum(KINDS).optional(), shared_with_me: z.boolean().optional() }),
   async run(input, ctx) {
     const actor = await actorFor(ctx);
     if (isResult(actor)) return actor;
     return guard(async () => {
-      const rows = await listEntries(actor, { q: input.query, kind: input.kind, filter: input.shared_with_me ? "shared" : undefined });
-      if (!rows.length) return ok({ entries: [], note: input.shared_with_me ? "No one has shared a journal entry with them yet." : "Nothing in their Journal matches. Offer to start one." });
-      return ok({
-        entries: rows.slice(0, 25).map((r) => ({ id: r.id, kind: KIND_LABELS[r.kind], title: r.title, updated: new Date(r.updatedAt).toISOString().slice(0, 10), tags: r.tags.length ? r.tags : undefined, pinned: r.pinned || undefined, shared: r.shared || undefined, by: r.ownerId === ctx.leader.leaderId ? undefined : r.ownerName, detail: r.detail })),
-        more: rows.length > 25 ? rows.length - 25 : undefined,
+      const q = { q: input.query?.trim() || undefined, tag: input.tag?.trim() || undefined, kind: input.kind };
+      const searching = Boolean(q.q || q.tag);
+      const mine = input.shared_with_me ? [] : await listEntries(actor, q);
+      const shared = input.shared_with_me || searching ? await listEntries(actor, { ...q, filter: "shared" }) : [];
+      const rows: JournalSummary[] = [...mine, ...shared];
+      if (!rows.length) {
+        return ok({ entries: [], note: input.shared_with_me ? "No one has shared a journal entry with them yet." : searching ? "Nothing in their Journal matches. Offer to start an entry, or try other words." : "Their Journal is empty. Offer to start one." });
+      }
+      const top = rows.slice(0, 25);
+      const result = ok({
+        entries: top.map((r) => ({
+          id: r.id,
+          kind: KIND_LABELS[r.kind],
+          title: r.title,
+          updated: new Date(r.updatedAt).toISOString().slice(0, 10),
+          tags: r.tags.length ? r.tags : undefined,
+          pinned: r.pinned || undefined,
+          snippet: searching ? r.snippet || undefined : undefined,
+          by: r.ownerId === ctx.leader.leaderId ? undefined : `${r.ownerName} (shared, read-only)`,
+          detail: r.detail,
+          link: link(r),
+        })),
+        more: rows.length > top.length ? rows.length - top.length : undefined,
       });
+      return searching ? linked(result, ...top.slice(0, 3)) : result;
     });
   },
 });
@@ -299,16 +329,19 @@ const updateJournalEntry = tool({
   def: {
     name: "update_journal_entry",
     description:
-      "Add to or edit a section of one of the leader's own journal entries: the title, tags, notes, a sermon's big idea or other parts, an outline point, a devotional day or a song. " +
-      "Points, days and songs are numbered from 1 (read_journal_entry first if you need them); `at` edits that one, leaving it out adds a new one at the end. It never deletes an entry. Quote scripture word for word in the leader's translation, with its reference.",
+      "Change one of the leader's own journal entries (their own: no confirmation needed): add text to the end of the notes (append_notes, optionally dated, keeping everything already there), set or change tags, rename it, or edit a sermon's big idea or other parts, an outline point, a devotional day or a song. " +
+      "Points, days and songs are numbered from 1 (read_journal_entry first if you need them); `at` edits that one, leaving it out adds a new one at the end. It never deletes an entry. Quote scripture word for word in the leader's translation, with its reference (verses). Not for entries others shared with them.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
       properties: {
         id: str(),
         title: str(),
+        tags: strs("The full new set of tags (short single words, at most 12)"),
         add_tags: strs(),
-        append_notes: str("Added to the end of the notes"),
+        remove_tags: strs(),
+        append_notes: str("Added to the end of the notes; nothing already there is replaced"),
+        dated: { type: "boolean", description: "Put today's date above the added notes, like a journal note" },
         verses: { type: "array", items: VERSE_JSON, description: "Scripture to quote at the end of the notes" },
         sermon: { type: "object", properties: { passages: strs(), big_idea: str(), illustrations: str(), application: str(), closing: str(), status: { type: "string", enum: [...SERMON_STATUSES] } } },
         outline_point: { ...OUTLINE_JSON, properties: { ...OUTLINE_JSON.properties, at: { type: "integer", description: "Which point to edit (1-based); leave out to add" } } },
@@ -322,8 +355,11 @@ const updateJournalEntry = tool({
   schema: z.object({
     id: S(40).min(1),
     title: S(120).optional(),
+    tags: z.array(S(30)).max(12).optional(),
     add_tags: z.array(S(30)).max(12).optional(),
+    remove_tags: z.array(S(30)).max(12).optional(),
     append_notes: S(8000).optional(),
+    dated: z.boolean().optional(),
     verses: z.array(VerseIn).max(12).optional(),
     sermon: SermonIn.omit({ outline: true }).optional(),
     outline_point: OutlineIn.extend({ at: z.number().int().min(1).optional() }).optional(),
@@ -342,9 +378,21 @@ const updateJournalEntry = tool({
       const changed: string[] = [];
       const patch: Parameters<typeof updateEntry>[2] = {};
       if (input.title) (patch.title = input.title), changed.push("title");
-      if (input.add_tags?.length) (patch.tags = [...new Set([...e.tags, ...input.add_tags])].slice(0, 12)), changed.push("tags");
-      const extra = [input.append_notes?.trim(), await sc.lines(input.verses)].filter(Boolean).join("\n\n");
-      if (extra) (patch.body = `${e.body.replace(/\s+$/, "")}${e.body.trim() ? "\n\n" : ""}${extra}`), changed.push("notes");
+      if (input.tags || input.add_tags?.length || input.remove_tags?.length) {
+        const clean = (list: string[] | undefined) => (list ?? []).map((t) => Tag.safeParse(t)).flatMap((r) => (r.success ? [r.data] : []));
+        const drop = new Set(clean(input.remove_tags));
+        const next = [...new Set([...(input.tags ? clean(input.tags) : e.tags), ...clean(input.add_tags)])].filter((t) => !drop.has(t));
+        if (next.length > LIMITS.tags) return fail(`An entry can have at most ${LIMITS.tags} tags.`);
+        patch.tags = next;
+        changed.push("tags");
+      }
+      const notes = input.append_notes?.trim();
+      const extra = [notes && input.dated ? `**${friendlyDate(today())}**` : "", notes, await sc.lines(input.verses)].filter(Boolean).join("\n\n");
+      if (extra) {
+        patch.body = `${e.body.replace(/\s+$/, "")}${e.body.trim() ? "\n\n" : ""}${extra}`;
+        if (patch.body.length > LIMITS.body) return fail(`That would make the entry longer than ${LIMITS.body} characters. Offer to start a new entry for it.`);
+        changed.push("notes");
+      }
       const pick = <T,>(list: T[], at: number | undefined, label: string): number => {
         if (at === undefined) return list.length;
         if (at > list.length) throw new JournalError(`There's no ${label} ${at}; it has ${list.length}.`);
@@ -481,104 +529,6 @@ const sendSetlist = tool({
 
 /* ---------- search, append, tag, delete ---------- */
 
-const KINDS = ["note", "sermon", "devotional", "setlist"] as const;
-
-const searchJournal = tool({
-  phrase: "Let me look in your Journal.",
-  def: {
-    name: "search_journal",
-    description:
-      "Search the leader's Journal by words (in titles, tags and text) and/or a tag: their own entries and, unless include_shared is false, entries other leaders shared with them (read-only). The same entries the Journal page shows them. Only when they ask. Returns ids, snippets and links.",
-    eager_input_streaming: true,
-    input_schema: {
-      type: "object",
-      properties: { query: str("Words to look for"), tag: str("One tag, e.g. 'advent'"), kind: { type: "string", enum: [...KINDS] }, include_shared: { type: "boolean", description: "Also entries shared with them (default true)" } },
-    },
-  },
-  schema: z.object({ query: S(100).optional(), tag: S(30).optional(), kind: z.enum(KINDS).optional(), include_shared: z.boolean().optional() }),
-  async run(input, ctx) {
-    if (!input.query?.trim() && !input.tag?.trim()) return fail("Give words to search for or a tag. list_journal lists everything.");
-    const actor = await actorFor(ctx);
-    if (isResult(actor)) return actor;
-    return guard(async () => {
-      const q = { q: input.query?.trim() || undefined, tag: input.tag?.trim() || undefined, kind: input.kind };
-      const mine = await listEntries(actor, q);
-      const shared = input.include_shared === false ? [] : await listEntries(actor, { ...q, filter: "shared" });
-      const rows: JournalSummary[] = [...mine, ...shared];
-      if (!rows.length) return ok({ entries: [], note: "Nothing in their Journal matches. Offer to start an entry, or try other words." });
-      const top = rows.slice(0, 20);
-      const result = ok({
-        entries: top.map((r) => ({ id: r.id, kind: KIND_LABELS[r.kind], title: r.title, tags: r.tags.length ? r.tags : undefined, updated: new Date(r.updatedAt).toISOString().slice(0, 10), snippet: r.snippet || undefined, by: r.ownerId === ctx.leader.leaderId ? undefined : `${r.ownerName} (shared, read-only)`, link: link(r) })),
-        more: rows.length > top.length ? rows.length - top.length : undefined,
-      });
-      return linked(result, ...top.slice(0, 3));
-    });
-  },
-});
-
-const appendToEntry = tool({
-  phrase: "Adding that to your Journal.",
-  def: {
-    name: "append_to_journal_entry",
-    description:
-      "Add text to the end of one of the leader's own journal entries' notes, keeping everything already there (nothing is replaced). Their own entry: no confirmation needed. Quote any scripture word for word in their translation with its reference (verses). Not for entries others shared with them.",
-    eager_input_streaming: true,
-    input_schema: {
-      type: "object",
-      properties: {
-        id: str("From search_journal or list_journal"),
-        text: str("What to add (markdown)"),
-        dated: { type: "boolean", description: "Put today's date above it, like a journal note" },
-        verses: { type: "array", items: VERSE_JSON, description: "Scripture to quote after the text" },
-      },
-      required: ["id", "text"],
-    },
-  },
-  schema: z.object({ id: S(40).min(1), text: S(8000).min(1), dated: z.boolean().optional(), verses: z.array(VerseIn).max(8).optional() }),
-  async run(input, ctx) {
-    if (ctx.meta.offRecord) return fail("This conversation is off the record, so nothing is saved, not even to the Journal.");
-    const actor = await actorFor(ctx);
-    if (isResult(actor)) return actor;
-    return guard(async () => {
-      const { entry: e, mine } = await getEntry(actor, input.id);
-      if (!mine) return fail(`${e.ownerName} shared this entry to read. Only they can change it. Offer to start the leader's own entry instead.`);
-      const sc = await Scripture.for(ctx);
-      const added = [input.dated ? `**${friendlyDate(today())}**` : "", input.text.trim(), await sc.lines(input.verses)].filter(Boolean).join("\n\n");
-      const body = `${e.body.replace(/\s+$/, "")}${e.body.trim() ? "\n\n" : ""}${added}`;
-      if (body.length > LIMITS.body) return fail(`That would make the entry longer than ${LIMITS.body} characters. Offer to start a new entry for it.`);
-      await updateEntry(actor, e.id, { body });
-      return linked(ok({ appended_to: e.title, id: e.id, link: link(e), notes: sc.notes, say: "Tell them in a few words it's added at the end." }), e);
-    });
-  },
-});
-
-const tagEntry = tool({
-  phrase: "Tagging it.",
-  def: {
-    name: "tag_journal_entry",
-    description:
-      "Set the tags on one of the leader's own journal entries: `tags` replaces them all; or `add` and `remove` change some. Tags are short single words, lowercase (at most 12). Their own entry: no confirmation needed.",
-    eager_input_streaming: true,
-    input_schema: { type: "object", properties: { id: str(), tags: strs("The full new set of tags"), add: strs(), remove: strs() }, required: ["id"] },
-  },
-  schema: z.object({ id: S(40).min(1), tags: z.array(S(30)).max(12).optional(), add: z.array(S(30)).max(12).optional(), remove: z.array(S(30)).max(12).optional() }),
-  async run(input, ctx) {
-    if (ctx.meta.offRecord) return fail("This conversation is off the record, so nothing is saved, not even to the Journal.");
-    if (!input.tags && !input.add?.length && !input.remove?.length) return fail("Say which tags to set, add or remove.");
-    const actor = await actorFor(ctx);
-    if (isResult(actor)) return actor;
-    return guard(async () => {
-      const { entry: e, mine } = await getEntry(actor, input.id);
-      if (!mine) return fail(`${e.ownerName} shared this entry to read. Only they can tag it.`);
-      const clean = (list: string[] | undefined) => (list ?? []).map((t) => Tag.safeParse(t)).flatMap((r) => (r.success ? [r.data] : []));
-      const drop = new Set(clean(input.remove));
-      const next = [...new Set([...(input.tags ? clean(input.tags) : e.tags), ...clean(input.add)])].filter((t) => !drop.has(t));
-      if (next.length > LIMITS.tags) return fail(`An entry can have at most ${LIMITS.tags} tags.`);
-      await updateEntry(actor, e.id, { tags: next });
-      return linked(ok({ title: e.title, tags: next, link: link(e) }), e);
-    });
-  },
-});
 
 const deleteJournalEntry = tool({
   def: {
@@ -605,7 +555,7 @@ const deleteJournalEntry = tool({
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const JOURNAL_MORE_TOOLS: ToolSpec<any>[] = [searchJournal, appendToEntry, tagEntry, deleteJournalEntry];
+export const JOURNAL_MORE_TOOLS: ToolSpec<any>[] = [deleteJournalEntry];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const JOURNAL_TOOLS: ToolSpec<any>[] = [journalNote, startEntry, listJournal, readJournalEntry, updateJournalEntry, shareJournalEntry, sendSetlist];

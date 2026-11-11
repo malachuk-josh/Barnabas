@@ -10,9 +10,9 @@ import {
 } from "../data/conversations";
 import { CRISIS_REMINDER, detectCrisis } from "../policy/crisis";
 import { withLock } from "../store";
-import { aiForLeader, claude, historyContent, modelFor, turnParams, type TurnMode } from "./claude";
+import { aiForLeader, claude, historyContent, modelFor, newFeaturesFailed, turnParams, type TurnMode } from "./claude";
 import { resolvePermission } from "./know";
-import { executeTool, holdingPhrase, type ToolContext } from "./tools";
+import { executeTool, holdingPhrase, isToolSearch, type ToolContext } from "./tools";
 import { cleanLinks } from "./links";
 
 export type TurnEvent =
@@ -133,6 +133,8 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
         if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
           if (firstTextMs === null) firstTextMs = Date.now() - turnStartedAt;
           emit({ type: "text", text: event.delta.text });
+        } else if (event.type === "content_block_start" && event.content_block.type === "server_tool_use" && isToolSearch(event.content_block.name)) {
+          // Finding the right tool happens quietly; the tool itself says its phrase.
         } else if (event.type === "content_block_start" && event.content_block.type === "server_tool_use") {
           // Claude searching the web or reading a page.
           const phrase = announced ? undefined : event.content_block.name === "web_fetch" ? "Let me read that." : "Let me look that up.";
@@ -150,6 +152,8 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
       // With eager input streaming, a tool input that isn't parseable JSON rejects the stream.
       // Re-issue that step; API errors are rethrown.
       // If the voice model rejects the request before saying anything, answer with the main model instead.
+      // A newer request feature (tool search, thinking binding) rejected: retry this step without it.
+      if (firstTextMs === null && err instanceof Anthropic.BadRequestError && newFeaturesFailed(err.message)) continue;
       if (mode === "voice" && firstTextMs === null && err instanceof Anthropic.BadRequestError) {
         console.warn("[barnabas] voice model request rejected; using the main model", err.message);
         mode = "text";

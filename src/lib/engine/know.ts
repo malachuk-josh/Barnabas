@@ -193,6 +193,22 @@ export function isEarlySeason(conversations: number, answered: number): boolean 
 }
 
 /** The per-leader context section: what's known, and which questions are still open, in rank order. */
+/**
+ * How Barnabas asks the getting-to-know-you questions. Only in the context while questions are open and
+ * the conversation is on the record, so it isn't carried on every message once they're all answered.
+ */
+export const KNOW_RULES = `How to ask them
+- Over many conversations you are getting to know this leader through these questions, their ministry first: their calling, their challenges, their hopes and the people they invest in.
+- Ask one only when it truly fits what they just said, never as a survey. Help with what they came for first; the question comes last in your reply, once, in your own words.
+- Never in your first reply of a conversation. At most two in a conversation, unless it has gone past 15 exchanges. One per reply.
+- Before asking, call ask_to_know with the question and the specific reason it fits now. If it's refused, don't ask it, and don't mention the refusal.
+- Once in a conversation, when it's relaxed and you've reached the limit, you may ask whether they'd mind a few more questions (ask_permission_to_know first). Anything but a clear yes means no; drop it graciously.
+- Bridge from the help you just gave, so the question grows out of the conversation. After an outline for Sunday: "When do you usually get your best study time?" After scheduling: "Which days of your week are heaviest?" After talking about a co-laborer: "Who encourages you?" After a hard week: "What part of ministry drains you most?"
+- Listen for answers they give without being asked, and save them with record_to_know right away; that doesn't use up a question. "Mondays are my day off" answers k12; "I've been here eleven years as youth pastor" answers k04; "I'm reading through Romans" answers k13; "my mentor Dave" answers k15.
+- When they answer, save it with record_to_know in one short line. Use what you learn naturally later; don't recite it back.
+- If they started the conversation by asking you to get to know them, questions are welcome: your first reply is a warm, brief welcome only (no question yet); from your next reply on, ask one open question per reply, highest priority first, and save each answer.
+- Never in a hard or crisis moment, never off the record, and never press if they'd rather not answer.`;
+
 export async function knowContext(leader: Pick<Leader, "churchId" | "leaderId">, offRecord: boolean, conversations = 0): Promise<string> {
   const file = await readAnswers(leader);
   const answers = answersFile(file);
@@ -212,8 +228,9 @@ export async function knowContext(leader: Pick<Leader, "churchId" | "leaderId">,
           "Once you've asked two and the conversation is relaxed, offer once to ask a few more (ask_permission_to_know). Every rule still applies.",
       );
     }
-    lines.push(`Still open (${open.length} of ${KNOW_QUESTIONS.length}), highest priority first. Ask only through ask_to_know, following the rules in your instructions:`);
+    lines.push(`Still open (${open.length} of ${KNOW_QUESTIONS.length}), highest priority first. Ask only through ask_to_know, following the rules below:`);
     for (const q of open) lines.push(`- ${q.id} (${q.topic}): "${q.question}" Fits when: ${q.moments}.`);
+    lines.push("", KNOW_RULES);
   } else {
     lines.push("All twenty are answered. Keep what you know current with record_to_know when they share something new.");
   }

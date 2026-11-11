@@ -213,30 +213,6 @@ const getVolunteerLoad = tool({
   },
 });
 
-const getSchedule = tool({
-  phrase: "Let me check the schedule.",
-  def: {
-    name: "get_schedule",
-    description: "Serving rosters and church events between two dates (default: the next 7 days). Dates are yyyy-mm-dd.",
-    eager_input_streaming: true,
-    input_schema: {
-      type: "object",
-      properties: { from: { type: "string" }, to: { type: "string" } },
-    },
-  },
-  schema: z.object({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
-  async run({ from, to }) {
-    const start = from ?? today();
-    const end = to ?? addDays(start, 7);
-    const data = churchData();
-    const [rosters, events] = await Promise.all([data.rosters(start, end), data.events(start, end)]);
-    return ok({
-      rosters: rosters.map((r) => ({ date: r.date, team: r.teamName, people: r.people.map((p) => ({ person_id: p.personId, name: p.name })) })),
-      events,
-    });
-  },
-});
-
 const listFollowUps = tool({
   phrase: "Let me check your follow-ups.",
   def: {
@@ -1308,7 +1284,6 @@ const ALL: ToolSpec<any>[] = [
   findPerson,
   getPersonSummary,
   getVolunteerLoad,
-  getSchedule,
   listFollowUps,
   recallMemory,
   saveMemory,
@@ -1348,8 +1323,37 @@ const ALL: ToolSpec<any>[] = [
   ...WORD_TOOLS,
 ];
 
+const MONEY_TALK =
+  "Speak about money plainly and calmly: the big picture first (on track, a little behind, over), one or two numbers rounded the way people say them (\"about forty-two thousand\"), then what's driving it. No alarm and no cheerleading: a gap is something to plan for. No tax, legal or accounting advice: that's one for the church's accountant.";
+
+/**
+ * How to use particular tools well, kept with the tools rather than in the system prompt (Barnabas reads a
+ * tool's description when he loads it). Appended to each tool's own description.
+ */
+const GUIDANCE: Record<string, string> = {
+  list_calendar: "Check it before suggesting times, and avoid conflicts.",
+  add_calendar_event: "Keep titles plain and minimal (\"Visit with Jamie\"), with no sensitive details. Say in one short sentence what you added.",
+  update_calendar_event: "Google, Outlook and church events are read-only to you: offer to add a Barnabas event instead.",
+  recall_memory: "What you remember is already in your context: don't look it up at the start of a conversation; open a file only when you need one listed there.",
+  save_memory: "Mention it briefly (\"I'll remember that.\") when it matters. If they ask what you remember, tell them honestly; if they say \"forget that\", say you won't use it and that they can delete it on the Memory page. Nothing can be saved off the record.",
+  draft_message: "Afterwards, tell the leader briefly who it goes to and what it says (in voice, one sentence). If they change anything, make a new draft. Never guess someone's language from their name: use the language the tools report.",
+  get_volunteer_load: "Share the reasons, not a score, and suggest a kind, specific way to encourage each person. Never shame a co-laborer or a leader.",
+  my_care_load: "If their load is full or stretched, mention it kindly once, at a natural moment, with the reasons, and offer rest (add a rest day with add_calendar_event only after they say yes). Never tell anyone about another leader's load.",
+  whos_serving: "Lead with thanks for who's serving before the gaps.",
+  find_coverage: "Suggest only the people it lists, best first, and never push past someone's away dates or monthly limit.",
+  event_registrations: "Payments for paid events aren't collected online yet; they're settled at the door.",
+  how_are_we_doing: "Lead with what's going well, give one or two numbers, then a gentle next step. When there's no data yet, say so warmly and name the first step.",
+  search_network: "Only name churches and resources it returns. Nothing about people is ever shared between churches.",
+  finance_overview: MONEY_TALK,
+  budget_status: `${MONEY_TALK} Each line is judged against the share of the year that has passed; seasonal lines (insurance, a summer trip) against the whole year: mention that when it explains a number.`,
+  giving_summary: MONEY_TALK,
+  missions_status: MONEY_TALK,
+  online_giving_summary: `${MONEY_TALK} Refunds are made in the Stripe dashboard.`,
+  log_care_event: "The older way to record a contact: prefer log_care_contact on a need.",
+};
+
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
-export const TOOL_DEFS: Anthropic.Beta.BetaTool[] = ALL.map((t) => t.def);
+export const TOOL_DEFS: Anthropic.Beta.BetaTool[] = ALL.map((t) => (GUIDANCE[t.def.name] ? { ...t.def, description: `${t.def.description} ${GUIDANCE[t.def.name]}` } : t.def));
 
 /** Barnabas's own memory, the person's calendar and the getting-to-know-you questions: nobody else's information. */
 const MEMBER_TOOLS = [
@@ -1372,7 +1376,7 @@ const MEMBER_TOOLS = [
   "save_verse",
   "add_verse_note",
 ];
-const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving", "search_journal", "append_to_journal_entry", "tag_journal_entry", "delete_journal_entry"];
+const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "whos_serving", "delete_journal_entry"];
 const TEAM_ROLE_TOOLS: Record<string, string[]> = {
   kids: ["kids_checkin_counts"],
   checkin: ["kids_checkin_counts"],
@@ -1392,6 +1396,32 @@ export function toolNamesFor(access: Access | null | undefined): string[] | null
 export function toolDefsFor(names: string[] | null | undefined): Anthropic.Beta.BetaTool[] {
   return names ? TOOL_DEFS.filter((d) => names.includes(d.name)) : TOOL_DEFS;
 }
+
+/**
+ * Always loaded: what leaders ask for most (scripture, their calendar and who's serving, a quick journal
+ * note, drafting a message, shepherding follow-ups). Everything else is found on demand with tool search,
+ * so Barnabas carries ~10 tools on every message instead of ~80, and picks among fewer at a time.
+ */
+export const CORE_TOOLS = ["read_scripture", "list_calendar", "whos_serving", "journal_note", "draft_message", "send_draft", "list_follow_ups", "list_care_cases"];
+
+/** With this many tools or fewer, load them all; above it, defer the rest behind tool search. */
+const SEARCH_ABOVE = 15;
+
+export const TOOL_SEARCH: Anthropic.Beta.BetaToolUnion = { type: "tool_search_tool_bm25_20251119", name: "tool_search_tool_bm25" };
+
+/**
+ * The tools for one request: every allowed tool's full definition (the API needs them all to search and
+ * expand), with the non-core ones marked defer_loading behind the BM25 tool search. Deterministic, so the
+ * prompt cache holds; discovered tools are appended to the conversation, not swapped into the prefix.
+ */
+export function toolsForRequest(names: string[] | null | undefined, search = true): Anthropic.Beta.BetaToolUnion[] {
+  const defs = toolDefsFor(names);
+  if (!search || defs.length <= SEARCH_ABOVE) return defs;
+  return [TOOL_SEARCH, ...defs.map((d) => (CORE_TOOLS.includes(d.name) ? d : { ...d, defer_loading: true }))];
+}
+
+/** Tool search runs on Anthropic's side; it isn't one of Barnabas's own tools. */
+export const isToolSearch = (name: string) => name.startsWith("tool_search_tool");
 
 const BY_NAME = new Map(ALL.map((t) => [t.def.name, t]));
 
