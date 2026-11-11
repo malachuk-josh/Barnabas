@@ -46,7 +46,7 @@ export default function ThemeToggle({
     const root = wordRoot();
     if (next === "dark") delete root.dataset.theme;
     else root.dataset.theme = next;
-    writeLocal("barnabas.word.theme", next);
+    writeLocal("barnabas.word.theme2", next);
   };
 
   return (
