@@ -510,12 +510,45 @@ export function TalkProvider({ children }: { children: React.ReactNode }) {
     setConfig((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
   }, []);
   const session = useTalkEngine(config);
+  useStayCurrent(session);
   return (
     <TalkContext.Provider value={{ session, configure }}>
       {children}
       <TalkBar session={session} />
     </TalkContext.Provider>
   );
+}
+
+/**
+ * A home-screen app can stay open for days on the version it first loaded, missing updates (a new
+ * ability Barnabas has, like opening pages). When the leader comes back to the app, check the server's
+ * build; if it's newer and no conversation is going, refresh to pick it up.
+ */
+function useStayCurrent(session: TalkSession) {
+  const latest = useRef(session);
+  latest.current = session;
+  useEffect(() => {
+    const mine = process.env.NEXT_PUBLIC_BUILD_ID;
+    if (!mine || mine === "dev") return;
+    let checking = false;
+    const check = async () => {
+      if (document.hidden || checking) return;
+      checking = true;
+      try {
+        const res = await fetch("/api/version", { cache: "no-store" });
+        const { build } = res.ok ? ((await res.json()) as { build?: string }) : {};
+        const s = latest.current;
+        const busy = s.hasConversation() || s.listening() || s.status !== "idle";
+        if (build && build !== "dev" && build !== mine && !busy) window.location.reload();
+      } catch {
+        /* offline: try next time */
+      } finally {
+        checking = false;
+      }
+    };
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, []);
 }
 
 /** The session, or null outside the provider. */

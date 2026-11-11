@@ -11,6 +11,8 @@ export const legacyRedirects = [
 ];
 
 const nextConfig: NextConfig = {
+  // Which build the browser is running, so the phone app can tell when it's behind the server (see /api/version).
+  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev" },
   // node-redis is only used when REDIS_URL is set; keep it out of the client bundle.
   serverExternalPackages: ["redis"],
   async redirects() {

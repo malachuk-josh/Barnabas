@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversationMeta } from "@/lib/data/conversations";
 import { createConversation } from "@/lib/data/conversations";
 import { setClaude, type ClaudeClient } from "@/lib/engine/claude";
@@ -74,8 +74,12 @@ describe("open_page", () => {
         },
       },
     } as unknown as ClaudeClient);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const events: TurnEvent[] = [];
     for await (const e of runTurn({ leader, meta: m, text: "Take me to Romans 8" })) events.push(e);
     expect(events).toContainEqual({ type: "navigate", href: "/word?b=45&c=8" });
+    // The server log names the tools used (names only), to see what Barnabas did on a turn.
+    expect(log.mock.calls.map((c) => String(c[0])).find((l) => l.startsWith("[barnabas] turn"))).toMatch(/tools=open_page$/);
+    log.mockRestore();
   });
 });
