@@ -188,7 +188,7 @@ describe("save_verse and add_verse_note", () => {
   });
 });
 
-describe("journal search, append, tag and delete", () => {
+describe("journal search, adding to an entry, tags and delete", () => {
   async function entries() {
     const mine = await createEntry(await journalActor(pastor), { kind: "note", title: "Advent ideas", body: "Hope in the waiting", tags: ["advent"] });
     const aaronPrivate = await createEntry(await journalActor(aaron), { kind: "note", title: "Aaron's private advent", body: "Hope, privately", tags: ["advent"] });
@@ -200,34 +200,39 @@ describe("journal search, append, tag and delete", () => {
   it("finds the leader's own entries and shared ones, never another leader's private entry", async () => {
     const { mine, aaronPrivate, aaronShared } = await entries();
     const ctx = await ctxFor(pastor);
-    const r = await executeTool("search_journal", { query: "hope" }, ctx("Find my notes on hope", 1));
+    const r = await executeTool("list_journal", { query: "hope" }, ctx("Find my notes on hope", 1));
     const ids = json(r).entries.map((e: { id: string }) => e.id);
     expect(ids).toContain(mine.id);
     expect(ids).toContain(aaronShared.id);
     expect(ids).not.toContain(aaronPrivate.id);
     expect(r.links?.map((l) => l.href)).toContain(`/journal/${mine.id}`);
-    const byTag = json(await executeTool("search_journal", { tag: "#Advent", include_shared: false }, ctx("Advent tag", 2)));
-    expect(byTag.entries.map((e: { id: string }) => e.id)).toEqual([mine.id]);
-    expect((await executeTool("search_journal", {}, ctx("search", 3))).isError).toBe(true);
+    const byTag = json(await executeTool("list_journal", { tag: "#Advent" }, ctx("Advent tag", 2)));
+    expect(byTag.entries.map((e: { id: string }) => e.id)).toContain(mine.id);
+    expect(byTag.entries.map((e: { id: string }) => e.id)).not.toContain(aaronPrivate.id);
+    // Without words or a tag: their own entries, newest first (no one else's).
+    const all = json(await executeTool("list_journal", {}, ctx("My journal", 3)));
+    expect(all.entries.map((e: { id: string }) => e.id)).toEqual([mine.id]);
+    const sharedOnly = json(await executeTool("list_journal", { shared_with_me: true }, ctx("Shared with me", 4)));
+    expect(sharedOnly.entries.map((e: { id: string }) => e.id)).toEqual([aaronShared.id]);
   });
 
   it("appends to the end of their own entry, and not to someone else's", async () => {
     const { mine, aaronShared } = await entries();
     const ctx = await ctxFor(pastor);
-    const r = await executeTool("append_to_journal_entry", { id: mine.id, text: "Isaiah 9 for week one." }, ctx("Add that to my advent note", 1));
+    const r = await executeTool("update_journal_entry", { id: mine.id, append_notes: "Isaiah 9 for week one." }, ctx("Add that to my advent note", 1));
     expect(r.isError).toBe(false);
     expect(r.links?.[0].href).toBe(`/journal/${mine.id}`);
     expect((await readEntry(pastor, mine.id))!.body).toBe("Hope in the waiting\n\nIsaiah 9 for week one.");
-    expect((await executeTool("append_to_journal_entry", { id: aaronShared.id, text: "x" }, ctx("Add", 2))).isError).toBe(true);
+    expect((await executeTool("update_journal_entry", { id: aaronShared.id, append_notes: "x" }, ctx("Add", 2))).isError).toBe(true);
     expect((await readEntry(aaron, aaronShared.id))!.body).toBe("Hope songs");
   });
 
   it("sets, adds and removes tags", async () => {
     const { mine } = await entries();
     const ctx = await ctxFor(pastor);
-    await executeTool("tag_journal_entry", { id: mine.id, add: ["#Hope", "christmas"], remove: ["advent"] }, ctx("Tag it", 1));
+    await executeTool("update_journal_entry", { id: mine.id, add_tags: ["#Hope", "christmas"], remove_tags: ["advent"] }, ctx("Tag it", 1));
     expect((await readEntry(pastor, mine.id))!.tags).toEqual(["hope", "christmas"]);
-    await executeTool("tag_journal_entry", { id: mine.id, tags: ["sermon"] }, ctx("Just sermon", 2));
+    await executeTool("update_journal_entry", { id: mine.id, tags: ["sermon"] }, ctx("Just sermon", 2));
     expect((await readEntry(pastor, mine.id))!.tags).toEqual(["sermon"]);
   });
 
@@ -265,7 +270,7 @@ describe("access levels and the prompt", () => {
   const member: Access = { role: "leader", admin: false, level: "member" };
   const team: Access = { role: "leader", admin: false, level: "team", teamRole: "serving" };
   const word = ["read_scripture", "search_scripture", "save_verse", "add_verse_note"];
-  const journal = ["search_journal", "append_to_journal_entry", "tag_journal_entry", "delete_journal_entry"];
+  const journal = ["list_journal", "update_journal_entry", "delete_journal_entry"];
 
   it("gives Members the Word tools but no Journal, and Team both", () => {
     const m = toolNamesFor(member)!;
@@ -278,7 +283,7 @@ describe("access levels and the prompt", () => {
   it("refuses a Journal tool at the Member level", async () => {
     const ctx = await ctxFor(pastor);
     const c = { ...ctx("Find my notes", 1), toolNames: toolNamesFor(member) };
-    expect((await executeTool("search_journal", { query: "hope" }, c)).content).toMatch(/isn't available/);
+    expect((await executeTool("list_journal", { query: "hope" }, c)).content).toMatch(/isn't available/);
     expect((await executeTool("read_scripture", { reference: "John 3:16" }, c)).isError).toBe(false);
   });
 

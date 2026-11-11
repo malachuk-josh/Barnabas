@@ -5,7 +5,7 @@ import type { Leader } from "../auth/session";
 import { accessFor } from "../team";
 import type { ConversationMeta, Message } from "../data/conversations";
 import { BARNABAS_SYSTEM, toneNote } from "./prompt";
-import { toolDefsFor, toolNamesFor } from "./tools";
+import { toolNamesFor, toolsForRequest } from "./tools";
 
 type Beta = typeof Anthropic.Beta.prototype;
 export type ClaudeClient = { beta: { messages: Pick<Beta["messages"], "stream" | "create"> } };
@@ -70,8 +70,10 @@ export function webTools(model: string, ai?: ResolvedAi): Anthropic.Beta.BetaToo
 }
 
 export function turnParams(meta: ConversationMeta, messages: Message[], mode: TurnMode = "text", ai?: ResolvedAi): Anthropic.Beta.MessageCreateParamsStreaming {
-  const { model, thinking, effort } = modelFor(mode, ai);
+  const { model, thinking: base, effort } = modelFor(mode, ai);
   const fallbacks = supportsFallbacks(model);
+  const thinking = withBinding(base);
+  const betas = betasFor(thinking, fallbacks);
   return {
     model,
     max_tokens: 16000,
@@ -81,40 +83,78 @@ export function turnParams(meta: ConversationMeta, messages: Message[], mode: Tu
     output_config: { effort },
     // Automatic caching for the growing conversation, after the two system breakpoints.
     cache_control: { type: "ephemeral" },
-    tools: [...toolDefsFor(ai?.tools), ...webTools(model, ai)],
+    tools: [...toolsForRequest(ai?.tools, features.toolSearch), ...webTools(model, ai)],
     system: system(meta, ai),
     messages,
-    ...(fallbacks ? { fallbacks: "default" as const, betas: [config.fallbackBeta] } : {}),
+    ...(fallbacks ? { fallbacks: "default" as const } : {}),
+    ...(betas.length ? { betas } : {}),
   };
 }
 
-/**
- * Pre-warm the cache for a new conversation: max_tokens 0, same tools, system, thinking and effort
- * as real turns, with the breakpoint on the last shared block (not on the placeholder message).
- */
 /** The church's AI settings for this person: Team and Member levels get Haiku and only their own tools. */
 export async function aiForLeader(leader: Pick<Leader, "churchId" | "leaderId" | "email">): Promise<ResolvedAi> {
   const [ai, access] = await Promise.all([resolvedAi(leader.churchId), accessFor(leader)]);
   return limitAi(ai, toolNamesFor(access));
 }
 
+/**
+ * Pre-warm the cache for a new conversation: max_tokens 0, same tools, system, thinking and effort
+ * as real turns, with the breakpoint on the last shared block (not on the placeholder message).
+ */
 export async function warmCache(meta: ConversationMeta, leader?: Pick<Leader, "churchId" | "leaderId" | "email">) {
   // A conversation started by voice is warmed for the voice model (caches are per model).
   const ai = leader ? await aiForLeader(leader) : undefined;
   const mode: TurnMode = meta.mode === "voice" && !ai?.tools ? "voice" : "text";
-  const { model, thinking, effort } = modelFor(mode, ai);
+  const { model, thinking: base, effort } = modelFor(mode, ai);
+  const thinking = withBinding(base);
+  const betas = betasFor(thinking, false);
   await claude().beta.messages.create({
     model,
     max_tokens: 0,
     thinking,
     output_config: { effort },
-    tools: [...toolDefsFor(ai?.tools), ...webTools(model, ai)],
+    tools: [...toolsForRequest(ai?.tools, features.toolSearch), ...webTools(model, ai)],
     system: system(meta, ai),
     messages: [{ role: "user", content: "warmup" }],
+    ...(betas.length ? { betas } : {}),
   });
 }
 
-const MODEL_INTERNAL = new Set(["thinking", "redacted_thinking", "tool_use", "server_tool_use"]);
+// A server tool's result goes with its call: drop both or neither.
+const MODEL_INTERNAL = new Set(["thinking", "redacted_thinking", "tool_use", "server_tool_use", "tool_search_tool_result", "web_search_tool_result", "web_fetch_tool_result"]);
+
+/**
+ * Preserved thinking: a thinking block is tied to the exact instructions, tools and history it was made
+ * with. When those change mid-conversation (a deploy, or an admin moving the tone slider), newer accounts
+ * get an error unless the request says to drop the stale blocks instead. Barnabas always says so and
+ * carries on. (Sonnet 5.5's `between_tools` takes no other field, and makes no thinking blocks to check.)
+ */
+export const THINKING_BINDING_BETA = "thinking-binding-controls-2026-08-01";
+function withBinding(thinking: Anthropic.Beta.BetaThinkingConfigParam): Anthropic.Beta.BetaThinkingConfigParam {
+  return thinking.type === "adaptive" && features.binding ? { ...thinking, block_binding: { prefix_mismatch_behavior: "drop_block" } } : thinking;
+}
+
+/**
+ * The newer request features (tool search, thinking binding). If the API ever rejects one, this server
+ * stops sending it and the turn is retried the plain way, so a rejected feature can't take Barnabas down.
+ */
+const features = { toolSearch: true, binding: true };
+const FEATURE_ERROR = /tool_search|defer_loading|tool_reference|block_binding|thinking-binding|prefix_mismatch/i;
+export function newFeaturesFailed(message: string): boolean {
+  if (!FEATURE_ERROR.test(message) || (!features.toolSearch && !features.binding)) return false;
+  if (/tool_search|defer_loading|tool_reference/i.test(message)) features.toolSearch = false;
+  else features.binding = false;
+  console.error("[barnabas] the API rejected a newer request feature; sending plain requests from now on", message.slice(0, 300));
+  return true;
+}
+/** For tests. */
+export function resetRequestFeatures() {
+  features.toolSearch = true;
+  features.binding = true;
+}
+function betasFor(thinking: Anthropic.Beta.BetaThinkingConfigParam, fallbacks: boolean): string[] {
+  return [...(fallbacks ? [config.fallbackBeta] : []), ...(thinking.type === "adaptive" ? [THINKING_BINDING_BETA] : [])];
+}
 
 /**
  * What to store as the assistant turn. After a mid-output fallback, blocks before the last

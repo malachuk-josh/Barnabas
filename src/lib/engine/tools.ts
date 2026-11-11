@@ -213,30 +213,6 @@ const getVolunteerLoad = tool({
   },
 });
 
-const getSchedule = tool({
-  phrase: "Let me check the schedule.",
-  def: {
-    name: "get_schedule",
-    description: "Serving rosters and church events between two dates (default: the next 7 days). Dates are yyyy-mm-dd.",
-    eager_input_streaming: true,
-    input_schema: {
-      type: "object",
-      properties: { from: { type: "string" }, to: { type: "string" } },
-    },
-  },
-  schema: z.object({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
-  async run({ from, to }) {
-    const start = from ?? today();
-    const end = to ?? addDays(start, 7);
-    const data = churchData();
-    const [rosters, events] = await Promise.all([data.rosters(start, end), data.events(start, end)]);
-    return ok({
-      rosters: rosters.map((r) => ({ date: r.date, team: r.teamName, people: r.people.map((p) => ({ person_id: p.personId, name: p.name })) })),
-      events,
-    });
-  },
-});
-
 const listFollowUps = tool({
   phrase: "Let me check your follow-ups.",
   def: {
@@ -1308,7 +1284,6 @@ const ALL: ToolSpec<any>[] = [
   findPerson,
   getPersonSummary,
   getVolunteerLoad,
-  getSchedule,
   listFollowUps,
   recallMemory,
   saveMemory,
@@ -1372,7 +1347,7 @@ const MEMBER_TOOLS = [
   "save_verse",
   "add_verse_note",
 ];
-const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "get_schedule", "whos_serving", "search_journal", "append_to_journal_entry", "tag_journal_entry", "delete_journal_entry"];
+const TEAM_TOOLS = [...MEMBER_TOOLS, "journal_note", "start_journal_entry", "list_journal", "read_journal_entry", "update_journal_entry", "whos_serving", "delete_journal_entry"];
 const TEAM_ROLE_TOOLS: Record<string, string[]> = {
   kids: ["kids_checkin_counts"],
   checkin: ["kids_checkin_counts"],
@@ -1392,6 +1367,32 @@ export function toolNamesFor(access: Access | null | undefined): string[] | null
 export function toolDefsFor(names: string[] | null | undefined): Anthropic.Beta.BetaTool[] {
   return names ? TOOL_DEFS.filter((d) => names.includes(d.name)) : TOOL_DEFS;
 }
+
+/**
+ * Always loaded: what leaders ask for most (scripture, their calendar and who's serving, a quick journal
+ * note, drafting a message, shepherding follow-ups). Everything else is found on demand with tool search,
+ * so Barnabas carries ~10 tools on every message instead of ~80, and picks among fewer at a time.
+ */
+export const CORE_TOOLS = ["read_scripture", "list_calendar", "whos_serving", "journal_note", "draft_message", "send_draft", "list_follow_ups", "list_care_cases"];
+
+/** With this many tools or fewer, load them all; above it, defer the rest behind tool search. */
+const SEARCH_ABOVE = 15;
+
+export const TOOL_SEARCH: Anthropic.Beta.BetaToolUnion = { type: "tool_search_tool_bm25_20251119", name: "tool_search_tool_bm25" };
+
+/**
+ * The tools for one request: every allowed tool's full definition (the API needs them all to search and
+ * expand), with the non-core ones marked defer_loading behind the BM25 tool search. Deterministic, so the
+ * prompt cache holds; discovered tools are appended to the conversation, not swapped into the prefix.
+ */
+export function toolsForRequest(names: string[] | null | undefined, search = true): Anthropic.Beta.BetaToolUnion[] {
+  const defs = toolDefsFor(names);
+  if (!search || defs.length <= SEARCH_ABOVE) return defs;
+  return [TOOL_SEARCH, ...defs.map((d) => (CORE_TOOLS.includes(d.name) ? d : { ...d, defer_loading: true }))];
+}
+
+/** Tool search runs on Anthropic's side; it isn't one of Barnabas's own tools. */
+export const isToolSearch = (name: string) => name.startsWith("tool_search_tool");
 
 const BY_NAME = new Map(ALL.map((t) => [t.def.name, t]));
 

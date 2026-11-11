@@ -54,20 +54,28 @@ function findTeam<T extends { id: string; name: string }>(teams: T[], q: string)
 
 /* ---------- Volunteer scheduling ---------- */
 
+const MAX_RANGE_DAYS = 14;
+
 const whosServing = tool({
   phrase: "Let me check the roster.",
   def: {
     name: "whos_serving",
     description:
-      "The serving roster for one date (default: this coming Sunday): for each gathering (Sunday 8:30 and 10:45 worship, 9:45 Growth Groups, Wednesday 6:00 Kids Club and Teens), each team's positions, who is scheduled and how many slots are open. Optionally one team.",
+      "Who is serving: the roster for one date (default: this coming Sunday), or every gathering from `date` through `through` (two weeks at most). For each gathering (Sunday 8:30 and 10:45 worship, 9:45 Growth Groups, Wednesday 6:00 Kids Club and Teens): each team's positions, who is scheduled and how many slots are open. Optionally one team. Church events are in list_calendar.",
     eager_input_streaming: true,
-    input_schema: { type: "object", properties: { date: { type: "string", description: "yyyy-mm-dd" }, team: { type: "string", description: "Team name, e.g. 'Worship team' or 'Greeters'" } } },
+    input_schema: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "yyyy-mm-dd" },
+        through: { type: "string", description: "yyyy-mm-dd, for a range (e.g. 'this month's serving'); at most two weeks after date" },
+        team: { type: "string", description: "Team name, e.g. 'Worship team' or 'Greeters'" },
+      },
+    },
   },
-  schema: z.object({ date: ISO_DATE.optional(), team: z.string().max(60).optional() }),
-  async run({ date, team }, ctx) {
-    const day = date ?? nextSunday();
+  schema: z.object({ date: ISO_DATE.optional(), through: ISO_DATE.optional(), team: z.string().max(60).optional() }),
+  async run({ date, through, team }, ctx) {
+    const first = date ?? (through ? today() : nextSunday());
     const [actor, book] = await Promise.all([serveActor(ctx.leader), loadServe(ctx.leader.churchId)]);
-    if (!gatheringsOn(day).length) return fail(`Nothing meets on ${friendlyDate(day)}. Sundays and Wednesdays have gatherings.`);
     let only: string | undefined;
     if (team) {
       const t = findTeam(book.teams, team);
@@ -75,24 +83,34 @@ const whosServing = tool({
       if (Array.isArray(t)) return fail(`"${team}" could be ${t.map((x) => x.name).join(" or ")}. Ask which.`);
       only = t.id;
     }
-    const roster = rosterFor(book, actor, day).map((g) => ({
-      gathering: g.label,
-      gathering_key: g.key,
-      teams: g.teams
-        .filter((t) => !only || t.teamId === only)
-        .map((t) => ({
-          team: t.teamName,
-          team_lead: t.lead,
-          open_slots: t.open,
-          positions: t.positions.map((p) => ({ position: p.name, serving: p.slots.filter((s) => s.name && s.status !== "declined").map((s) => (s.pendingSwap ? `${s.name} (asked ${s.pendingSwap.toName} to cover)` : s.name)), declined: p.slots.filter((s) => s.status === "declined").map((s) => s.name), open: p.open })),
-        })),
-    }));
-    const anyone = roster.some((g) => g.teams.some((t) => t.positions.some((p) => p.serving.length)));
-    return ok({
-      date: friendlyDate(day),
-      roster,
-      note: anyone ? undefined : "No one is scheduled yet. Say so plainly; don't name anyone. The leader can schedule people on the Serve page or ask you to find coverage.",
-    });
+    const rosterOn = (day: string) =>
+      rosterFor(book, actor, day).map((g) => ({
+        gathering: g.label,
+        gathering_key: g.key,
+        teams: g.teams
+          .filter((t) => !only || t.teamId === only)
+          .map((t) => ({
+            team: t.teamName,
+            team_lead: t.lead,
+            open_slots: t.open,
+            positions: t.positions.map((p) => ({ position: p.name, serving: p.slots.filter((s) => s.name && s.status !== "declined").map((s) => (s.pendingSwap ? `${s.name} (asked ${s.pendingSwap.toName} to cover)` : s.name)), declined: p.slots.filter((s) => s.status === "declined").map((s) => s.name), open: p.open })),
+          })),
+      }));
+    const noOne = "No one is scheduled yet. Say so plainly; don't name anyone. The leader can schedule people on the Serve page or ask you to find coverage.";
+
+    if (!through) {
+      if (!gatheringsOn(first).length) return fail(`Nothing meets on ${friendlyDate(first)}. Sundays and Wednesdays have gatherings.`);
+      const roster = rosterOn(first);
+      const anyone = roster.some((g) => g.teams.some((t) => t.positions.some((p) => p.serving.length)));
+      return ok({ date: friendlyDate(first), roster, note: anyone ? undefined : noOne });
+    }
+    if (through < first) return fail("`through` must be on or after `date`.");
+    const days: string[] = [];
+    for (let d = first; d <= through && days.length <= MAX_RANGE_DAYS; d = addDays(d, 1)) if (gatheringsOn(d).length) days.push(d);
+    const capped = through > addDays(first, MAX_RANGE_DAYS);
+    const dates = days.filter((d) => d <= addDays(first, MAX_RANGE_DAYS)).map((d) => ({ date: friendlyDate(d), roster: rosterOn(d) }));
+    const anyone = dates.some((x) => x.roster.some((g) => g.teams.some((t) => t.positions.some((p) => p.serving.length))));
+    return ok({ dates, note: [capped ? `Only the first two weeks; ask about later dates separately.` : "", anyone ? "" : noOne].filter(Boolean).join(" ") || undefined });
   },
 });
 
