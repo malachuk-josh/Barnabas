@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { Blocks } from "@/components/site/Blocks";
 import { SiteFrame } from "@/components/site/SiteFrame";
+import { backToApp } from "@/lib/site/access";
 import { publicContext } from "@/lib/site/context";
 import { siteData } from "@/lib/site/data";
 import { siteHref } from "@/lib/site/routing";
@@ -79,7 +80,7 @@ export default async function SitePage(props: Props) {
   const data = await siteData(ctx.book);
   const suffix = ctx.mode.banner === "preview" && preview ? `?preview=${encodeURIComponent(preview)}` : "";
   return (
-    <SiteFrame doc={ctx.doc} base={ctx.base} suffix={suffix} mode={ctx.mode} current={path}>
+    <SiteFrame doc={ctx.doc} base={ctx.base} suffix={suffix} mode={ctx.mode} current={path} backTo={backToApp(ctx.viewer, ctx.base)}>
       {page.blocks.some((b) => b.type === "hero") ? null : <h1 className="cs-page-title">{page.title}</h1>}
       <Blocks blocks={page.blocks} ctx={{ base: ctx.base, suffix, data, doc: ctx.doc, pageSlug: page.slug }} />
     </SiteFrame>

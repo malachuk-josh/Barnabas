@@ -32,11 +32,14 @@ export async function requirePageLeader(): Promise<{ leader: Leader; profile: Pr
 export async function AppShell({
   profile,
   fill = false,
+  reading = false,
   children,
 }: {
   profile: Profile;
   /** the page fills the main area edge to edge and scrolls itself (The Word) */
   fill?: boolean;
+  /** a reading page (The Word): on phones the Barnabas header steps aside so the text gets the room */
+  reading?: boolean;
   children: React.ReactNode;
 }) {
   // The Finance entry shows only for roles that can see finance; the server checks again on every request.
@@ -66,7 +69,7 @@ export async function AppShell({
     unread: leader ? await unreadCount(leader) : 0,
   };
   return (
-    <div className="shell">
+    <div className="shell" data-reading={reading || undefined}>
       <aside className="sidebar">
         <div className="brand-row">
           <Link href={checkinOnly ? "/kids" : "/"} className="brand">

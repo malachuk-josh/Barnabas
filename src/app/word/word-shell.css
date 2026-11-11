@@ -93,3 +93,44 @@
     justify-content: center;
   }
 }
+
+/*
+ * Reading on a phone: the Barnabas header steps aside so the scripture gets the room (WordApp measures the
+ * space from where The Word starts, so it simply grows). A strip in Barnabas's colour, exactly as tall as
+ * the status bar, keeps the clock and battery readable over a light page in the home-screen app.
+ */
+@media (max-width: 860px) {
+  .shell[data-reading] .mobile-top {
+    display: none;
+  }
+  .shell[data-reading] .main-area::before {
+    content: "";
+    display: block;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--talk-bg);
+    flex: 0 0 auto;
+  }
+}
+
+/*
+ * Inside Barnabas the status bar is always covered (by the header, or that strip), so The Word's own bars,
+ * panels and viewers don't leave room for it a second time. That doubled room was the empty band at the
+ * top of the book menu.
+ */
+.main-fill .word-root .nav,
+.main-fill .word-root .side-panel,
+.main-fill .word-root .map-full {
+  padding-top: 0;
+}
+.main-fill .word-root .bk-viewer-stage {
+  padding-top: 64px;
+}
+.main-fill .word-root .bk-viewer-close,
+.main-fill .word-root .bk-viewer-cap {
+  top: 14px;
+}
+@media (max-height: 500px) {
+  .main-fill .word-root .bk-viewer-stage {
+    padding-top: 8px;
+  }
+}

@@ -4,7 +4,7 @@ import { SOCIAL_LABELS, type SiteDoc } from "@/lib/site/types";
 import type { SiteMode } from "@/lib/site/access";
 
 /** The public site's header, navigation and footer, themed from the church's settings. */
-export function SiteFrame({ doc, base, suffix, mode, current, children }: { doc: SiteDoc; base: string; suffix: string; mode: SiteMode; current: string; children: React.ReactNode }) {
+export function SiteFrame({ doc, base, suffix, mode, current, backTo, children }: { doc: SiteDoc; base: string; suffix: string; mode: SiteMode; current: string; backTo?: string; children: React.ReactNode }) {
   const t = doc.theme;
   const nav = doc.pages.filter((p) => p.nav);
   const href = (slug: string) => `${siteHref(slug ? `/${slug}` : "/", base)}${suffix}`;
@@ -22,10 +22,14 @@ export function SiteFrame({ doc, base, suffix, mode, current, children }: { doc:
       <a className="cs-skip" href="#main">
         Skip to content
       </a>
-      {mode.banner && (
-        <p className="cs-banner" role="note">
-          {mode.banner === "unpublished" ? "Not published yet: only signed-in leaders can see this site, and search engines are asked not to index it." : "Preview of unpublished changes. Search engines are asked not to index this page."}
-        </p>
+      {backTo ? (
+        <BackBar href={backTo} note={mode.banner === "unpublished" ? "Not published yet: only signed-in leaders can see this site." : mode.banner === "preview" ? "Preview of unpublished changes." : undefined} />
+      ) : (
+        mode.banner && (
+          <p className="cs-banner" role="note">
+            {mode.banner === "unpublished" ? "Not published yet: only signed-in leaders can see this site, and search engines are asked not to index it." : "Preview of unpublished changes. Search engines are asked not to index this page."}
+          </p>
+        )
       )}
       <header className="cs-header">
         <div className="cs-wrap cs-header-row">
@@ -86,6 +90,21 @@ export function SiteFrame({ doc, base, suffix, mode, current, children }: { doc:
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * For someone signed in to Barnabas looking at the site from inside the app (a home-screen app has no
+ * browser back button): a way back, plus what the banner would have said.
+ */
+export function BackBar({ href, note }: { href: string; note?: string }) {
+  return (
+    <div className="cs-backbar" role="navigation" aria-label="Barnabas">
+      <a className="cs-backbar-link" href={href}>
+        <span aria-hidden="true">←</span> Back to Barnabas
+      </a>
+      {note && <span className="cs-backbar-note">{note}</span>}
     </div>
   );
 }

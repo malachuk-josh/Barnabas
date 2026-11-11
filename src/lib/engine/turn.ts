@@ -19,6 +19,7 @@ export type TurnEvent =
   | { type: "text"; text: string }
   | { type: "tool"; name: string; phrase?: string }
   | { type: "link"; label: string; href: string }
+  | { type: "navigate"; href: string }
   | { type: "notice"; kind: "crisis"; text: string }
   | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null; totalMs: number }
   | { type: "done"; stopReason: string | null }
@@ -121,6 +122,7 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   let firstTextMs: number | null = null;
 
   const ctx: ToolContext = { leader, meta, turnStartedAt, lastUserText: input.text, toolNames: ai.tools ?? null };
+  const toolsUsed: string[] = [];
   let stopReason: string | null = null;
   let parseRetries = 0;
 
@@ -135,10 +137,12 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
           emit({ type: "text", text: event.delta.text });
         } else if (event.type === "content_block_start" && event.content_block.type === "server_tool_use" && isToolSearch(event.content_block.name)) {
           // Finding the right tool happens quietly; the tool itself says its phrase.
+          toolsUsed.push("tool_search");
         } else if (event.type === "content_block_start" && event.content_block.type === "server_tool_use") {
           // Claude searching the web or reading a page.
           const phrase = announced ? undefined : event.content_block.name === "web_fetch" ? "Let me read that." : "Let me look that up.";
           if (phrase) announced = true;
+          toolsUsed.push(event.content_block.name);
           emit({ type: "tool", name: event.content_block.name, phrase });
         } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
           const phrase = announced ? undefined : holdingPhrase(event.content_block.name);
@@ -197,7 +201,9 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
     const results = await Promise.all(
       toolUses.map(async (t): Promise<Anthropic.Beta.BetaToolResultBlockParam> => {
         const r = await executeTool(t.name, t.input, ctx);
+        toolsUsed.push(r.isError ? `${t.name}!` : t.name);
         if (!r.isError) for (const l of cleanLinks(r.links)) emit({ type: "link", ...l });
+        if (!r.isError && r.navigate && cleanLinks([{ label: "open", href: r.navigate }]).length) emit({ type: "navigate", href: r.navigate });
         return { type: "tool_result", tool_use_id: t.id, content: r.content, ...(r.isError ? { is_error: true } : {}) };
       }),
     );
@@ -209,7 +215,8 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
   if (meta.turns === 1 || meta.title === "New conversation") meta.title = titleFrom(input.text);
   await saveConversation(leader, meta);
   const timing = { model: modelFor(mode, ai).model, setupMs, firstTextMs, totalMs: Date.now() - turnStartedAt };
-  console.log(`[barnabas] turn ${mode} model=${timing.model} setup=${setupMs}ms firstText=${firstTextMs ?? "-"}ms total=${timing.totalMs}ms`);
+  // Tool names only (never inputs or results), to see what Barnabas did on a turn.
+  console.log(`[barnabas] turn ${mode} model=${timing.model} setup=${setupMs}ms firstText=${firstTextMs ?? "-"}ms total=${timing.totalMs}ms tools=${toolsUsed.join(",") || "-"}`);
   emit({ type: "timing", ...timing });
   emit({ type: "done", stopReason });
 }

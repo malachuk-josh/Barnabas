@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { THEME_BOOTSTRAP } from "@/components/AppThemeSwitch";
+import { TalkProvider } from "@/components/talk/session";
 
 export const metadata: Metadata = {
   title: "Barnabas",
@@ -27,7 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* The conversation with Barnabas lives here, above the pages, so it carries on as the leader moves around. */}
+        <TalkProvider>{children}</TalkProvider>
+      </body>
     </html>
   );
 }

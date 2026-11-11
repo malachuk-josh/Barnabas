@@ -175,3 +175,19 @@ html:has(.cs-root), html:has(.cs-root) body { background: var(--cs-page-bg, #f3f
 .cs-give-done { display: grid; gap: 8px; max-width: 560px; }
 @media (max-width: 400px) { .cs-give-presets { grid-template-columns: repeat(2, 1fr); } .cs-root .cs-give-amount input { max-width: none; } }
 .cs-give-form .cs-check input { flex: none; }
+
+/* "Back to Barnabas": for a signed-in leader looking at the site from inside the app (no browser back button there). */
+.cs-backbar {
+  position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+  background: #1e4543; color: #f3f6f4; font-size: 0.9rem; font-family: system-ui, -apple-system, sans-serif;
+}
+.cs-backbar-link {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px;
+  background: rgba(243, 246, 244, 0.14); color: inherit; font-weight: 600; text-decoration: none;
+}
+.cs-backbar-link:hover { background: rgba(243, 246, 244, 0.22); }
+.cs-backbar-note { opacity: 0.85; font-size: 0.84rem; }
+/* The site's own link colours mustn't reach this bar. */
+.cs-root .cs-backbar-link, .cs-root .cs-backbar-link:visited { color: #ffffff; background: rgba(243, 246, 244, 0.18); }
+.cs-root .cs-backbar-link:hover { color: #ffffff; background: rgba(243, 246, 244, 0.28); }

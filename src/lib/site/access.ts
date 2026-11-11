@@ -11,6 +11,16 @@
 export type SiteViewer = { signedIn: boolean; canEdit: boolean; checkinOnly: boolean };
 export type SiteMode = { show: "published" | "draft" | null; noindex: boolean; banner?: "preview" | "unpublished" };
 
+/**
+ * Where "Back to Barnabas" goes when someone signed in to Barnabas is looking at the church's website or
+ * member app from inside the app (a preview, the unpublished site, or the live one): editors back to the
+ * Website pages, everyone else to Today. Nothing for the public, or on the church's own domain.
+ */
+export function backToApp(viewer: SiteViewer, base: "" | "/s"): string | undefined {
+  if (!viewer.signedIn || base !== "/s") return undefined;
+  return viewer.canEdit ? "/site" : "/";
+}
+
 export function siteMode(opts: { published: boolean; viewer: SiteViewer; preview?: string | null; previewToken?: string }): SiteMode {
   const { published, viewer, preview, previewToken } = opts;
   const leader = viewer.signedIn && !viewer.checkinOnly;

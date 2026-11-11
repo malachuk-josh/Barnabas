@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { levelMayUse, type Access } from "@/lib/auth/roles";
+import { useTalkSession } from "./talk/session";
 import { BookIcon, CalendarIcon, DraftsIcon, EventsIcon, FinanceIcon, HeartIcon, KidsIcon, MemoryIcon, MessagesIcon, MoreIcon, NetworkIcon, NotebookIcon, PeopleIcon, ReportsIcon, ServeIcon, ServicesIcon, SettingsIcon, ShieldIcon, TalkIcon, TodayIcon, WebsiteIcon } from "./icons";
 
 /** Sections of the menu, in order. Items with no group sit at the top; "account" sits at the foot. */
@@ -107,8 +108,11 @@ export const KNOW_INVITE_TEXT = "I'd like you to get to know me better.";
 function useTalk() {
   const pathname = usePathname();
   const router = useRouter();
+  const talk = useTalkSession();
   return () => {
     if (pathname === "/") window.dispatchEvent(new Event(TALK_EVENT));
+    // A conversation already going: talk from right here (the tap itself starts the microphone).
+    else if (talk?.session.configured && !talk.session.typedOnly) talk.session.onOrb();
     else router.push("/?talk=1");
   };
 }

@@ -25,6 +25,7 @@ import { SITE_TOOLS } from "./site-tools";
 import { JOURNAL_TOOLS } from "./journal-tools";
 import { APP_TOOLS } from "./app-tools";
 import { PEOPLE_TOOLS } from "./people-tools";
+import { NAV_TOOLS } from "./nav-tools";
 import { WORD_TOOLS } from "./word-tools";
 import { checkMemoryText, mentionsHealth } from "../policy/privacy";
 import { kv } from "../store";
@@ -65,6 +66,8 @@ export type ToolResult = {
   isError: boolean;
   /** Buttons for the leader under the reply, e.g. "Open Ruth's record" (paths inside the app only). */
   links?: ActionLink[];
+  /** Open this page in the app now (open_page, when the leader asked); the conversation carries on. */
+  navigate?: string;
 };
 
 export type ToolSpec<S extends z.ZodTypeAny> = {
@@ -1320,6 +1323,7 @@ const ALL: ToolSpec<any>[] = [
   ...JOURNAL_TOOLS,
   ...APP_TOOLS,
   ...PEOPLE_TOOLS,
+  ...NAV_TOOLS,
   ...WORD_TOOLS,
 ];
 
@@ -1367,6 +1371,7 @@ const MEMBER_TOOLS = [
   "ask_permission_to_know",
   "record_to_know",
   "remember_thorn",
+  "open_page",
   "send_app_message",
   "list_app_messages",
   "read_app_message",
@@ -1402,7 +1407,7 @@ export function toolDefsFor(names: string[] | null | undefined): Anthropic.Beta.
  * note, drafting a message, shepherding follow-ups). Everything else is found on demand with tool search,
  * so Barnabas carries ~10 tools on every message instead of ~80, and picks among fewer at a time.
  */
-export const CORE_TOOLS = ["read_scripture", "list_calendar", "whos_serving", "journal_note", "draft_message", "send_draft", "list_follow_ups", "list_care_cases"];
+export const CORE_TOOLS = ["read_scripture", "open_page", "list_calendar", "whos_serving", "journal_note", "draft_message", "send_draft", "list_follow_ups", "list_care_cases"];
 
 /** With this many tools or fewer, load them all; above it, defer the rest behind tool search. */
 const SEARCH_ABOVE = 15;

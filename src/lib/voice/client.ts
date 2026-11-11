@@ -338,6 +338,62 @@ type DGResult = {
   channel?: { alternatives?: { transcript?: string }[] };
 };
 
+/*
+ * Keeping the microphone between conversations. iPhones ask for microphone permission again when a page
+ * asks for the microphone after letting go of it, so after a conversation the stream is held (its tracks
+ * disabled, nothing captured or sent) for MIC_HOLD_MS, and the next conversation reuses it without a prompt.
+ * It's released after that quiet time, or as soon as the leader leaves the app. A restart of a home-screen
+ * app still asks once: iOS doesn't keep the permission for those.
+ */
+export const MIC_HOLD_MS = 20 * 60 * 1000;
+let heldMic: MediaStream | null = null;
+let micTimer: ReturnType<typeof setTimeout> | null = null;
+let watchingMic = false;
+
+const micLive = (s: MediaStream) => s.getAudioTracks().some((t) => t.readyState === "live");
+
+/** The held microphone if it's still live, otherwise a new one (which may ask for permission). */
+export async function takeMic(constraints: MediaStreamConstraints): Promise<MediaStream> {
+  if (micTimer) clearTimeout(micTimer);
+  micTimer = null;
+  const held = heldMic;
+  heldMic = null;
+  if (held && micLive(held)) {
+    held.getAudioTracks().forEach((t) => (t.enabled = true));
+    return held;
+  }
+  return navigator.mediaDevices.getUserMedia(constraints);
+}
+
+/** Hold the microphone quietly for the next conversation instead of letting it go. */
+export function holdMic(stream: MediaStream) {
+  if (!micLive(stream) || (typeof document !== "undefined" && document.hidden)) {
+    stream.getTracks().forEach((t) => t.stop());
+    return;
+  }
+  stream.getAudioTracks().forEach((t) => (t.enabled = false));
+  if (heldMic && heldMic !== stream) heldMic.getTracks().forEach((t) => t.stop());
+  heldMic = stream;
+  if (micTimer) clearTimeout(micTimer);
+  micTimer = setTimeout(releaseMic, MIC_HOLD_MS);
+  if (!watchingMic && typeof window !== "undefined") {
+    watchingMic = true;
+    // Leaving the app lets it go at once (the orange dot goes away).
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) releaseMic();
+    });
+    window.addEventListener("pagehide", releaseMic);
+  }
+}
+
+/** Let the held microphone go. */
+export function releaseMic() {
+  if (micTimer) clearTimeout(micTimer);
+  micTimer = null;
+  heldMic?.getTracks().forEach((t) => t.stop());
+  heldMic = null;
+}
+
 /** Deepgram streaming speech-to-text, with Barnabas's congregation names boosted. */
 export class DeepgramListener implements Listener {
   private ws: WebSocket | null = null;
@@ -373,7 +429,7 @@ export class DeepgramListener implements Listener {
     if (!tokenRes.ok) throw new Error((await tokenRes.json().catch(() => ({}))).error ?? "Couldn't start listening.");
     const { token, keyterms } = (await tokenRes.json()) as { token: string; keyterms: string[] };
 
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    this.stream = await takeMic({
       // Echo cancellation keeps Barnabas from hearing itself, which makes interruptions work.
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
@@ -462,7 +518,8 @@ export class DeepgramListener implements Listener {
     this.processor?.disconnect();
     this.source?.disconnect();
     if (this.processor) this.processor.onaudioprocess = null;
-    this.stream?.getTracks().forEach((t) => t.stop());
+    // Kept for the next conversation (see holdMic), so the iPhone doesn't ask again.
+    if (this.stream) holdMic(this.stream);
     void this.ctx?.close().catch(() => {});
     this.processor = null;
     this.source = null;
