@@ -1872,3 +1872,34 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .report-glance, .report-waiting-group, .report-monthly-side { display: none; }
   .report-letter { box-shadow: none; padding: 0; }
 }
+
+/* ---------- The conversation bar: Barnabas keeps listening on other pages ---------- */
+.talk-bar {
+  position: fixed; z-index: 30; right: 20px; bottom: 20px; width: min(420px, calc(100vw - 40px));
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 8px; border-radius: 999px;
+  background: var(--talk-bg); color: var(--talk-fg); box-shadow: 0 10px 28px rgba(15, 36, 35, 0.28);
+}
+.talk-bar-main:where(:not(.word-root *)) {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 0; background: none; color: inherit;
+  text-align: left; cursor: pointer; font: inherit; border-radius: 999px;
+}
+.talk-bar-text { display: grid; min-width: 0; line-height: 1.25; }
+.talk-bar-text strong { font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.talk-bar-last { font-size: 0.8rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.talk-bar-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--brass); }
+.talk-bar[data-state="listening"] .talk-bar-dot { animation: breathe 1.6s ease-in-out infinite; box-shadow: 0 0 0 4px rgba(217, 164, 65, 0.35); }
+.talk-bar[data-state="thinking"] .talk-bar-dot { opacity: 0.6; }
+.talk-bar-btn:where(:not(.word-root *)) {
+  flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(243, 246, 244, 0.12); color: inherit;
+}
+.talk-bar-btn[aria-pressed="true"]:where(:not(.word-root *)) { background: var(--brass); color: var(--night); }
+.talk-bar-btn svg { width: 20px; height: 20px; }
+@media (max-width: 860px) {
+  .talk-bar { left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); width: auto; bottom: calc(82px + env(safe-area-inset-bottom)); }
+}
+/* In The Word, keep clear of the chapter arrows at the bottom corners: centered over the reading on wide screens, raised above them on phones. */
+.talk-bar[data-page="word"] { right: auto; left: calc(248px + (100vw - 248px) / 2); transform: translateX(-50%); width: min(420px, calc(100vw - 248px - 160px)); }
+@media (max-width: 860px) {
+  .talk-bar[data-page="word"] { left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); transform: none; width: auto; bottom: calc(144px + env(safe-area-inset-bottom)); }
+}
