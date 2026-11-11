@@ -9,3 +9,7 @@ next-env.d.ts
 coverage/
 dump.rdb
 .claude/worktrees/
+
+# Eval runs (keep the latest)
+evals/results/*.json
+!evals/results/latest.json
