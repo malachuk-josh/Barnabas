@@ -2123,3 +2123,23 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 @media (max-width: 860px) {
   .talk-bar[data-page="word"] { left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); transform: none; width: auto; bottom: calc(144px + env(safe-area-inset-bottom)); }
 }
+
+/* People, second pass: compact letter bands and rows in the directory, and the household read before it's edited */
+.ppl-letter th { padding: 6px 20px; font-size: 0.95rem; line-height: 1.2; background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); border-top: 1px solid var(--line-soft); }
+.ppl-table td { padding-block: 8px; }
+.ppl-contact { font-size: 0.86rem; line-height: 1.35; }
+.ppl-contact a, .ppl-contact span { white-space: nowrap; }
+.ppl-table tbody tr:not(.ppl-letter):hover td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+
+.hh-view { display: grid; gap: 10px; }
+.hh-name { margin: 0; font-weight: 600; color: var(--muted); font-size: 0.92rem; }
+.hh-members { list-style: none; margin: 0; padding: 0; display: grid; }
+.hh-members li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.hh-members li:first-child { border-top: 0; padding-top: 0; }
+.hh-members a { font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.hh-members a:hover { text-decoration: underline; }
+.hh-avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--sea-glass); color: var(--night); font-size: 0.74rem; font-weight: 800; }
+.hh-edit { justify-self: start; }
+@media (max-width: 640px) {
+  .ppl-letter th { padding: 6px 16px; }
+}
