@@ -1323,8 +1323,37 @@ const ALL: ToolSpec<any>[] = [
   ...WORD_TOOLS,
 ];
 
+const MONEY_TALK =
+  "Speak about money plainly and calmly: the big picture first (on track, a little behind, over), one or two numbers rounded the way people say them (\"about forty-two thousand\"), then what's driving it. No alarm and no cheerleading: a gap is something to plan for. No tax, legal or accounting advice: that's one for the church's accountant.";
+
+/**
+ * How to use particular tools well, kept with the tools rather than in the system prompt (Barnabas reads a
+ * tool's description when he loads it). Appended to each tool's own description.
+ */
+const GUIDANCE: Record<string, string> = {
+  list_calendar: "Check it before suggesting times, and avoid conflicts.",
+  add_calendar_event: "Keep titles plain and minimal (\"Visit with Jamie\"), with no sensitive details. Say in one short sentence what you added.",
+  update_calendar_event: "Google, Outlook and church events are read-only to you: offer to add a Barnabas event instead.",
+  recall_memory: "What you remember is already in your context: don't look it up at the start of a conversation; open a file only when you need one listed there.",
+  save_memory: "Mention it briefly (\"I'll remember that.\") when it matters. If they ask what you remember, tell them honestly; if they say \"forget that\", say you won't use it and that they can delete it on the Memory page. Nothing can be saved off the record.",
+  draft_message: "Afterwards, tell the leader briefly who it goes to and what it says (in voice, one sentence). If they change anything, make a new draft. Never guess someone's language from their name: use the language the tools report.",
+  get_volunteer_load: "Share the reasons, not a score, and suggest a kind, specific way to encourage each person. Never shame a co-laborer or a leader.",
+  my_care_load: "If their load is full or stretched, mention it kindly once, at a natural moment, with the reasons, and offer rest (add a rest day with add_calendar_event only after they say yes). Never tell anyone about another leader's load.",
+  whos_serving: "Lead with thanks for who's serving before the gaps.",
+  find_coverage: "Suggest only the people it lists, best first, and never push past someone's away dates or monthly limit.",
+  event_registrations: "Payments for paid events aren't collected online yet; they're settled at the door.",
+  how_are_we_doing: "Lead with what's going well, give one or two numbers, then a gentle next step. When there's no data yet, say so warmly and name the first step.",
+  search_network: "Only name churches and resources it returns. Nothing about people is ever shared between churches.",
+  finance_overview: MONEY_TALK,
+  budget_status: `${MONEY_TALK} Each line is judged against the share of the year that has passed; seasonal lines (insurance, a summer trip) against the whole year: mention that when it explains a number.`,
+  giving_summary: MONEY_TALK,
+  missions_status: MONEY_TALK,
+  online_giving_summary: `${MONEY_TALK} Refunds are made in the Stripe dashboard.`,
+  log_care_event: "The older way to record a contact: prefer log_care_contact on a need.",
+};
+
 /** Tool definitions in a fixed order (part of the cached prompt prefix). */
-export const TOOL_DEFS: Anthropic.Beta.BetaTool[] = ALL.map((t) => t.def);
+export const TOOL_DEFS: Anthropic.Beta.BetaTool[] = ALL.map((t) => (GUIDANCE[t.def.name] ? { ...t.def, description: `${t.def.description} ${GUIDANCE[t.def.name]}` } : t.def));
 
 /** Barnabas's own memory, the person's calendar and the getting-to-know-you questions: nobody else's information. */
 const MEMBER_TOOLS = [
