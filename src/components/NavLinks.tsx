@@ -34,11 +34,11 @@ export const NAV: NavItem[] = [
   { href: "/calendar", label: "Calendar", Icon: CalendarIcon, tab: true },
   { href: "/inbox", label: "Messages", Icon: MessagesIcon },
   { href: "/drafts", label: "Drafts", Icon: DraftsIcon },
-  { href: "/people", label: "People", Icon: PeopleIcon, group: "people", tab: true },
+  { href: "/people", label: "People", Icon: PeopleIcon, group: "people" },
   { href: "/shepherding", label: "Shepherding", Icon: HeartIcon, group: "people" },
   { href: "/serve", label: "Serve", Icon: ServeIcon, group: "people" },
   { href: "/kids", label: "Kids", Icon: KidsIcon, group: "people", kids: true },
-  { href: "/word", label: "The Word", Icon: BookIcon, group: "worship" },
+  { href: "/word", label: "The Word", Icon: BookIcon, group: "worship", tab: true },
   { href: "/services", label: "Services", Icon: ServicesIcon, group: "worship" },
   { href: "/journal", label: "Journal", Icon: NotebookIcon, group: "worship" },
   { href: "/events", label: "Events", Icon: EventsIcon, group: "worship" },
@@ -201,12 +201,12 @@ export function TabBar(access: NavAccess) {
   }
 
   // Team and Member levels: Today, Messages and Calendar as tabs, the rest under More, and no microphone.
-  const limitedTabs = ["/", "/inbox", "/calendar"];
+  const limitedTabs = ["/", "/inbox", "/word", "/calendar"];
   const tabs = access.limited ? all.filter((n) => limitedTabs.includes(n.href)) : all.filter((n) => n.tab);
   const overflow = all.filter((n) => !tabs.includes(n));
   const moreActive = overflow.some((n) => active(pathname, n.href));
-  // Today and People to the left of the microphone, Calendar and More to the right.
-  const left = tabs.filter((n) => n.href === "/" || n.href === "/people" || (access.limited && n.href === "/inbox"));
+  // Today and The Word to the left of the microphone, Calendar and More to the right.
+  const left = tabs.filter((n) => n.href === "/" || n.href === "/word" || (access.limited && n.href === "/inbox"));
   const right = tabs.filter((n) => !left.includes(n));
   const tab = ({ href, label, Icon }: NavItem) => (
     <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>

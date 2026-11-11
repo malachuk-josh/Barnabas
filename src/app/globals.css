@@ -347,7 +347,7 @@ pre.file:where(:not(.word-root *)) { white-space: pre-wrap; overflow-wrap: anywh
   .tabbar a { display: grid; justify-items: center; gap: 2px; padding: 6px 2px; text-decoration: none; color: var(--muted); font-size: 0.72rem; font-weight: 600; border-radius: 10px; }
   .tabbar a svg { width: 22px; height: 22px; }
   .tabbar a[aria-current="page"] { color: var(--accent); background: var(--surface-2); }
-  /* Today · People · Talk · Calendar · More: the microphone sits raised in the middle, in reach of a thumb */
+  /* Today · The Word · Talk · Calendar · More: the microphone sits raised in the middle, in reach of a thumb */
   .tabbar-talk { grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; overflow: visible; }
   .tab-talk {
     justify-self: center; margin-top: -24px; width: 60px; height: 60px; border-radius: 50%; cursor: pointer;
