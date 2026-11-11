@@ -16,7 +16,7 @@ export function DraftReportButton() {
     }
   }
   return (
-    <div className="row">
+    <div className="report-draft">
       <button className="btn btn-primary" type="button" disabled={state === "busy"} onClick={() => void run()}>
         {state === "busy" ? "Drafting…" : "Draft this month's report"}
       </button>

@@ -76,7 +76,7 @@ function Lines({ chart }: { chart: Chart }) {
   const n = chart.x.length;
   const x = (i: number) => PAD.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const y = (v: number) => PAD.top + innerH - (v / top) * innerH;
-  const every = chart.every ?? Math.max(1, Math.ceil(n / 8));
+  const every = chart.every ?? Math.max(1, Math.ceil(n / 6));
   const id = useId();
   return (
     <div className="rchart-plot" onMouseLeave={() => setHover(null)}>
@@ -84,7 +84,7 @@ function Lines({ chart }: { chart: Chart }) {
         <desc id={`${id}-d`}>{`${chart.title}. ${chart.x.map((l, i) => `${l}: ${chart.series.map((s) => `${chart.series.length > 1 ? `${s.name} ` : ""}${formatValue(s.values[i], chart.unit)}`).join(", ")}`).join("; ")}`}</desc>
         <Axis top={top} step={step} unit={chart.unit} y={y} />
         {chart.x.map((l, i) =>
-          i % every === 0 || i === n - 1 ? (
+          (i % every === 0 && n - 1 - i >= every) || i === n - 1 ? (
             <text key={l + i} className="rc-xlabel" x={x(i)} y={H - 6} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"} aria-hidden="true">
               {l}
             </text>
@@ -137,7 +137,7 @@ function VBars({ chart }: { chart: Chart }) {
   const n = chart.x.length;
   const bw = innerW / Math.max(n, 1);
   const y = (v: number) => PAD.top + innerH - (v / top) * innerH;
-  const every = chart.every ?? Math.max(1, Math.ceil(n / 8));
+  const every = chart.every ?? Math.max(1, Math.ceil(n / 6));
   const id = useId();
   return (
     <div className="rchart-plot" onMouseLeave={() => setHover(null)}>
@@ -153,7 +153,7 @@ function VBars({ chart }: { chart: Chart }) {
           return (
             <g key={l + i}>
               {v > 0 && <path className={`rc-bar${hover === i ? " on" : ""}`} d={roundedTop(cx - w / 2, y(v), w, h, Math.min(4, w / 2, h))} />}
-              {(i % every === 0 || i === n - 1) && (
+              {((i % every === 0 && n - 1 - i >= every) || i === n - 1) && (
                 <text className="rc-xlabel" x={cx} y={H - 6} textAnchor="middle" aria-hidden="true">
                   {l}
                 </text>
