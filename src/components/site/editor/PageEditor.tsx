@@ -47,8 +47,8 @@ export function PageEditor({ page: initial, uploads, leaders, address, previewHr
     if (!window.confirm(`Remove this ${BLOCK_LABELS[page.blocks[i].type].toLowerCase()} block?`)) return;
     change({ ...page, blocks: page.blocks.filter((_, j) => j !== i) });
   };
-  const add = () => {
-    const b = defaultBlock(adding, address);
+  const add = (type: BlockType = adding) => {
+    const b = defaultBlock(type, address);
     change({ ...page, blocks: [...page.blocks, b] });
     requestAnimationFrame(() => document.getElementById(`blk-${b.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }));
   };
@@ -74,6 +74,12 @@ export function PageEditor({ page: initial, uploads, leaders, address, previewHr
     setNotice("Saved to the draft. Publish from Pages when you're ready.");
     router.refresh();
   }
+
+  const jump = (id: string) => {
+    const el = document.getElementById(`blk-${id}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    el?.focus({ preventScroll: true });
+  };
 
   return (
     <div className="se-editor">
@@ -101,6 +107,8 @@ export function PageEditor({ page: initial, uploads, leaders, address, previewHr
         </p>
       )}
 
+      <div className="se-layout">
+        <div className="se-main">
       <section className="fin-card" aria-labelledby="pg-settings">
         <h2 id="pg-settings">Page settings</h2>
         <div className="form-row">
@@ -119,22 +127,30 @@ export function PageEditor({ page: initial, uploads, leaders, address, previewHr
         {page.blocks.map((b, i) => (
           <li key={b.id} className="se-block fin-card">
             <div className="se-block-head">
-              <h3 id={`blk-${b.id}`} tabIndex={-1}>
-                {i + 1}. {BLOCK_LABELS[b.type]}
-              </h3>
-              <div className="row">
-                <button type="button" className="btn se-small" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${BLOCK_LABELS[b.type]} up`}>
-                  ↑
-                </button>
-                <button type="button" className="btn se-small" onClick={() => move(i, 1)} disabled={i === page.blocks.length - 1} aria-label={`Move ${BLOCK_LABELS[b.type]} down`}>
-                  ↓
-                </button>
-                <button type="button" className="btn btn-danger se-small" onClick={() => remove(i)} aria-label={`Remove ${BLOCK_LABELS[b.type]}`}>
+              <span className="se-block-num" aria-hidden="true">
+                {i + 1}
+              </span>
+              <div className="se-block-title">
+                <h3 id={`blk-${b.id}`} tabIndex={-1}>
+                  <span className="se-sr">{i + 1}. </span>
+                  {BLOCK_LABELS[b.type]}
+                </h3>
+                <p className="small muted">{BLOCK_HINTS[b.type]}</p>
+              </div>
+              <div className="se-block-actions">
+                <span className="se-move" role="group" aria-label={`Move ${BLOCK_LABELS[b.type]}`}>
+                  <button type="button" className="se-icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${BLOCK_LABELS[b.type]} up`}>
+                    ↑
+                  </button>
+                  <button type="button" className="se-icon-btn" onClick={() => move(i, 1)} disabled={i === page.blocks.length - 1} aria-label={`Move ${BLOCK_LABELS[b.type]} down`}>
+                    ↓
+                  </button>
+                </span>
+                <button type="button" className="se-remove" onClick={() => remove(i)} aria-label={`Remove ${BLOCK_LABELS[b.type]}`}>
                   Remove
                 </button>
               </div>
             </div>
-            <p className="small muted">{BLOCK_HINTS[b.type]}</p>
             <BlockForm block={b} onChange={(nb) => setBlock(i, nb)} uploads={uploads} leaders={leaders} />
           </li>
         ))}
@@ -143,23 +159,49 @@ export function PageEditor({ page: initial, uploads, leaders, address, previewHr
 
       <section className="fin-card se-add" aria-labelledby="add-h">
         <h2 id="add-h">Add a block</h2>
-        <div className="row">
-          <label className="se-sr" htmlFor="add-type">
-            Block type
-          </label>
-          <select id="add-type" value={adding} onChange={(e) => setAdding(e.target.value as BlockType)} className="se-select">
-            {BLOCK_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {BLOCK_LABELS[t]}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="btn btn-primary" onClick={add} disabled={page.blocks.length >= 40}>
-            Add block
-          </button>
+        <p className="small muted">It goes at the end of the page; move it up from there.</p>
+        <div className="se-add-grid">
+          {BLOCK_TYPES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className="se-add-tile"
+              disabled={page.blocks.length >= 40}
+              onClick={() => {
+                setAdding(t);
+                add(t);
+              }}
+            >
+              <strong>{BLOCK_LABELS[t]}</strong>
+              <span>{BLOCK_HINTS[t]}</span>
+            </button>
+          ))}
         </div>
-        <p className="small muted">{BLOCK_HINTS[adding]}</p>
       </section>
+        </div>
+        <aside className="se-outline" aria-label="On this page">
+          <div className="se-outline-card">
+            <p className="se-outline-label">On this page</p>
+            {page.blocks.length ? (
+              <ol>
+                {page.blocks.map((b, i) => (
+                  <li key={b.id}>
+                    <button type="button" onClick={() => jump(b.id)}>
+                      <span className="se-outline-num">{i + 1}</span>
+                      {BLOCK_LABELS[b.type]}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="small muted">No blocks yet.</p>
+            )}
+            <a className="se-outline-add" href="#add-h">
+              + Add a block
+            </a>
+          </div>
+        </aside>
+      </div>
       <p className="small">
         <Link href="/site">Back to pages</Link>
       </p>

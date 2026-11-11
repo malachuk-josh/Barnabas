@@ -15,12 +15,15 @@ export function PublishPanel({ published, publishedAt, publishedBy, changes, pro
   const { act, busy, error, notice } = useOps("site");
   const [copied, setCopied] = useState(false);
   return (
-    <section className="fin-card se-publish" aria-labelledby="pub-h">
-      <div className="fin-card-head">
-        <h2 id="pub-h">{published ? "Published" : "Draft: not published"}</h2>
-        <span className={`pill ${published ? (changes ? "pill-watch" : "pill-ok") : "pill-watch"}`}>{published ? (changes ? "Unpublished changes" : "Up to date") : "Only leaders can see it · noindex"}</span>
+    <section className={`fin-card se-publish ${published ? (changes ? "is-changed" : "is-live") : "is-draft"}`} aria-labelledby="pub-h">
+      <div className="se-publish-head">
+        <span className="se-publish-dot" aria-hidden="true" />
+        <div>
+          <h2 id="pub-h">{published ? (changes ? "Live, with changes not yet published" : "Live and up to date") : "Draft: not published yet"}</h2>
+          <span className="small muted">{published ? (changes ? "Visitors still see the last published version." : "Visitors see exactly what's in the draft.") : "Only signed-in leaders can see it, and search engines are asked not to index it."}</span>
+        </div>
       </div>
-      <p className="small muted">
+      <p className="small muted se-publish-detail">
         {published
           ? `Published ${publishedAt ? when(publishedAt) : ""}${publishedBy ? ` by ${publishedBy}` : ""}. Visitors see the published version; your edits stay in the draft until you publish again.`
           : "Until you publish, the site shows only to signed-in leaders and asks search engines not to index it."}
@@ -35,7 +38,7 @@ export function PublishPanel({ published, publishedAt, publishedBy, changes, pro
           </ul>
         </div>
       )}
-      <div className="row">
+      <div className="row se-publish-actions">
         <a className="btn" href="/s?preview=1" target="_blank" rel="noopener">
           Preview draft
         </a>
@@ -93,37 +96,61 @@ export function PagesList({ pages, base }: { pages: PageRow[]; base: string }) {
   const { act, busy, error, notice } = useOps("site");
   const [title, setTitle] = useState("");
   return (
-    <section className="fin-card" aria-labelledby="pages-h">
-      <h2 id="pages-h">Pages</h2>
+    <section className="fin-card se-pages-card" aria-labelledby="pages-h">
+      <div className="fin-card-head">
+        <h2 id="pages-h">Pages</h2>
+        <span className="small muted">
+          {pages.length} {pages.length === 1 ? "page" : "pages"} · {pages.filter((p) => p.nav).length} in the menu
+        </span>
+      </div>
       <ul className="se-pages">
         {pages.map((p, i) => (
-          <li key={p.id}>
-            <div>
+          <li key={p.id} className={p.kind === "home" ? "is-home" : undefined}>
+            <span className="se-page-icon" aria-hidden="true">
+              {p.kind === "home" ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 11.5 12 5l8 6.5M6.5 10v9h11v-9" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20Z" />
+                  <path d="M14 3.5V8h4M10 12h5M10 15.5h5" />
+                </svg>
+              )}
+            </span>
+            <div className="se-page-text">
               <Link href={`/site/edit/${p.id}`} className="se-page-link">
                 {p.title}
               </Link>
-              <span className="small muted">
-                {" "}
-                {base}/{p.slug} · {PAGE_KIND_LABELS[p.kind]} · {p.blocks} block{p.blocks === 1 ? "" : "s"}
-                {p.nav ? "" : " · not in menu"}
+              <span className="se-page-meta">
+                <code>
+                  {base}/{p.slug}
+                </code>
+                <span>
+                  {p.blocks} block{p.blocks === 1 ? "" : "s"}
+                </span>
+                {p.kind !== "home" && p.kind !== "custom" && PAGE_KIND_LABELS[p.kind] !== p.title && <span>{PAGE_KIND_LABELS[p.kind]}</span>}
+                <span className={p.nav ? "se-in-menu" : "se-not-menu"}>{p.nav ? "In the menu" : "Not in the menu"}</span>
               </span>
             </div>
-            <div className="row">
+            <div className="se-page-actions">
+              {p.kind !== "home" && (
+                <span className="se-move" role="group" aria-label={`Move ${p.title}`}>
+                  <button type="button" className="se-icon-btn" disabled={busy || i <= 1} onClick={() => act({ action: "move-page", id: p.id, dir: -1 })} aria-label={`Move ${p.title} up`}>
+                    ↑
+                  </button>
+                  <button type="button" className="se-icon-btn" disabled={busy || i === pages.length - 1} onClick={() => act({ action: "move-page", id: p.id, dir: 1 })} aria-label={`Move ${p.title} down`}>
+                    ↓
+                  </button>
+                </span>
+              )}
               <Link className="btn se-small" href={`/site/edit/${p.id}`}>
                 Edit
               </Link>
               {p.kind !== "home" && (
-                <>
-                  <button type="button" className="btn se-small" disabled={busy || i <= 1} onClick={() => act({ action: "move-page", id: p.id, dir: -1 })} aria-label={`Move ${p.title} up`}>
-                    ↑
-                  </button>
-                  <button type="button" className="btn se-small" disabled={busy || i === pages.length - 1} onClick={() => act({ action: "move-page", id: p.id, dir: 1 })} aria-label={`Move ${p.title} down`}>
-                    ↓
-                  </button>
-                  <button type="button" className="btn btn-danger se-small" disabled={busy} onClick={() => window.confirm(`Remove the page "${p.title}"?`) && act({ action: "remove-page", id: p.id }, () => "Page removed from the draft.")}>
-                    Remove
-                  </button>
-                </>
+                <button type="button" className="se-remove" disabled={busy} onClick={() => window.confirm(`Remove the page "${p.title}"?`) && act({ action: "remove-page", id: p.id }, () => "Page removed from the draft.")} aria-label={`Remove ${p.title}`}>
+                  Remove
+                </button>
               )}
             </div>
           </li>
@@ -165,7 +192,7 @@ export function ThemeEditor({ theme: initial, uploads }: { theme: SiteTheme; upl
   ];
   return (
     <form
-      className="fin-stack"
+      className="se-theme"
       onSubmit={(e) => {
         e.preventDefault();
         const parsed = ThemeSchema.safeParse(t);
@@ -173,6 +200,7 @@ export function ThemeEditor({ theme: initial, uploads }: { theme: SiteTheme; upl
         act({ action: "save-theme", theme: parsed.data }, () => "Theme saved to the draft.");
       }}
     >
+      <div className="se-theme-main">
       <section className="fin-card">
         <h2>Church</h2>
         <div className="form-row">
@@ -183,7 +211,7 @@ export function ThemeEditor({ theme: initial, uploads }: { theme: SiteTheme; upl
       </section>
       <section className="fin-card">
         <h2>Colors</h2>
-        <p className="small muted">Starts from the Barnabas palette. Each pair must reach WCAG AA contrast ({AA}:1) before publishing.</p>
+        <p className="small muted">Starts from the Barnabas palette. The preview beside the form shows them together, with the contrast checks.</p>
         <div className="se-colors">
           {(Object.keys(COLOR_LABELS) as (keyof SiteTheme["colors"])[]).map((k) => (
             <div key={k} className="field se-color">
@@ -194,20 +222,6 @@ export function ThemeEditor({ theme: initial, uploads }: { theme: SiteTheme; upl
               </div>
             </div>
           ))}
-        </div>
-        <ul className="se-contrast">
-          {checks.map((x) => (
-            <li key={x.label}>
-              <span className={`pill ${x.ratio >= AA ? "pill-ok" : "pill-high"}`}>{x.ratio >= AA ? "Pass" : "Too faint"}</span> {x.label}: {x.ratio.toFixed(1)}:1
-            </li>
-          ))}
-        </ul>
-        <div className="se-swatch" style={{ background: c.background, color: c.text, borderColor: c.surface }}>
-          <span style={{ fontFamily: `"${t.fonts.heading}", serif`, fontSize: "1.4rem" }}>{t.churchName}</span>
-          <span>Body text looks like this, with a <span style={{ color: c.primary, textDecoration: "underline" }}>link</span>.</span>
-          <span className="se-swatch-btn" style={{ background: c.primary, color: onColor(c.primary) }}>
-            Plan a visit
-          </span>
         </div>
       </section>
       <section className="fin-card">
@@ -263,12 +277,53 @@ export function ThemeEditor({ theme: initial, uploads }: { theme: SiteTheme; upl
         )}
         <p className="small muted">Navigation comes from your pages: reorder them on Pages, and untick &quot;Show in the menu&quot; on a page to leave it out.</p>
       </section>
-      <div className="row">
-        <button className="btn btn-primary" type="submit" disabled={busy}>
+      </div>
+      <aside className="se-theme-side" aria-label="Preview">
+        <div className="se-site-mock" style={{ background: c.background, color: c.text, fontFamily: `"${t.fonts.body}", sans-serif` }}>
+          <div className="se-mock-bar" style={{ background: c.primary, color: onColor(c.primary) }}>
+            <span style={{ fontFamily: `"${t.fonts.heading}", serif` }}>{t.churchName || "Your church"}</span>
+            <span className="se-mock-nav" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </div>
+          <div className="se-mock-hero">
+            <span className="se-mock-h" style={{ fontFamily: `"${t.fonts.heading}", serif` }}>
+              Welcome home
+            </span>
+            {t.tagline && <span className="se-mock-tag">{t.tagline}</span>}
+            <span>
+              Body text looks like this, with a <span style={{ color: c.primary, textDecoration: "underline" }}>link</span>.
+            </span>
+            <span className="se-swatch-btn" style={{ background: c.primary, color: onColor(c.primary) }}>
+              Plan a visit
+            </span>
+          </div>
+          <div className="se-mock-card" style={{ background: c.surface, color: c.text, borderColor: c.accent }}>
+            <span style={{ fontFamily: `"${t.fonts.heading}", serif` }}>Sunday worship</span>
+            <span className="se-mock-small">A card, with the accent along its edge.</span>
+          </div>
+        </div>
+        <section className="se-contrast-card" aria-labelledby="contrast-h">
+          <h3 id="contrast-h">Readable for everyone</h3>
+          <p className="small muted">Each pair must reach WCAG AA contrast ({AA}:1) before publishing.</p>
+          <ul className="se-contrast">
+            {checks.map((x) => (
+              <li key={x.label} className={x.ratio >= AA ? "is-pass" : "is-fail"}>
+                <span>{x.label}</span>
+                <span className="tabular">
+                  {x.ratio.toFixed(1)}:1 {x.ratio >= AA ? "✓" : "Too faint"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <button className="btn btn-primary se-theme-save" type="submit" disabled={busy}>
           {busy ? "Saving…" : "Save theme"}
         </button>
-      </div>
-      <Status error={error} notice={notice} />
+        <Status error={error} notice={notice} />
+      </aside>
     </form>
   );
 }
