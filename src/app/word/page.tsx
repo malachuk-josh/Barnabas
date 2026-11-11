@@ -25,7 +25,7 @@ export default async function WordPage({
   const verse = Number(v);
   const valid = book && Number.isInteger(chapter) && chapter >= 1 && chapter <= book.chapters;
   return (
-    <AppShell profile={profile} fill>
+    <AppShell profile={profile} fill reading>
       <WordApp
         initialBook={valid ? book.nr : undefined}
         initialChapter={valid ? chapter : undefined}
