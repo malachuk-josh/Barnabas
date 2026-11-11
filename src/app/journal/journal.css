@@ -139,3 +139,64 @@
   .jr-quote { background: none; border-left-color: #888; }
   .jr-ref { color: #000; text-decoration: none; }
 }
+
+/* ---------- Redesign: search with kind chips, cards with a stripe per kind, and the editor as a page ---------- */
+.jr-card-note { --jr-kind: var(--accent); }
+.jr-card-sermon { --jr-kind: var(--brass); }
+.jr-card-devotional { --jr-kind: var(--ok); }
+.jr-card-setlist { --jr-kind: var(--chart-1); }
+.jr-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; display: inline-block; background: var(--muted); }
+.jr-dot-note { background: var(--accent); }
+.jr-dot-sermon { background: var(--brass); }
+.jr-dot-devotional { background: var(--ok); }
+.jr-dot-setlist { background: var(--chart-1); }
+.filter-chip[aria-pressed="true"] .jr-dot { background: var(--accent-fg); }
+
+.jr-toolbar { gap: 10px 12px; }
+.jr-search-field { flex: 1 1 280px; min-width: 0; }
+.jr-tag-select { flex: 0 1 180px; min-width: 0; width: auto; }
+.jr-show { display: inline-flex; flex: none; padding: 3px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.jr-show button { border: 0; background: none; cursor: pointer; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--muted); padding: 7px 12px; border-radius: 999px; white-space: nowrap; }
+.jr-show button:hover { color: var(--fg); }
+.jr-show button[aria-current="page"] { background: var(--accent); color: var(--accent-fg); }
+.jr-show button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.jr-kinds { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.jr-cards { gap: 14px; }
+.jr-card { border-top: 4px solid var(--jr-kind, var(--line)); padding: 16px 18px 14px; gap: 8px; }
+.jr-card:hover { box-shadow: var(--shadow-card), 0 0 0 1px var(--jr-kind, var(--muted)); }
+.jr-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.jr-card .jr-kind { background: none; padding: 0; color: var(--muted); }
+.jr-card-title { font-family: var(--font-display); font-weight: 400; font-size: 1.22rem; line-height: 1.25; }
+.jr-card-foot { margin-top: auto; padding-top: 4px; }
+.jr-tag { background: none; padding: 0; }
+
+/* The editor reads as a page: a borderless title and tags, a quiet toolbar, and writing without an inner box */
+.jr-head input.jr-title { border: 0; border-bottom: 1px solid transparent; border-radius: 0; background: transparent; padding: 4px 0; min-height: 0; box-shadow: none; }
+.jr-head input.jr-title:hover { border-bottom-color: var(--line); }
+.jr-head input.jr-title:focus { outline: none; border-bottom-color: var(--brass); }
+.jr-head input.jr-tags-input { border: 0; background: transparent; padding: 2px 0; min-height: 0; color: var(--muted); box-shadow: none; }
+.jr-head input.jr-tags-input:focus { outline: none; color: var(--fg); }
+.jr-head .jr-kind { background: none; padding: 0; }
+.jr-head-row .jr-kind::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; background: var(--accent); }
+.jr-head-row .jr-kind-sermon::before { background: var(--brass); }
+.jr-head-row .jr-kind-devotional::before { background: var(--ok); }
+.jr-head-row .jr-kind-setlist::before { background: var(--chart-1); }
+.jr-actions { padding: 4px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-card); justify-self: start; gap: 2px; flex-wrap: wrap; }
+.jr-actions .btn:where(:not(.word-root *)) { border-color: transparent; background: transparent; }
+.jr-actions .btn:hover:where(:not(.word-root *)) { background: var(--surface-2); }
+.jr-actions .btn[aria-pressed="true"]:where(:not(.word-root *)) { background: var(--surface-2); color: var(--fg); }
+.jr-section { padding: 18px 20px; }
+.jr-section:focus-within { box-shadow: var(--shadow-card), 0 0 0 1.5px color-mix(in srgb, var(--brass) 60%, transparent); }
+.jr-section textarea.jr-body { border: 0; background: transparent; padding: 4px 0; box-shadow: none; font-size: 1.05rem; line-height: 1.7; resize: vertical; }
+.jr-section textarea.jr-body:focus { outline: none; }
+.jr-preview { border: 0; padding: 4px 0; }
+
+@media (max-width: 640px) {
+  .jr-show { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .jr-show button { flex: 1 0 auto; }
+  .jr-tag-select { flex: 1 1 100%; }
+  .jr-kinds { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px; scrollbar-width: none; }
+  .jr-kinds::-webkit-scrollbar, .jr-show::-webkit-scrollbar { display: none; }
+  .jr-actions { border-radius: 16px; }
+}
