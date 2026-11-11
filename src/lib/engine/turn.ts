@@ -19,6 +19,7 @@ export type TurnEvent =
   | { type: "text"; text: string }
   | { type: "tool"; name: string; phrase?: string }
   | { type: "link"; label: string; href: string }
+  | { type: "navigate"; href: string }
   | { type: "notice"; kind: "crisis"; text: string }
   | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null; totalMs: number }
   | { type: "done"; stopReason: string | null }
@@ -198,6 +199,7 @@ async function turn(input: TurnInput, emit: (e: TurnEvent) => void) {
       toolUses.map(async (t): Promise<Anthropic.Beta.BetaToolResultBlockParam> => {
         const r = await executeTool(t.name, t.input, ctx);
         if (!r.isError) for (const l of cleanLinks(r.links)) emit({ type: "link", ...l });
+        if (!r.isError && r.navigate && cleanLinks([{ label: "open", href: r.navigate }]).length) emit({ type: "navigate", href: r.navigate });
         return { type: "tool_result", tool_use_id: t.id, content: r.content, ...(r.isError ? { is_error: true } : {}) };
       }),
     );

@@ -68,6 +68,7 @@ const DEFAULT_CONFIG: TalkConfig = { voice: { speakReplies: true, language: "en-
 
 function useTalkEngine(config: TalkConfig | null) {
   const { voice, pronunciations, cloudVoice, cloudListening, typedOnly = false } = config ?? DEFAULT_CONFIG;
+  const router = useRouter();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState<Status>("idle");
   const [interim, setInterim] = useState("");
@@ -294,6 +295,7 @@ function useTalkEngine(config: TalkConfig | null) {
             | { type: "text"; text: string }
             | { type: "tool"; name: string; phrase?: string }
             | { type: "link"; label: string; href: string }
+            | { type: "navigate"; href: string }
             | { type: "notice"; text: string }
             | { type: "timing"; model: string; setupMs: number; firstTextMs: number | null }
             | { type: "done" }
@@ -316,6 +318,9 @@ function useTalkEngine(config: TalkConfig | null) {
             if (event.href.startsWith("/") && !event.href.startsWith("//")) {
               update((t) => (t.links?.some((l) => l.href === event.href) ? t : { ...t, links: [...(t.links ?? []), { label: event.label, href: event.href }] }));
             }
+          } else if (event.type === "navigate") {
+            // Barnabas opening a page the leader asked for; the conversation lives above the pages and carries on.
+            if (event.href.startsWith("/") && !event.href.startsWith("//")) router.push(event.href);
           } else if (event.type === "notice") {
             setNotice(event.text);
           } else if (event.type === "error") {

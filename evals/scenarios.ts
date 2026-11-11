@@ -32,6 +32,7 @@ export const TOOLS = {
   events: ["create_event"],
   finance: ["finance_overview", "budget_status", "giving_summary", "online_giving_summary", "missions_status"],
   webSearch: ["web_search"],
+  openPage: ["open_page"],
 } as const;
 const T = (k: keyof typeof TOOLS) => [...TOOLS[k]];
 
@@ -195,6 +196,17 @@ export const SCENARIOS: Scenario[] = [
         return /ninety|99|lost sheep/i.test(full) ? null : "the illustration wasn't added";
       }),
     ],
+  },
+
+  {
+    id: "open-the-word",
+    title: "Read a verse, then open it in The Word when asked",
+    tags: ["scripture", "tools"],
+    who: pastor,
+    mode: "voice",
+    turns: ["Read me John 3:16.", "Yes, open it for me."],
+    checks: [called(T("scripture"), 0), notCalled(T("openPage"), 0), called(T("openPage"), 1), neverSays(/can(no|')t open/i, "that it can't open it")],
+    rubric: ["Opens it when asked and says so in a few words, without claiming it can't."],
   },
 
   /* ---------- Asking before acting ---------- */
