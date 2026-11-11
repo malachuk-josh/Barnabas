@@ -556,19 +556,115 @@ export function useTalkSession() {
   return useContext(TalkContext);
 }
 
+const MicIcon = ({ off = false }: { off?: boolean }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    {off && <path d="M4 4l16 16" />}
+  </svg>
+);
+const KeyboardIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
+    <path d="M6.5 10h1M10 10h1M13.5 10h1M17 10h.5M6.5 13.5h1M17 13.5h.5M10 13.5h4" />
+  </svg>
+);
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
 /**
- * On pages other than Today, while Barnabas is listening, thinking or speaking: who's talking, a mic
- * button (stop or start listening), end, and a tap back to the whole conversation.
+ * On pages other than Today, while Barnabas is listening, thinking or speaking: who's talking, a
+ * keyboard button to switch to typing, a mic button (stop or start listening), end, and a tap back to
+ * the whole conversation. Typing opens it into a small panel with the conversation so far.
  */
 function TalkBar({ session: s }: { session: TalkSession }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [typing, setTyping] = useState(false);
+  const [draft, setDraft] = useState("");
+  const input = useRef<HTMLInputElement | null>(null);
+  const log = useRef<HTMLDivElement | null>(null);
   const live = s.configured && (s.status !== "idle" || s.listening());
-  if (!live || pathname === "/" || s.typedOnly) return null;
+  const open = typing && s.configured && (live || s.turns.length > 0 || s.hasConversation());
+  useEffect(() => {
+    log.current?.scrollTo({ top: log.current.scrollHeight });
+  }, [s.turns, open]);
+  useEffect(() => {
+    if (open) input.current?.focus();
+  }, [open]);
+  if ((!live && !open) || pathname === "/" || s.typedOnly) return null;
+  const page = pathname.startsWith("/word") ? "word" : undefined;
+  const end = () => {
+    setTyping(false);
+    void s.endConversation("button");
+  };
+
+  if (open) {
+    const recent = s.turns.slice(-12);
+    const send = (e: React.FormEvent) => {
+      e.preventDefault();
+      const text = draft.trim();
+      if (!text) return;
+      setDraft("");
+      if (s.status === "speaking" || s.status === "thinking") s.interrupt();
+      void s.send(text, "text");
+    };
+    return (
+      <div className="talk-bar talk-bar-typing" data-state={s.status} data-page={page} role="region" aria-label="Conversation with Barnabas">
+        <div className="talk-bar-head">
+          <button type="button" className="talk-bar-open" onClick={() => router.push("/")}>
+            <span className="talk-bar-dot" aria-hidden="true" />
+            {s.status === "thinking" ? "Barnabas is thinking…" : "Barnabas"}
+            <span className="talk-bar-open-hint">Open conversation</span>
+          </button>
+          <button type="button" className="talk-bar-btn" aria-label="End conversation" onClick={end}>
+            <CloseIcon />
+          </button>
+        </div>
+        <div className="talk-bar-log" ref={log} aria-live="polite">
+          {recent.length === 0 && <p className="talk-bar-empty">Type to Barnabas below.</p>}
+          {recent.map((t) => (
+            <p key={t.id} className={t.role === "leader" ? "talk-bar-msg is-mine" : "talk-bar-msg"}>
+              {t.text || (t.role === "barnabas" ? (t.tools.length ? "Looking that up…" : "…") : "")}
+              {t.links?.map((l) => (
+                <a key={l.href} href={l.href} className="talk-bar-link" onClick={(e) => (e.preventDefault(), router.push(l.href))}>
+                  {l.label}
+                </a>
+              ))}
+            </p>
+          ))}
+        </div>
+        <form className="talk-bar-compose" onSubmit={send}>
+          <button
+            type="button"
+            className="talk-bar-btn"
+            aria-label="Talk instead"
+            onClick={() => {
+              setTyping(false);
+              if (!s.listening()) s.onOrb();
+            }}
+          >
+            <MicIcon />
+          </button>
+          <label htmlFor="talk-bar-input" style={{ position: "absolute", left: -9999 }}>
+            Message Barnabas
+          </label>
+          <input id="talk-bar-input" ref={input} type="text" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type to Barnabas…" autoComplete="off" enterKeyHint="send" />
+          <button type="submit" className="talk-bar-send" disabled={!draft.trim()}>
+            Send
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   const label = s.status === "listening" ? (s.interim ? s.interim : "Barnabas is listening") : s.status === "thinking" ? "Barnabas is thinking…" : s.status === "speaking" ? "Barnabas is speaking" : "Barnabas";
   const last = [...s.turns].reverse().find((t) => t.role === "barnabas" && t.text)?.text;
   return (
-    <div className="talk-bar" data-state={s.status} data-page={pathname.startsWith("/word") ? "word" : undefined} role="region" aria-label="Conversation with Barnabas">
+    <div className="talk-bar" data-state={s.status} data-page={page} role="region" aria-label="Conversation with Barnabas">
       <button type="button" className="talk-bar-main" onClick={() => router.push("/")} aria-label="Back to the conversation">
         <span className="talk-bar-dot" aria-hidden="true" />
         <span className="talk-bar-text">
@@ -579,20 +675,25 @@ function TalkBar({ session: s }: { session: TalkSession }) {
       <button
         type="button"
         className="talk-bar-btn"
+        aria-label="Type instead"
+        onClick={() => {
+          if (s.listening()) s.stopListening();
+          setTyping(true);
+        }}
+      >
+        <KeyboardIcon />
+      </button>
+      <button
+        type="button"
+        className="talk-bar-btn"
         aria-label={s.listening() ? "Stop listening" : "Talk"}
         aria-pressed={s.listening()}
         onClick={() => (s.listening() ? (s.handsFree ? s.stopListening() : s.onOrb()) : s.onOrb())}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="9" y="3" width="6" height="11" rx="3" />
-          <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-          {s.listening() && s.handsFree && <path d="M4 4l16 16" />}
-        </svg>
+        <MicIcon off={s.listening() && s.handsFree} />
       </button>
-      <button type="button" className="talk-bar-btn" aria-label="End conversation" onClick={() => void s.endConversation("button")}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+      <button type="button" className="talk-bar-btn" aria-label="End conversation" onClick={end}>
+        <CloseIcon />
       </button>
     </div>
   );

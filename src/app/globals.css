@@ -1903,3 +1903,25 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 @media (max-width: 860px) {
   .talk-bar[data-page="word"] { left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); transform: none; width: auto; bottom: calc(144px + env(safe-area-inset-bottom)); }
 }
+
+/* The bar opened for typing: the conversation so far, then a text box */
+.talk-bar-typing { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; border-radius: 20px; max-height: min(52vh, 460px); }
+.talk-bar-head { display: flex; align-items: center; gap: 6px; }
+.talk-bar-open:where(:not(.word-root *)) {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 0; background: none; color: inherit;
+  font: inherit; font-weight: 700; font-size: 0.92rem; text-align: left; cursor: pointer; border-radius: 999px;
+}
+.talk-bar-open-hint { margin-left: auto; font-weight: 600; font-size: 0.78rem; opacity: 0.75; }
+.talk-bar-log { flex: 1 1 auto; min-height: 60px; overflow-y: auto; display: grid; gap: 6px; align-content: start; padding: 2px 4px; overscroll-behavior: contain; }
+.talk-bar-msg:where(:not(.word-root *)) { margin: 0; padding: 8px 12px; border-radius: 14px; background: rgba(243, 246, 244, 0.1); font-size: 0.92rem; line-height: 1.45; max-width: 92%; justify-self: start; white-space: pre-wrap; }
+.talk-bar-msg.is-mine:where(:not(.word-root *)) { justify-self: end; background: var(--brass); color: var(--night); }
+.talk-bar-empty:where(:not(.word-root *)) { margin: 0; padding: 8px 4px; font-size: 0.86rem; opacity: 0.75; }
+.talk-bar-link:where(:not(.word-root *)) { display: inline-block; margin: 6px 6px 0 0; padding: 4px 10px; border-radius: 999px; background: rgba(243, 246, 244, 0.16); color: inherit; font-weight: 600; font-size: 0.82rem; text-decoration: none; }
+.talk-bar-compose { display: flex; align-items: center; gap: 6px; }
+.talk-bar-compose input:where(:not(.word-root *)) {
+  flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(243, 246, 244, 0.25);
+  background: rgba(243, 246, 244, 0.08); color: inherit; font: inherit; font-size: 16px;
+}
+.talk-bar-compose input::placeholder { color: inherit; opacity: 0.6; }
+.talk-bar-send:where(:not(.word-root *)) { flex: none; height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--brass); color: var(--night); font: inherit; font-weight: 700; cursor: pointer; }
+.talk-bar-send:disabled:where(:not(.word-root *)) { opacity: 0.5; cursor: default; }
