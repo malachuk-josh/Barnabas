@@ -1774,6 +1774,12 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .inbox-compose { padding: 0 14px 16px; overflow: visible; }
   .inbox-compose .inbox-thread-head { margin: 0 -14px; }
 }
+.admin-invite-ways { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.admin-invite-ways legend { font-weight: 700; font-size: 0.92rem; margin-bottom: 6px; padding: 0; }
+.admin-invite-ways .small { flex-basis: 100%; }
+.admin-invite-link { display: grid; gap: 8px; background: var(--surface-2); }
+.admin-invite-link input:where(:not(.word-root *)) { flex: 1; min-width: 0; font-size: 0.85rem; }
+.admin-invite-bad { color: var(--watch); font-weight: 600; }
 
 /* Reports, redesigned: an at-a-glance strip, one wide row per report, and the empty ones gathered at the foot */
 .report-glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 0; margin: 0 0 18px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
@@ -1866,14 +1872,6 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .report-glance, .report-waiting-group, .report-monthly-side { display: none; }
   .report-letter { box-shadow: none; padding: 0; }
 }
-
-.admin-invite-ways { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
-.admin-invite-ways legend { font-weight: 700; font-size: 0.92rem; margin-bottom: 6px; padding: 0; }
-.admin-invite-ways .small { flex-basis: 100%; }
-.admin-invite-link { display: grid; gap: 8px; background: var(--surface-2); }
-.admin-invite-link input:where(:not(.word-root *)) { flex: 1; min-width: 0; font-size: 0.85rem; }
-.admin-invite-bad { color: var(--watch); font-weight: 600; }
-
 /* Mesa, redesigned: search with kind chips, resource cards with who shared them, church rows and two steps to connect */
 .kind-series_outline { --kind: var(--accent); }
 .kind-service_template { --kind: var(--sea-glass); }
