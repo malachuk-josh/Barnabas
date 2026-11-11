@@ -5,6 +5,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { ITEM_KINDS, KIND_LABELS, type ItemKind, type SharedItem } from "@/lib/network/types";
 import { networkPost } from "./client";
+import { KIND_CHIPS, ResourceCard } from "./LibrarySearch";
 
 type Starter = { id: string; kind: ItemKind; title: string; body: string; scripture?: string };
 type Preview = { item: Omit<SharedItem, "id" | "sharedAt">; title: { removed: { kind: string; count: number }[]; total: number }; body: { removed: { kind: string; count: number }[]; total: number } };
@@ -72,10 +73,10 @@ export function ShareForm({ starters, mine }: { starters: { series: Starter[]; p
   }
 
   return (
-    <div className="fin-grid-2">
-      <section className="fin-card fin-form" data-no-pull>
+    <div className="mesa-share">
+      <section className="fin-card fin-form mesa-share-form" data-no-pull>
         <h2>Share a resource</h2>
-        <p className="small muted">Only resources leave the church, never people. Names, emails, phone numbers and addresses are removed in code before anything is shared, and you see exactly what goes out first.</p>
+        <p className="small muted">Only resources leave the church, never people. Names, emails, phone numbers and addresses are removed before anything is shared, and you see exactly what goes out first.</p>
         {all.length > 0 && (
           <div className="field">
             <label htmlFor="mesa-start">Start from your own planning</label>
@@ -94,12 +95,18 @@ export function ShareForm({ starters, mine }: { starters: { series: Starter[]; p
             </select>
           </div>
         )}
-        <div className="field">
-          <label htmlFor="mesa-kind-s">Kind</label>
-          <select id="mesa-kind-s" value={kind} onChange={(e) => edit(() => setKind(e.target.value as ItemKind))}>
-            {ITEM_KINDS.map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
-          </select>
-        </div>
+        <fieldset className="field mesa-kind-pick">
+          <legend>Kind</legend>
+          <div className="mesa-kinds">
+            {ITEM_KINDS.map((k) => (
+              <label key={k} className="filter-chip" data-checked={kind === k ? "true" : undefined}>
+                <input type="radio" name="mesa-kind-s" className="sr-only" value={k} checked={kind === k} onChange={() => edit(() => setKind(k))} />
+                <span className={`mesa-kind-dot kind-${k}`} aria-hidden="true" />
+                {KIND_CHIPS[k]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="field">
           <label htmlFor="mesa-title">Title</label>
           <input id="mesa-title" type="text" value={title} maxLength={120} onChange={(e) => edit(() => setTitle(e.target.value))} />
@@ -126,17 +133,13 @@ export function ShareForm({ starters, mine }: { starters: { series: Starter[]; p
         {error && <p className="error" role="alert">{error}</p>}
         {done && <p className="notice success" role="status">{done}</p>}
       </section>
-      <div className="stack">
+      <div className="mesa-share-side">
         {preview ? (
-          <section className="fin-card mesa-preview" aria-labelledby="mesa-prev-h">
-            <span className="eyebrow">Exactly what connected churches will see</span>
-            <h2 id="mesa-prev-h">{preview.item.title}</h2>
-            <p className="small muted">
-              {KIND_LABELS[preview.item.kind]} · from {preview.item.churchName}
-              {preview.item.scripture ? ` · ${preview.item.scripture}` : ""}
-            </p>
-            <pre className="report-preview">{preview.item.body}</pre>
-            {preview.item.tags.length > 0 && <p className="small">Tags: {preview.item.tags.join(", ")}</p>}
+          <section className="mesa-preview" aria-labelledby="mesa-prev-h">
+            <h2 id="mesa-prev-h" className="eyebrow">
+              Exactly what connected churches will see
+            </h2>
+            <ResourceCard r={preview.item} open />
             <p className={`small ${preview.title.total + preview.body.total ? "notice" : "muted"}`}>
               {preview.title.total + preview.body.total
                 ? `Removed before sharing: ${removedText(preview)}.`
@@ -152,20 +155,23 @@ export function ShareForm({ starters, mine }: { starters: { series: Starter[]; p
             </div>
           </section>
         ) : (
-          <section className="fin-card">
-            <h2>Shared by your church</h2>
+          <section className="fin-card mesa-mine">
+            <div className="fin-card-head">
+              <h2>Shared by your church</h2>
+              {mine.length > 0 && <span className="small muted">{mine.length}</span>}
+            </div>
             {mine.length === 0 ? (
               <EmptyState compact title="Nothing shared yet">Share a series outline, a service template or co-laborer training, and connected churches can find it.</EmptyState>
             ) : (
-              <ul className="list">
+              <ul className="mesa-mine-list">
                 {mine.map((m) => (
-                  <li key={m.id} className="row" style={{ justifyContent: "space-between" }}>
-                    <span>
-                      <span className="label">{KIND_LABELS[m.kind]}</span>
-                      <br />
-                      {m.title}
+                  <li key={m.id}>
+                    <span className={`mesa-kind-dot kind-${m.kind}`} aria-hidden="true" />
+                    <span className="mesa-mine-text">
+                      <strong>{m.title}</strong>
+                      <span className="small muted">{KIND_LABELS[m.kind]}</span>
                     </span>
-                    <button className="btn btn-sm" type="button" onClick={() => void remove(m.id)}>
+                    <button className="btn btn-sm btn-quiet" type="button" onClick={() => void remove(m.id)}>
                       Stop sharing
                     </button>
                   </li>

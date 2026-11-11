@@ -1873,3 +1873,112 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .admin-invite-link { display: grid; gap: 8px; background: var(--surface-2); }
 .admin-invite-link input:where(:not(.word-root *)) { flex: 1; min-width: 0; font-size: 0.85rem; }
 .admin-invite-bad { color: var(--watch); font-weight: 600; }
+
+/* Mesa, redesigned: search with kind chips, resource cards with who shared them, church rows and two steps to connect */
+.kind-series_outline { --kind: var(--accent); }
+.kind-service_template { --kind: var(--sea-glass); }
+.kind-training_doc { --kind: var(--brass); }
+.kind-event_idea { --kind: var(--highlight); }
+.kind-prayer_need { --kind: var(--ok); }
+.kind-mission_need { --kind: color-mix(in srgb, var(--accent) 50%, var(--brass)); }
+.mesa-kind-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--kind, var(--muted)); display: inline-block; }
+.filter-chip[aria-pressed="true"] .mesa-kind-dot, .filter-chip[data-checked="true"] .mesa-kind-dot { background: var(--accent-fg); }
+
+.mesa-find { display: grid; gap: 14px; }
+.mesa-search { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.mesa-search .search-field input[type="search"] { font-size: 1rem; }
+.mesa-kinds { display: flex; flex-wrap: wrap; gap: 8px; }
+.mesa-count { margin: 4px 0 0; }
+.mesa-results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; align-items: stretch; }
+.mesa-results > li { display: grid; min-width: 0; }
+.mesa-card {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 18px 20px 14px;
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card);
+  border-top: 4px solid var(--kind, var(--line));
+}
+.mesa-kind { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mesa-card h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; line-height: 1.25; overflow-wrap: anywhere; }
+.mesa-scripture { margin: 0; justify-self: start; align-self: flex-start; font-size: 0.82rem; font-weight: 700; color: var(--highlight); }
+.mesa-card .mesa-body { margin: 0; font-size: 0.93rem; line-height: 1.55; color: var(--fg); }
+.mesa-tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.mesa-tags li { font-size: 0.78rem; color: var(--muted); }
+.mesa-tags li::before { content: "#"; opacity: 0.6; }
+.mesa-card-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.mesa-from { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.mesa-from .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mesa-church-mark {
+  width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center;
+  background: var(--sea-glass); color: var(--night); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em;
+}
+
+/* Connections */
+.mesa-conn { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.mesa-conn-main { display: grid; gap: 16px; min-width: 0; }
+.mesa-conn-list h2, .mesa-connect h2, .mesa-mine h2 { margin: 0; font-size: 1.2rem; }
+.mesa-churches { list-style: none; margin: 0; padding: 0; display: grid; }
+.mesa-churches li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.mesa-churches li:first-child { border-top: 0; padding-top: 4px; }
+.mesa-churches .mesa-church-mark { width: 40px; height: 40px; border-radius: 12px; font-size: 0.85rem; }
+.mesa-church-text { display: grid; gap: 2px; min-width: 0; }
+.mesa-church-text strong { overflow-wrap: anywhere; }
+.mesa-status { font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.mesa-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--watch); }
+.mesa-status.is-connected { color: var(--ok); }
+.mesa-status.is-connected::before { background: var(--ok); }
+.mesa-status.is-awaiting_us { color: var(--highlight); }
+.mesa-status.is-awaiting_us::before { background: var(--brass); }
+.mesa-church-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.mesa-boundary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--surface-2); border-radius: var(--radius); }
+.mesa-boundary > div { padding: 14px 18px; display: grid; gap: 4px; align-content: start; }
+.mesa-boundary > div + div { border-left: 1px solid var(--line-soft); }
+.mesa-boundary h3 { margin: 0; font-family: var(--font-body); font-size: 0.9rem; font-weight: 700; }
+.mesa-boundary p { margin: 0; color: var(--muted); }
+.mesa-connect { gap: 14px; }
+.mesa-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: mesa-step; }
+.mesa-steps > li { counter-increment: mesa-step; position: relative; display: grid; gap: 6px; padding: 0 0 18px 42px; }
+.mesa-steps > li::before {
+  content: counter(mesa-step); position: absolute; left: 0; top: -2px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: var(--accent-fg); font-weight: 800; font-size: 0.85rem;
+}
+.mesa-steps > li:not(:last-child)::after { content: ""; position: absolute; left: 13.5px; top: 30px; bottom: 4px; width: 1px; background: var(--line); }
+.mesa-steps h3 { margin: 2px 0 0; font-family: var(--font-body); font-size: 1rem; font-weight: 700; }
+.mesa-steps p { margin: 0; }
+.mesa-steps .btn:where(:not(.word-root *)) { justify-self: start; }
+.mesa-code { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px; border-radius: 12px; border: 1.5px dashed var(--brass); background: color-mix(in srgb, var(--brass) 8%, var(--surface)); }
+.mesa-code code { font-size: 1.1rem; letter-spacing: 0.08em; padding: 4px 8px; background: var(--surface); }
+.mesa-code .small { flex-basis: 100%; }
+.mesa-redeem { display: flex; gap: 8px; flex-wrap: wrap; }
+.mesa-redeem input { flex: 1 1 200px; width: auto; min-width: 0; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: 0.04em; }
+.mesa-example { margin: 0; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+
+/* Share */
+.mesa-share { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.mesa-share-side { display: grid; gap: 16px; position: sticky; top: 24px; min-width: 0; }
+.mesa-kind-pick { border: 0; padding: 0; margin: 0; min-width: 0; }
+.mesa-kind-pick legend { padding: 0; margin-bottom: 6px; font-weight: 600; font-size: 0.92rem; }
+.mesa-kind-pick .filter-chip { min-height: 36px; font-size: 0.86rem; }
+.mesa-kind-pick .filter-chip[data-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.mesa-kind-pick .filter-chip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mesa-preview { display: grid; gap: 12px; padding: 16px; border-radius: calc(var(--radius) + 4px); border: 2px solid var(--brass); background: color-mix(in srgb, var(--brass) 6%, var(--bg)); }
+.mesa-preview > h2.eyebrow { margin: 0; font-family: var(--font-body); font-size: 0.75rem; }
+.mesa-preview .mesa-card { box-shadow: var(--shadow-card); }
+.mesa-preview > p, .mesa-preview .row { margin: 0; }
+.mesa-mine-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.mesa-mine-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.mesa-mine-list li:first-child { border-top: 0; }
+.mesa-mine-text { display: grid; gap: 1px; min-width: 0; }
+.mesa-mine-text strong { overflow-wrap: anywhere; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .mesa-conn, .mesa-share { grid-template-columns: minmax(0, 1fr); }
+  .mesa-share-side { position: static; }
+}
+@media (max-width: 640px) {
+  .mesa-kinds { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px; scrollbar-width: none; }
+  .mesa-kinds::-webkit-scrollbar { display: none; }
+  .mesa-kind-pick .mesa-kinds { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
+  .mesa-boundary { grid-template-columns: minmax(0, 1fr); }
+  .mesa-boundary > div + div { border-left: 0; border-top: 1px solid var(--line-soft); }
+  .mesa-churches li { grid-template-columns: auto minmax(0, 1fr); }
+  .mesa-church-actions { grid-column: 2; justify-content: flex-start; }
+}

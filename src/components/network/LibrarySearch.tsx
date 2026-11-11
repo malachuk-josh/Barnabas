@@ -6,6 +6,55 @@ import { ITEM_KINDS, KIND_LABELS, type ItemKind, type SharedItem } from "@/lib/n
 
 type Result = SharedItem & { mine: boolean };
 
+/** Short chip labels for the kind filter. */
+export const KIND_CHIPS: Record<ItemKind, string> = {
+  series_outline: "Sermon series",
+  service_template: "Service templates",
+  training_doc: "Training",
+  event_idea: "Event ideas",
+  prayer_need: "Prayer needs",
+  mission_need: "Mission needs",
+};
+
+/** "GC" from "Grace Chapel"; used for a church's mark. */
+export function churchInitials(name: string) {
+  const words = name.replace(/\(.*?\)/g, "").split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w) && !/^(the|of|and|church)$/i.test(w));
+  const picked = words.length ? words : name.split(/\s+/).filter(Boolean);
+  return ((picked[0]?.[0] ?? "?") + (picked[1]?.[0] ?? "")).toUpperCase();
+}
+
+/** One shared resource as connected churches see it (the Share page previews with this too). */
+export function ResourceCard({ r, open, onToggle, mine }: { r: Omit<SharedItem, "id" | "sharedAt">; open: boolean; onToggle?: () => void; mine?: boolean }) {
+  return (
+    <article className={`mesa-card kind-${r.kind}`}>
+      <span className="mesa-kind">{KIND_LABELS[r.kind]}</span>
+      <h3>{r.title}</h3>
+      {r.scripture && <p className="mesa-scripture">{r.scripture}</p>}
+      <p className={`mesa-body${open ? " open" : ""}`}>{r.body}</p>
+      {r.tags.length > 0 && (
+        <ul className="mesa-tags" aria-label="Tags">
+          {r.tags.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      )}
+      <footer className="mesa-card-foot">
+        <span className="mesa-from">
+          <span className="mesa-church-mark" aria-hidden="true">
+            {churchInitials(r.churchName)}
+          </span>
+          <span className="small">{mine ? "Shared by your church" : r.churchName}</span>
+        </span>
+        {onToggle && (
+          <button type="button" className="btn btn-sm btn-quiet" aria-expanded={open} onClick={onToggle}>
+            {open ? "Show less" : "Read it"}
+          </button>
+        )}
+      </footer>
+    </article>
+  );
+}
+
 export function LibrarySearch({ peers }: { peers: number }) {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<ItemKind | "">("");
@@ -21,22 +70,26 @@ export function LibrarySearch({ peers }: { peers: number }) {
   }, [q, kind]);
 
   return (
-    <div className="stack" style={{ gap: 16 }}>
+    <div className="mesa-find">
       <div className="mesa-search" role="search">
-        <div className="field">
-          <label htmlFor="mesa-q">Search shared resources</label>
-          <input id="mesa-q" type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="A series on James, greeter training, a fall outreach…" />
-        </div>
-        <div className="field">
-          <label htmlFor="mesa-kind">Kind</label>
-          <select id="mesa-kind" value={kind} onChange={(e) => setKind(e.target.value as ItemKind | "")}>
-            <option value="">Everything</option>
-            {ITEM_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {KIND_LABELS[k]}
-              </option>
-            ))}
-          </select>
+        <label className="search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <span className="sr-only">Search shared resources</span>
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="A series on James, greeter training, a fall outreach…" />
+        </label>
+        <div className="mesa-kinds" role="group" aria-label="Kind">
+          <button type="button" className="filter-chip" aria-pressed={kind === ""} onClick={() => setKind("")}>
+            Everything
+          </button>
+          {ITEM_KINDS.map((k) => (
+            <button key={k} type="button" className="filter-chip" aria-pressed={kind === k} onClick={() => setKind(kind === k ? "" : k)}>
+              <span className={`mesa-kind-dot kind-${k}`} aria-hidden="true" />
+              {KIND_CHIPS[k]}
+            </button>
+          ))}
         </div>
       </div>
       {results === null ? (
@@ -52,29 +105,19 @@ export function LibrarySearch({ peers }: { peers: number }) {
           </EmptyState>
         )
       ) : (
-        <ul className="mesa-results">
-          {results.map((r) => (
-            <li key={r.id} className="fin-card">
-              <div className="fin-card-head">
-                <span className="label">{KIND_LABELS[r.kind]}</span>
-                <span className="small muted">{r.mine ? "Shared by your church" : r.churchName}</span>
-              </div>
-              <h3>{r.title}</h3>
-              {r.scripture && <p className="small">{r.scripture}</p>}
-              <p className={`mesa-body${open === r.id ? " open" : ""}`}>{r.body}</p>
-              <div className="row">
-                <button type="button" className="btn btn-sm" aria-expanded={open === r.id} onClick={() => setOpen(open === r.id ? null : r.id)}>
-                  {open === r.id ? "Show less" : "Read it"}
-                </button>
-                {r.tags.map((t) => (
-                  <span key={t} className="badge" style={{ marginLeft: 0 }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="small muted mesa-count" aria-live="polite">
+            {results.length} {results.length === 1 ? "resource" : "resources"} from {peers} connected {peers === 1 ? "church" : "churches"}
+            {results.some((r) => r.mine) ? " and yours" : ""}
+          </p>
+          <ul className="mesa-results">
+            {results.map((r) => (
+              <li key={r.id}>
+                <ResourceCard r={r} mine={r.mine} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
