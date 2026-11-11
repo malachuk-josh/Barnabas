@@ -11,7 +11,9 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined, set: () => {} }),
 }));
 
-import { DELETE, GET, PATCH, POST } from "@/app/api/admin/users/route";
+import { DELETE, GET, PATCH, POST, PUT } from "@/app/api/admin/users/route";
+import { GET as INVITE_LOOKUP } from "@/app/api/auth/invite/route";
+import { getLeaderRecord } from "@/lib/team";
 import { POST as SIGNIN } from "@/app/api/auth/signin/route";
 import { leaderIdFor } from "@/lib/auth/session";
 import { can, levelMayUse } from "@/lib/auth/roles";
@@ -70,7 +72,7 @@ describe("Admin page: people and access", () => {
   });
 
   it("lets only people on the list sign in, and signs out someone removed", async () => {
-    const signin = (email: string) => SIGNIN(new Request("http://x/api/auth/signin", { method: "POST", body: JSON.stringify({ name: "Someone", email, code: "code" }) }));
+    const signin = (email: string) => SIGNIN(new Request("http://x/api/auth/signin", { method: "POST", body: JSON.stringify({ email, code: "code" }) }));
     expect((await signin("stranger@example.org")).status).toBe(403);
     expect((await signin("admin@example.org")).status).toBe(200);
 
@@ -165,3 +167,78 @@ describe("Barnabas for Team and Member", () => {
     expect(leaderAi.tools).toBeUndefined();
   });
 });
+
+describe("invites and sign-in", () => {
+  const signin = (body: object) => SIGNIN(new Request("http://x/api/auth/signin", { method: "POST", body: JSON.stringify(body) }));
+  const linkToken = (link: string) => new URL(link).searchParams.get("invite")!;
+
+  it("signs in with just email and access code, and uses the name from the Admin page", async () => {
+    await POST(req("POST", { name: "Ruth Miller", email: "ruth@example.org", level: "member" }));
+    expect((await signin({ email: "ruth@example.org", code: "code" })).status).toBe(200);
+    const ruth = await person("x", "ruth@example.org");
+    expect((await getLeaderRecord("demo", ruth.leaderId))?.name).toBe("Ruth Miller");
+    expect((await signin({ email: "ruth@example.org" })).status).toBe(400);
+  });
+
+  it("sends an invite by email and text, and its link signs them in once without the code", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test");
+    vi.stubEnv("RESEND_FROM", "Barnabas <hello@example.org>");
+    vi.stubEnv("TWILIO_ACCOUNT_SID", "AC123");
+    vi.stubEnv("TWILIO_AUTH_TOKEN", "tok");
+    vi.stubEnv("TWILIO_FROM_NUMBER", "+14135550100");
+    const calls: { url: string; body: string }[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url: String(url), body: String(init.body) });
+      return String(url).includes("twilio") ? new Response(JSON.stringify({ sid: "SM1", status: "queued" }), { status: 201 }) : new Response(JSON.stringify({ id: "em1" }), { status: 200 });
+    }));
+    try {
+      const r = await POST(req("POST", { name: "Ruth Miller", email: "ruth@example.org", phone: "(413) 555-0142", level: "member", inviteEmail: true, inviteText: true }));
+      const json = await r.json();
+      expect(json.invite.sends.map((x: { via: string; ok: boolean }) => [x.via, x.ok])).toEqual([["email", true], ["text", true]]);
+      expect(calls.some((c) => c.url.includes("resend") && c.body.includes("Accept your invitation"))).toBe(true);
+      expect(calls.some((c) => c.url.includes("twilio") && (new URLSearchParams(c.body).get("Body") ?? "").includes("invited you to Barnabas"))).toBe(true);
+      const pending = json.people.find((p: { email: string }) => p.email === "ruth@example.org");
+      expect(pending).toMatchObject({ lastSignedInAt: 0, phone: "+14135550142", invite: { expired: false } });
+
+      const token = linkToken(json.invite.link);
+      const lookup = await (await INVITE_LOOKUP(new Request(`http://x/api/auth/invite?token=${token}`))).json();
+      expect(lookup).toMatchObject({ valid: true, firstName: "Ruth", email: "ruth@example.org" });
+      expect((await signin({ email: "someone@example.org", invite: token })).status).toBe(401);
+      expect((await signin({ email: "ruth@example.org", invite: token })).status).toBe(200);
+      // Used once.
+      expect((await signin({ email: "ruth@example.org", invite: token })).status).toBe(401);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("a newer invite replaces the old link; without email or text set up, it gives a link to copy", async () => {
+    await POST(req("POST", { name: "Sam", email: "sam@example.org", level: "team", teamRole: "serving" }));
+    const sam = await person("Sam", "sam@example.org");
+    const first = await (await PUT(req("PUT", { leaderId: sam.leaderId, email: true }))).json();
+    expect(first.invite.sends[0]).toMatchObject({ via: "email", ok: false });
+    expect(first.invite.link).toContain("/signin?invite=");
+    const second = await (await PUT(req("PUT", { leaderId: sam.leaderId }))).json();
+    expect((await signin({ email: "sam@example.org", invite: linkToken(first.invite.link) })).status).toBe(401);
+    expect((await signin({ email: "sam@example.org", invite: linkToken(second.invite.link) })).status).toBe(200);
+  });
+
+  it("saving a mobile number for an invite doesn't choose a level for someone who has none", async () => {
+    const dee = await person("Dee", "dee@example.org");
+    await recordSignIn(dee);
+    await setLeaderRole("demo", dee.leaderId, "deacon", "test");
+    await PUT(req("PUT", { leaderId: dee.leaderId, phone: "413-555-0199" }));
+    const rec = await getLeaderRecord("demo", dee.leaderId);
+    expect(rec?.phone).toBe("+14135550199");
+    expect(rec?.level).toBeUndefined();
+    expect((await PUT(req("PUT", { leaderId: dee.leaderId, phone: "12" }))).status).toBe(400);
+  });
+
+  it("invites are admin-only", async () => {
+    const lee = await person("Lee", "lee@example.org");
+    await recordSignIn(lee);
+    session.current = lee;
+    expect((await PUT(req("PUT", { leaderId: lee.leaderId }))).status).toBe(403);
+  });
+});
+

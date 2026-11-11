@@ -1866,3 +1866,10 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .report-glance, .report-waiting-group, .report-monthly-side { display: none; }
   .report-letter { box-shadow: none; padding: 0; }
 }
+
+.admin-invite-ways { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.admin-invite-ways legend { font-weight: 700; font-size: 0.92rem; margin-bottom: 6px; padding: 0; }
+.admin-invite-ways .small { flex-basis: 100%; }
+.admin-invite-link { display: grid; gap: 8px; background: var(--surface-2); }
+.admin-invite-link input:where(:not(.word-root *)) { flex: 1; min-width: 0; font-size: 0.85rem; }
+.admin-invite-bad { color: var(--watch); font-weight: 600; }
