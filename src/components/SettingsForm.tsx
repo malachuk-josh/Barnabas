@@ -172,6 +172,7 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
   const sections = [
     { id: "profile", label: "Profile" },
     ...(!checkinOnly ? [{ id: "barnabas", label: "Barnabas and voice" }] : []),
+    ...(!checkinOnly && access.admin ? [{ id: "ai", label: "Barnabas for everyone" }] : []),
     { id: "notifications", label: "Notifications" },
     ...(!checkinOnly ? [{ id: "calendars", label: "Calendars" }] : []),
     { id: "privacy", label: "Privacy and data" },
@@ -321,18 +322,22 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
               <p className="muted small">How Barnabas speaks with you, listens to you and quotes Scripture.</p>
             </div>
             {know && (
-              <p className="small">
-                <strong>
-                  Barnabas knows you: {know.answered} of {know.total}
-                </strong>
+              <div className="settings-know">
+                <span className="settings-know-text small">
+                  <strong>
+                    Barnabas knows you: {know.answered} of {know.total}
+                  </strong>
+                  <span className="muted"> What he&apos;s learned is in your <Link href="/memory">Memory</Link>.</span>
+                </span>
+                <span className="memory-know-bar" aria-hidden="true">
+                  <span style={{ width: `${know.total ? Math.round((Math.min(know.answered, know.total) / know.total) * 100) : 0}%` }} />
+                </span>
                 {know.answered < know.total && (
-                  <>
-                    {" · "}
-                    <Link href="/?know=1">Let Barnabas get to know you</Link>
-                  </>
+                  <Link className="btn btn-sm" href="/?know=1">
+                    {know.answered ? "Keep going" : "Let Barnabas get to know you"}
+                  </Link>
                 )}
-                <span className="muted"> What he&apos;s learned is in your Memory, under &ldquo;getting-to-know-you&rdquo;.</span>
-              </p>
+              </div>
             )}
             <h3 className="settings-group">Language and time</h3>
             <div className="form-row">
@@ -461,7 +466,6 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
             </div>
             {access.admin && voices?.voiceReady && <VoiceTuning />}
 
-            {access.admin && <AiSettings embedded />}
 
             <h3 className="settings-group">Names he says wrong</h3>
             <div className="field">
@@ -499,6 +503,8 @@ export function SettingsForm({ initial, access, leaderId, vapidPublicKey = null,
             </button>
           </div>
         </form>
+
+        {access.admin && !checkinOnly && <AiSettings />}
 
         <NotificationSettings initial={initial.notifications} types={typesFor(access)} vapidPublicKey={vapidPublicKey} setupProblem={access.admin ? pushProblem : null} />
 

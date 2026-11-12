@@ -2259,3 +2259,16 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .memory-convs-empty { display: grid; gap: 6px; justify-items: start; }
 .memory-convs-empty p { margin: 0; }
 .memory-convs-empty .btn:where(:not(.word-root *)) { margin-top: 6px; }
+
+/* Settings, second pass: church-wide Barnabas settings in their own card, and how well Barnabas knows you as a bar */
+.ai-card { scroll-margin-top: 80px; border-left: 4px solid var(--accent); }
+.ai-card h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ai-admin-tag { font-family: var(--font-body); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.ai-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.settings-know { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+.settings-know-text { flex: 1 1 260px; min-width: 0; }
+.settings-know .memory-know-bar { flex: 1 1 140px; max-width: 220px; background: var(--surface); }
+@media (max-width: 640px) {
+  .ai-grid { grid-template-columns: minmax(0, 1fr); }
+  .settings-know .memory-know-bar { max-width: none; }
+}
