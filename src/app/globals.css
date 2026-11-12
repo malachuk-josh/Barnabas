@@ -2437,3 +2437,18 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .stmt-contents + .stmt-sheet { break-before: auto; }
   .stmt-total { background: none; border: 1px solid #000; }
 }
+
+/* Today, second pass: the voice and language settings folded behind one button, with Off the record kept in view */
+.talk-options { position: relative; }
+.talk-options > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--talk-muted) 45%, transparent); font-weight: 600; color: inherit; }
+.talk-options > summary::-webkit-details-marker { display: none; }
+.talk-options > summary::after { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin: -3px 0 0 2px; transition: transform 0.15s; }
+.talk-options[open] > summary::after { transform: rotate(-135deg); margin-top: 3px; }
+.talk-options-now { font-weight: 500; opacity: 0.8; }
+.talk-options-body { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 10px; }
+.talk-options { flex: 1 1 260px; min-width: 0; }
+.toggles:has(.talk-options[open]) { align-items: flex-start; }
+.toggles:has(.talk-options[open]) > label:first-child { padding-top: 5px; }
+@media (max-width: 480px) { .talk-options-now { display: none; } }
+.week-soon { color: var(--watch); font-weight: 700; }
+.week-list li.is-soon .date-tile { background: color-mix(in srgb, var(--brass) 22%, var(--surface-2)); }
