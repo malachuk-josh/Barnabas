@@ -473,9 +473,13 @@ function RecentGifts({ recentGifts, canEdit, funds }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const fundName = (id: string) => funds.find((f) => f.id === id)?.name ?? id;
+  const [limit, setLimit] = useState(12);
   return (
     <section className="fin-card">
-      <h2>Recent gifts</h2>
+      <div className="fin-card-head">
+        <h2>Recent gifts</h2>
+        {recentGifts.length > 0 && <span className="small muted">The latest {Math.min(limit, recentGifts.length)} of {recentGifts.length}</span>}
+      </div>
       {error && (
         <p className="error" role="alert">
           {error}
@@ -494,7 +498,7 @@ function RecentGifts({ recentGifts, canEdit, funds }: Props) {
             </tr>
           </thead>
           <tbody>
-            {recentGifts.map((g) => (
+            {recentGifts.slice(0, limit).map((g) => (
               <tr key={g.id}>
                 <td className="nowrap">{shortDate(g.date)}</td>
                 <td className="wide">{g.donorName}</td>
@@ -526,6 +530,11 @@ function RecentGifts({ recentGifts, canEdit, funds }: Props) {
           </tbody>
         </table>
       </div>
+      {recentGifts.length > limit && (
+        <button type="button" className="btn fin-more" onClick={() => setLimit((n) => n + 25)}>
+          Show more ({recentGifts.length - limit} more)
+        </button>
+      )}
     </section>
   );
 }

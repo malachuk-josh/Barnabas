@@ -32,40 +32,42 @@ export default async function GivingPage() {
       intro={ctx.canSeeDonors ? "Gift records, Sunday batches, recurring givers, donor history and year-end statements." : "Church-wide giving totals and trends. Individual giving is visible only to the pastor and treasurer."}
     >
       <div className="fin-stack">
-        <div className="fin-grid">
-          <section className="fin-card">
+        <div className="giving-top">
+          <section className="fin-card giving-totals">
             <span className="label">Given in {year} so far</span>
             <div className="fin-stat">{wholeDollars(summary.total)}</div>
             <span className="small muted">
               {summary.count} gifts from {summary.givers} givers. By this day last year: {wholeDollars(lastYear.total)}.
             </span>
+            <div className="giving-splits">
+              <div>
+                <h3>By fund</h3>
+                {summary.byFund.map((f) => (
+                  <div className="fin-sub" key={f.fundId}>
+                    <span>{f.name}</span>
+                    <span>{wholeDollars(f.total)}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <h3>By method</h3>
+                {(Object.keys(summary.byMethod) as GiftMethod[]).map((m) => (
+                  <div className="fin-sub" key={m}>
+                    <span>{METHOD_LABELS[m]}</span>
+                    <span>{wholeDollars(summary.byMethod[m])}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
             <p className="fin-source">Every gift record dated January 1 to today, all funds.</p>
           </section>
+
           <section className="fin-card">
-            <span className="label">By fund</span>
-            {summary.byFund.map((f) => (
-              <div className="fin-sub" key={f.fundId}>
-                <span>{f.name}</span>
-                <span>{wholeDollars(f.total)}</span>
-              </div>
-            ))}
-          </section>
-          <section className="fin-card">
-            <span className="label">By method</span>
-            {(Object.keys(summary.byMethod) as GiftMethod[]).map((m) => (
-              <div className="fin-sub" key={m}>
-                <span>{METHOD_LABELS[m]}</span>
-                <span>{wholeDollars(summary.byMethod[m])}</span>
-              </div>
-            ))}
+            <h2>Giving trends</h2>
+            <TrendChart points={summary.trend} title="Monthly giving for the last 13 months" highlight={asOf.slice(0, 7)} />
+            <p className="fin-source">Gift records by month, all funds. The first bar is the same month last year; the brass bar is this month so far.</p>
           </section>
         </div>
-
-        <section className="fin-card">
-          <h2>Giving trends</h2>
-          <TrendChart points={summary.trend} title="Monthly giving for the last 13 months" highlight={asOf.slice(0, 7)} />
-          <p className="fin-source">Gift records by month, all funds. The first bar is the same month last year; the brass bar is this month so far.</p>
-        </section>
 
         <GivingView
           canEdit={ctx.canEdit}

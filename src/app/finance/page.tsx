@@ -150,6 +150,7 @@ export default async function FinanceOverviewPage() {
             <p className="fin-source">{o.budgetHealth.source} The brass tick marks how much of the year has passed.</p>
           </section>
 
+          <div className="fin-stack">
           <section className="fin-card">
             <div className="fin-card-head">
               <h2>Giving by month</h2>
@@ -173,13 +174,27 @@ export default async function FinanceOverviewPage() {
               </span>
             </div>
             <p className="fin-source">Every gift record for the last 13 months, all funds, by the date of the gift.</p>
-            {o.bankAccounts.map((b) => (
-              <div className="fin-sub" key={b.id}>
-                <span>{b.name}</span>
-                <span>{wholeDollars(b.balance)}</span>
-              </div>
-            ))}
           </section>
+          {o.bankAccounts.length > 0 && (
+            <section className="fin-card fin-banks">
+              <div className="fin-card-head">
+                <h2>In the bank</h2>
+                <Link href="/finance/accounts" className="small">
+                  Funds and ledger
+                </Link>
+              </div>
+              <ul className="fin-bank-list">
+                {o.bankAccounts.map((b) => (
+                  <li key={b.id}>
+                    <span>{b.name}</span>
+                    <strong>{wholeDollars(b.balance)}</strong>
+                  </li>
+                ))}
+              </ul>
+              <p className="fin-source">Book balances from the ledger today.</p>
+            </section>
+          )}
+          </div>
         </div>
       </div>
     </FinanceFrame>

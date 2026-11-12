@@ -17,26 +17,74 @@ async function post(body: unknown) {
   return json;
 }
 
+function CopyText({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <span className="connect-copy">
+      <code>{text}</code>
+      <button
+        type="button"
+        className="btn btn-sm btn-quiet"
+        aria-label={`Copy ${label}`}
+        onClick={() => {
+          void navigator.clipboard?.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          });
+        }}
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </span>
+  );
+}
+
+/** What's in place so far: the key, the webhook, a fund open online, and the giver portal link. */
+function ConnectChecklist({ status, fundsOpen }: { status: View["status"]; fundsOpen: number }) {
+  const items: [string, boolean][] = [
+    ["Secret key", status.connected],
+    ["Webhook", status.webhook],
+    [fundsOpen ? `${fundsOpen} ${fundsOpen === 1 ? "fund" : "funds"} open online` : "A fund open online", fundsOpen > 0],
+    ["Giver portal link", status.portalLogin],
+  ];
+  return (
+    <ul className="connect-check">
+      {items.map(([label, done]) => (
+        <li key={label} className={done ? "is-done" : ""}>
+          <span className="connect-tick" aria-hidden="true" />
+          {label}
+          <span className="sr-only">{done ? ": done" : ": not yet"}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function SetupSteps({ webhookUrl, status }: { webhookUrl: string; status: View["status"] }) {
   return (
-    <ol className="fin-steps">
+    <ol className="fin-steps connect-steps">
       <li>
         Create or open the church&apos;s Stripe account at <strong>dashboard.stripe.com</strong> as a nonprofit (business type &ldquo;Nonprofit organization&rdquo;), with the church&apos;s EIN and bank account, and finish verification.
       </li>
-      <li>
+      <li className={status.connected ? "is-done" : ""}>
         Start in <strong>test mode</strong> (the toggle at the top of the dashboard). Under Developers → API keys, copy the <strong>secret key</strong> (<code>sk_test_…</code>) into Vercel → Settings → Environment Variables as <code>STRIPE_SECRET_KEY</code>. Barnabas never needs the publishable key: payments are entered on Stripe&apos;s own Checkout page.
       </li>
-      <li>
-        Under Developers → Webhooks, add an endpoint at <code>{webhookUrl}</code> and select these events: {EVENTS.map((e, i) => (
-          <span key={e}>
-            <code>{e}</code>
-            {i < EVENTS.length - 1 ? ", " : "."}
-          </span>
-        ))}{" "}
-        Copy its signing secret (<code>whsec_…</code>) into <code>STRIPE_WEBHOOK_SECRET</code>{status.webhook ? " (done)" : ""}.
+      <li className={status.webhook ? "is-done" : ""}>
+        Under Developers → Webhooks, add an endpoint at <CopyText text={webhookUrl} label="the webhook address" /> and select the events below. Copy its signing secret (<code>whsec_…</code>) into <code>STRIPE_WEBHOOK_SECRET</code>
+        {status.webhook ? " (done)" : ""}.
+        <details className="fin-details connect-events">
+          <summary>The {EVENTS.length} events to select</summary>
+          <ul>
+            {EVENTS.map((e) => (
+              <li key={e}>
+                <code>{e}</code>
+              </li>
+            ))}
+          </ul>
+        </details>
       </li>
       <li>Under Settings → Payment methods, turn on cards, Apple Pay, Google Pay and ACH Direct Debit (US bank account). Under Settings → Emails, turn on receipts for successful payments.</li>
-      <li>
+      <li className={status.portalLogin ? "is-done" : ""}>
         Under Settings → Billing → Customer portal, allow customers to cancel subscriptions and update payment methods, and turn on the login link. Paste that link into <code>STRIPE_PORTAL_LOGIN_URL</code>{status.portalLogin ? " (done)" : ""} so givers can change or cancel a recurring gift.
       </li>
       <li>Redeploy, then open the funds below for online giving and make a test gift with card 4242 4242 4242 4242. When it shows up here, switch the dashboard to live mode and repeat steps 2 and 3 with the live keys.</li>
@@ -68,6 +116,8 @@ export function OnlineGivingView({ view, canEdit, canSeeDonors, webhookUrl }: { 
   }
 
   const openFunds = view.funds.filter((f) => f.online);
+  // Before Stripe is connected and nothing has come in, the totals, payouts and gift list would all be empty.
+  const quiet = !status.connected && view.year.count === 0 && view.payouts.length === 0;
 
   return (
     <div className="fin-stack">
@@ -83,25 +133,39 @@ export function OnlineGivingView({ view, canEdit, canSeeDonors, webhookUrl }: { 
       )}
 
       {!status.connected ? (
-        <section className="fin-card">
+        <section className="fin-card connect-card">
           <div className="fin-card-head">
-            <h2>Stripe not connected</h2>
+            <h2>Connect Stripe</h2>
             <span className="badge">Not connected</span>
           </div>
+          <ConnectChecklist status={status} fundsOpen={openFunds.length} />
           {status.keyLooksWrong && <p className="notice notice-danger">STRIPE_SECRET_KEY is set but isn&apos;t a Stripe secret key. It should start with sk_test_ or sk_live_ (a publishable pk_ key won&apos;t work).</p>}
           <p className="muted small">Until Stripe is connected, the website&apos;s Give page shows the church&apos;s giving link (or &ldquo;coming soon&rdquo;), paid events are paid at the door, and online and ACH gifts are recorded by hand in Giving. To connect:</p>
           <SetupSteps webhookUrl={webhookUrl} status={status} />
         </section>
       ) : (
         !status.webhook && (
-          <section className="fin-card">
-            <h2>Almost there: add the webhook</h2>
+          <section className="fin-card connect-card">
+            <div className="fin-card-head">
+              <h2>Almost there: add the webhook</h2>
+              <span className="badge">{status.testMode ? "Test mode" : "Live"}</span>
+            </div>
+            <ConnectChecklist status={status} fundsOpen={openFunds.length} />
             <p className="notice">Stripe is connected, but STRIPE_WEBHOOK_SECRET isn&apos;t set, so gifts made online aren&apos;t recorded here yet.</p>
             <SetupSteps webhookUrl={webhookUrl} status={status} />
           </section>
         )
       )}
+      {status.connected && status.webhook && (
+        <section className={`connect-ok${status.testMode ? " is-test" : ""}`}>
+          <span className="connect-ok-dot" aria-hidden="true" />
+          <strong>{status.testMode ? "Stripe is connected in test mode" : "Stripe is connected and live"}</strong>
+          <span className="small muted">{status.testMode ? "Only test cards work. Switch to the live keys when a test gift shows up here." : "Gifts and event payments come in on their own."}</span>
+          <ConnectChecklist status={status} fundsOpen={openFunds.length} />
+        </section>
+      )}
 
+      {!quiet && (
       <div className="fin-grid">
         <section className="fin-card">
           <span className="label">Given online in {view.asOf.slice(0, 4)}</span>
@@ -145,20 +209,21 @@ export function OnlineGivingView({ view, canEdit, canSeeDonors, webhookUrl }: { 
           <p className="fin-source">The Stripe balance clearing account: online gifts and event payments, less fees, refunds and payouts. It should match the dashboard&apos;s balance.</p>
         </section>
       </div>
+      )}
 
       <section className="fin-card">
         <h2>Funds open for online giving</h2>
         <p className="muted small">Givers choose from these on the website&apos;s Give page and in the member app. {openFunds.length ? "" : "No fund is open yet, so the give form says online giving is being set up."}</p>
         <div>
           {view.funds.map((f) => (
-            <div className="fin-fund-toggle" key={f.id}>
+            <div className={`fin-fund-toggle${f.online ? " is-on" : ""}`} key={f.id}>
               <span>
                 <strong>{f.name}</strong> <span className="small muted">{f.restricted ? "Restricted" : "Unrestricted"}</span>
               </span>
               {canEdit ? (
-                <label className="check">
-                  <input type="checkbox" checked={f.online} disabled={busy} onChange={(e) => void act({ action: "fund-online", fundId: f.id, online: e.target.checked })} />
-                  Open online
+                <label className="fund-switch">
+                  <span className="small">{f.online ? "Open online" : "Not online"}</span>
+                  <input className="switch" type="checkbox" role="switch" aria-label={`${f.name}: open for online giving`} checked={f.online} disabled={busy} onChange={(e) => void act({ action: "fund-online", fundId: f.id, online: e.target.checked })} />
                 </label>
               ) : (
                 <span className="small">{f.online ? "Open online" : "Not online"}</span>
@@ -169,6 +234,11 @@ export function OnlineGivingView({ view, canEdit, canSeeDonors, webhookUrl }: { 
         {!canEdit && <p className="small muted">The pastor or treasurer opens funds for online giving.</p>}
       </section>
 
+      {quiet && (
+        <p className="fin-source connect-later">Once Stripe is connected, this page shows what came in online, the processing fees, each payout to the bank and the latest online gifts.</p>
+      )}
+
+      {!quiet && (
       <section className="fin-card">
         <div className="fin-card-head">
           <h2>Stripe payouts</h2>
@@ -220,8 +290,9 @@ export function OnlineGivingView({ view, canEdit, canSeeDonors, webhookUrl }: { 
           </div>
         )}
       </section>
+      )}
 
-      {canSeeDonors && view.gifts && (
+      {!quiet && canSeeDonors && view.gifts && (
         <section className="fin-card">
           <h2>Recent online gifts</h2>
           {view.gifts.length === 0 ? (

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePageLeader } from "@/components/AppShell";
-import { Attendees, EventForm } from "@/components/ops/EventsViews";
+import { Attendees, EventDetailsFold } from "@/components/ops/EventsViews";
 import { OpsFrame } from "@/components/ops/OpsFrame";
 import { friendlyDate } from "@/lib/dates";
 import { counts, eventsActor, loadEvents } from "@/lib/events/service";
@@ -53,9 +53,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         </div>
       </dl>
       {actor.manager ? (
-        <div className="fin-grid-2">
+        <div className="event-layout">
           <Attendees event={event} registrations={book.registrations.filter((r) => r.eventId === id)} origin={origin} />
-          <EventForm event={event} />
+          <EventDetailsFold event={event} />
         </div>
       ) : (
         <section className="fin-card">
