@@ -113,6 +113,17 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
     return map;
   }, [data]);
 
+  // The next few things after today (from what's loaded for this month's grid), for the side column.
+  const upcoming = useMemo(() => {
+    const out: Item[] = [];
+    for (const date of [...byDate.keys()].filter((d) => d > today).sort()) {
+      for (const it of byDate.get(date) ?? []) {
+        if (out.length < 5) out.push(it);
+      }
+    }
+    return out;
+  }, [byDate, today]);
+
   function openItem(item: Item) {
     setFormError(null);
     setConfirmDelete(false);
@@ -249,7 +260,7 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
                       <span className="num">{Number(date.slice(8))}</span>
                       {items.slice(0, 3).map((it) => (
                         <span key={`${it.kind}-${it.kind === "mine" ? it.event.id : it.event.id}`} className={`chip src-${it.source}`}>
-                          {!it.allDay && it.start ? `${time12(it.start).replace(":00", "").replace(" ", "").toLowerCase()} ` : ""}
+                          {!it.allDay && it.start && <span className="chip-time">{time12(it.start).replace(":00", "").replace(" ", "").toLowerCase()}</span>}
                           {it.title}
                         </span>
                       ))}
@@ -301,6 +312,30 @@ export function CalendarView({ timezone, suggestions = [] }: { timezone: string;
               ))}
             </div>
           </aside>
+        )}
+        {view === "month" && upcoming.length > 0 && (
+          <section className="card cal-upcoming" aria-labelledby="cal-upcoming-h">
+            <h2 id="cal-upcoming-h">Coming up</h2>
+            <ul>
+              {upcoming.map((it) => (
+                <li key={`${it.kind}-${it.event.id}`}>
+                  <button type="button" className={`src-${it.source}`} onClick={() => openItem(it)}>
+                    <span className="date-tile" aria-hidden="true">
+                      <small>{new Date(`${it.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}</small>
+                      <strong>{Number(it.date.slice(8))}</strong>
+                    </span>
+                    <span className="cal-upcoming-what">
+                      <strong>{it.title}</strong>
+                      <span className="small muted">
+                        <span className="sr-only">{longDate(it.date)}, </span>
+                        {whenText(it)} · {SOURCE_LABEL[it.source]}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
         {suggestions.length > 0 && (
           <section className="card care-suggest cal-suggest" aria-label="Suggestions from Shepherding">

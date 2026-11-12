@@ -2164,3 +2164,30 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 @media (max-width: 640px) {
   .ppl-letter th { padding: 6px 16px; }
 }
+
+/* Calendar, second pass: events as tinted pills with a quieter time, today tinted, and a "Coming up" list beside the month */
+@media (min-width: 641px) {
+  .day .chip:where(:not(.word-root *)) {
+    padding: 1px 5px 1px 6px; border-left: 3px solid var(--chip-color); border-radius: 5px;
+    background: color-mix(in srgb, var(--chip-color) 12%, var(--surface)); margin-top: 2px; font-weight: 600;
+  }
+  .day .chip:where(:not(.word-root *))::before { display: none; }
+  .chip-time { font-weight: 500; font-size: 0.68rem; color: var(--muted); margin-right: 4px; font-variant-numeric: tabular-nums; }
+  .day.today { background: color-mix(in srgb, var(--brass) 7%, var(--surface)); }
+}
+@media (max-width: 640px) {
+  .chip-time { display: none; }
+}
+.cal-upcoming { display: grid; gap: 10px; }
+.cal-upcoming h2 { font-size: 1.1rem; margin: 0; }
+.cal-upcoming ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.cal-upcoming li + li { border-top: 1px solid var(--line-soft); }
+.cal-upcoming button { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px 4px; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; color: inherit; border-radius: 10px; }
+.cal-upcoming button:hover { background: var(--surface-2); }
+.cal-upcoming button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cal-upcoming .date-tile { background: color-mix(in srgb, var(--chip-color) 12%, var(--surface)); }
+.cal-upcoming-what { display: grid; gap: 1px; min-width: 0; }
+.cal-upcoming-what strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1100px) {
+  .cal-upcoming { order: 1; }
+}
