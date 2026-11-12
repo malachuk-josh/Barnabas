@@ -2248,3 +2248,14 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .send-stats > div { border-left: 0 !important; border-top: 1px solid var(--line-soft); }
   .send-stats > div:first-child { border-top: 0; }
 }
+
+/* Memory, second pass: how far Barnabas has got to know you, and a friendlier empty conversations list */
+.memory-know { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0 0 22px; padding: 16px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); border-left: 4px solid var(--brass); }
+.memory-know-text { display: grid; gap: 6px; flex: 1 1 320px; min-width: 0; }
+.memory-know h2 { margin: 0; font-size: 1.15rem; }
+.memory-know p { margin: 0; }
+.memory-know-bar { display: block; height: 6px; max-width: 420px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.memory-know-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--brass); }
+.memory-convs-empty { display: grid; gap: 6px; justify-items: start; }
+.memory-convs-empty p { margin: 0; }
+.memory-convs-empty .btn:where(:not(.word-root *)) { margin-top: 6px; }
