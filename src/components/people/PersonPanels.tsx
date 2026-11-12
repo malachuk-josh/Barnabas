@@ -15,15 +15,57 @@ export function HouseholdEditor({ household, members, directory }: { household: 
   const [list, setList] = useState(members);
   const [add, setAdd] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   async function save() {
     setMsg(null);
     try {
       await peoplePost({ action: "household", id: household.id, household: { name, members: list.map((m) => ({ personId: m.personId, role: m.role })) } });
       setMsg("Saved.");
+      setEditing(false);
       router.refresh();
     } catch (e) {
       setMsg((e as Error).message);
     }
+  }
+  if (!editing) {
+    return (
+      <div className="hh-view">
+        <p className="hh-name">{household.name}</p>
+        <ul className="hh-members">
+          {members.map((m) => (
+            <li key={m.personId}>
+              <span className="hh-avatar" aria-hidden="true">
+                {m.name
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((w) => w[0]!.toUpperCase())
+                  .join("")}
+              </span>
+              <Link href={`/people/${m.personId}`}>{m.name}</Link>
+              <span className="small muted">{ROLE_LABELS[m.role]}</span>
+            </li>
+          ))}
+        </ul>
+        {msg && (
+          <p className="small" role="status">
+            {msg}
+          </p>
+        )}
+        <button
+          type="button"
+          className="btn btn-sm btn-quiet hh-edit"
+          onClick={() => {
+            setName(household.name);
+            setList(members);
+            setMsg(null);
+            setEditing(true);
+          }}
+        >
+          Edit household
+        </button>
+      </div>
+    );
   }
   return (
     <div className="stack" style={{ gap: 10 }} data-no-pull>
@@ -53,6 +95,7 @@ export function HouseholdEditor({ household, members, directory }: { household: 
       </div>
       <div className="row">
         <button type="button" className="btn btn-primary btn-sm" onClick={() => void save()}>Save household</button>
+        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setEditing(false)}>Cancel</button>
         {msg && <span className="small" role="status">{msg}</span>}
       </div>
     </div>

@@ -16,30 +16,32 @@ function summary(p: AdminPerson) {
   return LEVEL_LABELS[p.level];
 }
 
-/** The level picker: level, then the finance switch for Leaders or the team role for Team. */
+/** The level picker: level cards, then the finance switch for Leaders or the team role for Team. */
 function LevelFields({ id, value, onChange }: { id: string; value: LevelChoice; onChange: (v: LevelChoice) => void }) {
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <div className="field">
-        <label htmlFor={`${id}-level`}>Level</label>
-        <select id={`${id}-level`} value={value.level} onChange={(e) => onChange({ ...value, level: e.target.value as Level })}>
-          {value.level === "" && <option value="">Choose a level</option>}
+      <fieldset className="admin-levels">
+        <legend>Level</legend>
+        <div className="admin-level-cards">
           {LEVELS.map((l) => (
-            <option key={l} value={l}>
-              {LEVEL_LABELS[l]}
-            </option>
+            <label key={l} className={`admin-level-card${value.level === l ? " is-picked" : ""}`}>
+              <input type="radio" className="sr-only" name={`${id}-level`} value={l} checked={value.level === l} onChange={() => onChange({ ...value, level: l })} />
+              <span className={`admin-level-mark admin-level-${l}`} aria-hidden="true" />
+              <strong>{LEVEL_LABELS[l]}</strong>
+              <span className="small muted">{LEVEL_DESCRIPTIONS[l]}.</span>
+            </label>
           ))}
-        </select>
-        {value.level && <span className="small muted">{LEVEL_DESCRIPTIONS[value.level]}.</span>}
-      </div>
+        </div>
+        {value.level === "" && <span className="small muted">Choose a level.</span>}
+      </fieldset>
       {value.level === "leader" && (
-        <label className="check">
+        <label className="check admin-sub">
           <input id={`${id}-finance`} type="checkbox" checked={value.finance} onChange={(e) => onChange({ ...value, finance: e.target.checked })} />
           Finance access (budgets, giving and donors)
         </label>
       )}
       {value.level === "team" && (
-        <div className="field">
+        <div className="field admin-sub">
           <label htmlFor={`${id}-team`}>Team role</label>
           <select id={`${id}-team`} value={value.teamRole} onChange={(e) => onChange({ ...value, teamRole: e.target.value as TeamRole })}>
             {TEAM_ROLES.map((r) => (
@@ -54,6 +56,14 @@ function LevelFields({ id, value, onChange }: { id: string; value: LevelChoice; 
     </div>
   );
 }
+
+/** "DW" from "Dana Whitfield". */
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "?") + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "")).toUpperCase();
+}
+
+const shortDay = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 function inviteStatus(p: AdminPerson) {
   const inv = p.invite;
@@ -79,6 +89,7 @@ export function AdminPeople() {
   const [inviting, setInviting] = useState<{ id: string; email: boolean; text: boolean; phone: string } | null>(null);
   const [editing, setEditing] = useState<{ id: string; choice: LevelChoice } | null>(null);
   const [query, setQuery] = useState("");
+  const [addOpen, setAddOpen] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/users")
@@ -150,12 +161,43 @@ export function AdminPeople() {
     return c;
   }, [people]);
 
+  // Open when there's hardly anyone yet; folded once the church is on Barnabas.
+  const showAdd = addOpen ?? (people !== null && people.length <= 1);
+
   return (
     <div className="stack" style={{ gap: 20 }}>
-      <section className="card stack" aria-labelledby="add-person">
-        <h2 id="add-person">Add someone</h2>
-        <p className="muted small">Only people on this list can sign in. Send them an invite: its link signs them in without the access code. They can also sign in with their email and the church access code.</p>
-        <form className="stack" onSubmit={onAdd}>
+      {people && (
+        <dl className="admin-counts">
+          {LEVELS.map((l) => (
+            <div key={l}>
+              <dt>
+                <span className={`admin-level-mark admin-level-${l}`} aria-hidden="true" />
+                {LEVEL_LABELS[l]}
+              </dt>
+              <dd className="tabular">{counts[l] ?? 0}</dd>
+            </div>
+          ))}
+          <div className={pending.length ? "is-pending" : undefined}>
+            <dt>Invites waiting</dt>
+            <dd className="tabular">{pending.length}</dd>
+          </div>
+        </dl>
+      )}
+
+      <section className={`card stack admin-add${showAdd ? " is-open" : ""}`} aria-labelledby="add-person">
+        <div className="admin-add-head">
+          <div>
+            <h2 id="add-person">Add someone</h2>
+            <p className="muted small">Only people on this list can sign in. An invite&apos;s link signs them in without the access code; they can also use their email and the church access code.</p>
+          </div>
+          {!showAdd && (
+            <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)} aria-controls="add-form">
+              Add someone
+            </button>
+          )}
+        </div>
+        {showAdd && (
+        <form className="stack" id="add-form" onSubmit={onAdd}>
           <div className="admin-add-grid">
             <div className="field">
               <label htmlFor="add-name">Name</label>
@@ -191,8 +233,14 @@ export function AdminPeople() {
             <button type="submit" className="btn btn-primary" disabled={busy === "add" || !add.choice.level}>
               {busy === "add" ? "Adding…" : add.inviteEmail || add.inviteText ? "Add and send invite" : "Add to Barnabas"}
             </button>
+            {people && people.length > 1 && (
+              <button type="button" className="btn btn-quiet" onClick={() => setAddOpen(false)}>
+                Close
+              </button>
+            )}
           </div>
         </form>
+        )}
       </section>
 
       {message && (
@@ -225,6 +273,9 @@ export function AdminPeople() {
               return (
                 <li key={p.leaderId}>
                   <div className="admin-person">
+                    <span className="admin-avatar is-pending" aria-hidden="true">
+                      {initials(p.name)}
+                    </span>
                     <div className="admin-person-who">
                       <strong>{p.name}</strong>
                       <span className="small muted">
@@ -236,15 +287,15 @@ export function AdminPeople() {
                     <span className={`admin-level admin-level-${p.levelChosen ? p.level : "unset"}`}>{summary(p)}</span>
                     {!open && (
                       <div className="row" style={{ gap: 6 }}>
-                        <button type="button" className="btn btn-primary" onClick={() => setInviting({ id: p.leaderId, email: Boolean(channels.email), text: Boolean(channels.text && p.phone), phone: p.phone ?? "" })}>
+                        <button type="button" className="btn btn-sm btn-primary" onClick={() => setInviting({ id: p.leaderId, email: Boolean(channels.email), text: Boolean(channels.text && p.phone), phone: p.phone ?? "" })}>
                           {p.invite ? "Resend" : "Send invite"}
                         </button>
-                        <button type="button" className="btn" disabled={busy === p.leaderId} onClick={() => void sendInvite(p, { email: false, text: false }, true)}>
+                        <button type="button" className="btn btn-sm btn-quiet" disabled={busy === p.leaderId} onClick={() => void sendInvite(p, { email: false, text: false }, true)}>
                           New link
                         </button>
                         <button
                           type="button"
-                          className="btn btn-danger"
+                          className="admin-remove"
                           disabled={busy === p.leaderId}
                           onClick={() => {
                             if (window.confirm(`Cancel ${p.name}'s invite and take them off Barnabas?`)) void call("DELETE", { leaderId: p.leaderId }, `${p.name}'s invite is cancelled.`, p.leaderId);
@@ -290,19 +341,17 @@ export function AdminPeople() {
       <section className="card stack" aria-labelledby="people-list">
         <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <h2 id="people-list">People on Barnabas</h2>
-          {people && (
-            <span className="small muted">
-              {LEVELS.filter((l) => counts[l]).map((l) => `${counts[l]} ${LEVEL_LABELS[l]}`).join(" · ")}
-            </span>
-          )}
+          {people && <span className="small muted">{shown.length} signed in</span>}
         </div>
         {people && people.length > 6 && (
-          <div className="field">
-            <label htmlFor="people-search" style={{ position: "absolute", left: -9999 }}>
-              Find someone
-            </label>
+          <label className="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <span className="sr-only">Find someone</span>
             <input id="people-search" type="search" placeholder="Find someone by name or email" value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
+          </label>
         )}
         {!people && !message && <p className="muted">Loading…</p>}
         <ul className="admin-people">
@@ -311,27 +360,31 @@ export function AdminPeople() {
             return (
               <li key={p.leaderId} className={p.levelChosen ? undefined : "is-unset"}>
                 <div className="admin-person">
+                  <span className={`admin-avatar admin-avatar-${p.levelChosen ? p.level : "unset"}`} aria-hidden="true">
+                    {initials(p.name)}
+                  </span>
                   <div className="admin-person-who">
                     <strong>
                       {p.name}
                       {p.me && <span className="muted small"> (you)</span>}
                     </strong>
-                    <span className="small muted">{p.email}</span>
-                    <span className="small muted">{p.lastSignedInAt ? `Last signed in ${new Date(p.lastSignedInAt).toLocaleDateString()}` : "Added, hasn't signed in yet"}</span>
+                    <span className="small muted">
+                      {p.email} · {p.lastSignedInAt ? `last signed in ${shortDay(p.lastSignedInAt)}` : "hasn't signed in yet"}
+                    </span>
                   </div>
                   <span className={`admin-level admin-level-${p.levelChosen ? p.level : "unset"}`}>{summary(p)}</span>
                   {p.fromServer ? (
-                    <span className="small muted">Admin from the server settings</span>
+                    <span className="small muted admin-server">Admin from the server settings</span>
                   ) : (
                     !open && (
                       <div className="row" style={{ gap: 6 }}>
-                        <button type="button" className="btn" onClick={() => setEditing({ id: p.leaderId, choice: choiceOf(p) })}>
+                        <button type="button" className={p.levelChosen ? "btn btn-sm" : "btn btn-sm btn-primary"} onClick={() => setEditing({ id: p.leaderId, choice: choiceOf(p) })}>
                           {p.levelChosen ? "Change access" : "Choose a level"}
                         </button>
                         {!p.me && (
                           <button
                             type="button"
-                            className="btn btn-danger"
+                            className="admin-remove"
                             disabled={busy === p.leaderId}
                             onClick={() => {
                               if (window.confirm(`Remove ${p.name} from Barnabas? They'll be signed out and can't sign in again unless you add them back.`)) {

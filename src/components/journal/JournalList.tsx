@@ -123,46 +123,48 @@ export function JournalList({ initial, tags: initialTags, me }: { initial: Row[]
   return (
     <div className="jr-list-wrap">
       <div className="jr-toolbar">
-        <label className="sr-only" htmlFor="jr-search">
-          Search your journal
+        <label className="search-field jr-search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <span className="sr-only">Search your journal</span>
+          <input id="jr-search" type="search" placeholder="Search titles, notes and tags" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
-        <input id="jr-search" type="search" className="jr-search" placeholder="Search titles, notes and tags" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="jr-selects">
-          <label className="sr-only" htmlFor="jr-kind">
-            Kind
-          </label>
-          <select id="jr-kind" value={kind} onChange={(e) => setKind(e.target.value as JournalKind | "")}>
-            <option value="">Every kind</option>
-            {JOURNAL_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {KIND_LABELS[k]}
-              </option>
-            ))}
-          </select>
-          {tags.length > 0 && (
-            <>
-              <label className="sr-only" htmlFor="jr-tag">
-                Tag
-              </label>
-              <select id="jr-tag" value={tag} onChange={(e) => setTag(e.target.value)}>
-                <option value="">Every tag</option>
-                {tags.map((t) => (
-                  <option key={t} value={t}>
-                    #{t}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
+        {tags.length > 0 && (
+          <>
+            <label className="sr-only" htmlFor="jr-tag">
+              Tag
+            </label>
+            <select id="jr-tag" className="jr-tag-select" value={tag} onChange={(e) => setTag(e.target.value)}>
+              <option value="">Every tag</option>
+              {tags.map((t) => (
+                <option key={t} value={t}>
+                  #{t}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        <nav className="jr-show" aria-label="Show">
+          {FILTERS.map((f) => (
+            <button key={f.id} type="button" aria-current={filter === f.id ? "page" : undefined} onClick={() => setFilter(f.id)}>
+              {f.label}
+            </button>
+          ))}
+        </nav>
       </div>
-      <nav className="care-chips jr-filters" aria-label="Show">
-        {FILTERS.map((f) => (
-          <button key={f.id} type="button" className="care-chip" aria-current={filter === f.id ? "page" : undefined} onClick={() => setFilter(f.id)}>
-            {f.label}
+      <div className="jr-kinds" role="group" aria-label="Kind">
+        <button type="button" className="filter-chip" aria-pressed={kind === ""} onClick={() => setKind("")}>
+          Every kind
+        </button>
+        {JOURNAL_KINDS.map((k) => (
+          <button key={k} type="button" className="filter-chip" aria-pressed={kind === k} onClick={() => setKind(kind === k ? "" : k)}>
+            <span className={`jr-dot jr-dot-${k}`} aria-hidden="true" />
+            {KIND_LABELS[k]}
           </button>
         ))}
-      </nav>
+      </div>
       <p className="sr-only" role="status">
         {loading ? "Searching" : `${rows.length} entries`}
       </p>
@@ -186,7 +188,7 @@ export function JournalList({ initial, tags: initialTags, me }: { initial: Row[]
         <ul className="jr-cards">
           {rows.map((r) => (
             <li key={`${r.ownerId}:${r.id}`}>
-              <Link href={`/journal/${r.id}`} className="jr-card">
+              <Link href={`/journal/${r.id}`} className={`jr-card jr-card-${r.kind}`}>
                 <span className="jr-card-top">
                   <KindMark kind={r.kind} />
                   {r.pinned && r.ownerId === me && <span className="jr-flag">Pinned</span>}
