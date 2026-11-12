@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requirePageLeader } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { OpsFrame } from "@/components/ops/OpsFrame";
-import { EventForm } from "@/components/ops/EventsViews";
+import { NewEventFold } from "@/components/ops/EventsViews";
 import { churchData } from "@/lib/chms";
 import { addDays, friendlyDate, today } from "@/lib/dates";
 import { counts, eventsActor, loadEvents } from "@/lib/events/service";
@@ -56,14 +56,25 @@ export default async function EventsPage() {
             <span style={{ width: `${pct}%` }} />
           </div>
         )}
-        <span className="small muted">
-          {c.waitlisted ? `${c.waitlisted} on the waitlist · ` : ""}
-          {c.checkedIn ? `${c.checkedIn} checked in · ` : ""}
-          {e.priceCents ? `$${(e.priceCents / 100).toFixed(0)} per person` : "Free"}
+        <span className="event-card-foot small muted">
+          <span>
+            {c.waitlisted ? `${c.waitlisted} on the waitlist` : ""}
+            {c.waitlisted && c.checkedIn ? " · " : ""}
+            {c.checkedIn ? `${c.checkedIn} checked in` : ""}
+            {!c.waitlisted && !c.checkedIn ? (c.spotsLeft === null ? "No limit" : `${c.spotsLeft} spots left`) : ""}
+          </span>
+          <span className="event-price">{e.priceCents ? `$${(e.priceCents / 100).toFixed(0)} per person` : "Free"}</span>
         </span>
       </Link>
     );
   };
+  const totals = upcoming.reduce(
+    (t, e) => {
+      const c = counts(book, e.id);
+      return { registered: t.registered + c.registered, waitlisted: t.waitlisted + c.waitlisted, open: t.open + (e.open ? 1 : 0) };
+    },
+    { registered: 0, waitlisted: 0, open: 0 },
+  );
   return (
     <OpsFrame
       profile={profile}
@@ -74,6 +85,26 @@ export default async function EventsPage() {
       demo={book.meta.demo ? { text: <>These are real events from MGBC&apos;s calendar. <strong>No one has registered yet</strong>, and no registrant is made up.</>, clear: actor.manager && (actor.access.role === "pastor" || actor.access.role === "staff") ? { path: "/api/events", method: "POST", body: { action: "demo-clear", confirm: "CLEAR" }, label: "Clear the demo events" } : undefined } : undefined}
     >
       <div className="fin-stack">
+        {upcoming.length > 0 && (
+          <dl className="fact-strip event-glance">
+            <div>
+              <dt>Coming up</dt>
+              <dd>{upcoming.length}</dd>
+            </div>
+            <div>
+              <dt>Taking registration</dt>
+              <dd>{totals.open}</dd>
+            </div>
+            <div>
+              <dt>Registered</dt>
+              <dd>{totals.registered}</dd>
+            </div>
+            <div>
+              <dt>On waitlists</dt>
+              <dd>{totals.waitlisted}</dd>
+            </div>
+          </dl>
+        )}
         {upcoming.length ? (
           <div className="fin-grid event-cards">{upcoming.map(card)}</div>
         ) : (
@@ -81,7 +112,7 @@ export default async function EventsPage() {
             Add a registration form to anything on the church calendar: a retreat, a dinner, a class. Each event gets a link people can open on their phone.
           </EmptyState>
         )}
-        {actor.manager && <EventForm churchEvents={church.map((e) => ({ id: e.id, title: e.title, date: e.date, time: e.time, endTime: e.endTime, location: e.location, description: e.description }))} />}
+        {actor.manager && <NewEventFold churchEvents={church.map((e) => ({ id: e.id, title: e.title, date: e.date, time: e.time, endTime: e.endTime, location: e.location, description: e.description }))} />}
         {past.length > 0 && (
           <details className="fin-details">
             <summary>Past events ({past.length})</summary>

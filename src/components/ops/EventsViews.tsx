@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { FIELD_KINDS, FIELD_LABELS, type FieldKind, type FormField, type RegEvent, type Registration } from "@/lib/events/types";
 import { localToday, money, opsApi, Status, useOps } from "./client";
@@ -16,7 +16,7 @@ function toDraft(f: FormField): FieldDraft {
 }
 
 /** Create an event (optionally from the church calendar) or edit one: details, capacity, waitlist and the form. */
-export function EventForm({ churchEvents = [], event }: { churchEvents?: ChurchEvent[]; event?: RegEvent }) {
+export function EventForm({ churchEvents = [], event, onClose }: { churchEvents?: ChurchEvent[]; event?: RegEvent; onClose?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,7 +70,7 @@ export function EventForm({ churchEvents = [], event }: { churchEvents?: ChurchE
   }
 
   return (
-    <form id={event ? "edit-event" : "new-event"} className="fin-card fin-form" onSubmit={submit}>
+    <form id={event ? "edit-event" : "new-event-form"} className="fin-card fin-form" onSubmit={submit}>
       <h2>{event ? "Event details and form" : "Create an event"}</h2>
       <Status error={error} />
       {!event && churchEvents.length > 0 && (
@@ -188,8 +188,105 @@ export function EventForm({ churchEvents = [], event }: { churchEvents?: ChurchE
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? "Saving…" : event ? "Save event" : "Create event"}
         </button>
+        {onClose && (
+          <button className="btn btn-quiet" type="button" onClick={onClose}>
+            {event ? "Done" : "Close"}
+          </button>
+        )}
       </div>
     </form>
+  );
+}
+
+/** The create form stays folded until someone asks for it (the header's New event link, or the button here). */
+export function NewEventFold({ churchEvents }: { churchEvents: ChurchEvent[] }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      if (window.location.hash === "#new-event") {
+        setOpen(true);
+        requestAnimationFrame(() => document.getElementById("new-event")?.scrollIntoView({ block: "start" }));
+      }
+    };
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
+  const close = () => {
+    setOpen(false);
+    if (window.location.hash === "#new-event") history.replaceState(null, "", window.location.pathname);
+  };
+  return (
+    <div id="new-event" className="event-new">
+      {open ? (
+        <EventForm churchEvents={churchEvents} onClose={close} />
+      ) : (
+        <button type="button" className="event-new-tile" onClick={() => setOpen(true)}>
+          <span className="event-new-plus" aria-hidden="true">
+            +
+          </span>
+          <span>
+            <strong>New event</strong>
+            <span className="small muted">
+              {churchEvents.length ? `Start from one of ${churchEvents.length} on the church calendar, or from scratch.` : "A retreat, a dinner, a class: anything people sign up for."}
+            </span>
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** On an event's page: what the form asks and how it's set up, with the full editor folded behind Edit. */
+export function EventDetailsFold({ event }: { event: RegEvent }) {
+  const [editing, setEditing] = useState(false);
+  if (editing) return <EventForm event={event} onClose={() => setEditing(false)} />;
+  const facts: [string, string][] = [
+    ["Registration", event.open ? "Open" : "Closed"],
+    ["Capacity", event.capacity ? `${event.capacity} people` : "No limit"],
+    ["Waitlist", event.waitlist ? "On when full" : "Off"],
+    ["Per registration", event.maxParty > 1 ? `Up to ${event.maxParty} people` : "1 person"],
+    ["Cost", event.priceCents ? `${money(event.priceCents)} per person` : "Free"],
+  ];
+  return (
+    <section className="fin-card event-details">
+      <div className="fin-card-head">
+        <h2>Event details</h2>
+        <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>
+          Edit event
+        </button>
+      </div>
+      {event.description && <p className="event-details-desc">{event.description}</p>}
+      <dl className="event-details-facts">
+        {facts.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="event-details-qs">
+        <h3>Registration form</h3>
+        <ol>
+          <li>
+            Name <span className="muted">· required</span>
+          </li>
+          <li>
+            Email or phone <span className="muted">· required</span>
+          </li>
+          {event.fields.map((x) => (
+            <li key={x.id}>
+              {x.label}
+              <span className="muted">
+                {" "}
+                · {FIELD_LABELS[x.kind]}
+                {x.required ? ", required" : ""}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 }
 
