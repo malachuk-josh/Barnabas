@@ -2379,3 +2379,33 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .ledger-month th > span:first-child { margin-right: 12px; }
 .ledger-month-sum { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ledger-in { color: var(--ok); font-weight: 600; }
+
+/* Online giving, second pass: a checklist of what's in place, numbered setup steps with a copyable webhook address, funds as switches, and the empty totals held back until Stripe is connected */
+.connect-card { display: grid; gap: 12px; }
+.connect-check { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.connect-check li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: var(--surface-2); font-size: 0.88rem; font-weight: 600; color: var(--muted); }
+.connect-check li.is-done { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+.connect-tick { width: 18px; height: 18px; border-radius: 50%; border: 2px solid currentColor; flex: none; position: relative; opacity: 0.6; }
+.is-done > .connect-tick { background: var(--ok); border-color: var(--ok); opacity: 1; }
+.is-done > .connect-tick::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid var(--surface); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.connect-steps { list-style: none; padding: 0; counter-reset: cstep; gap: 0; }
+.connect-steps > li { counter-increment: cstep; position: relative; padding: 12px 0 12px 44px; border-top: 1px solid var(--line-soft); line-height: 1.55; }
+.connect-steps > li:first-child { border-top: 0; }
+.connect-steps > li::before { content: counter(cstep); position: absolute; left: 0; top: 10px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.9rem; background: var(--surface-2); color: var(--accent); }
+.connect-steps > li.is-done::before { content: "✓"; background: var(--ok); color: var(--surface); }
+.connect-steps > li.is-done { color: var(--muted); }
+.connect-copy { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 100%; vertical-align: middle; }
+.connect-copy code { overflow-wrap: anywhere; }
+.connect-events { margin-top: 6px; }
+.connect-events ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.connect-ok { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: center; padding: 16px 18px; border-radius: var(--radius); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); box-shadow: var(--shadow-card); }
+.connect-ok.is-test { background: color-mix(in srgb, var(--watch) 10%, var(--surface)); }
+.connect-ok-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--ok); grid-row: span 2; }
+.connect-ok.is-test .connect-ok-dot { background: var(--watch); }
+.connect-ok .connect-check { grid-column: 1 / -1; margin-top: 8px; }
+.connect-later { margin: 0; }
+.fin-fund-toggle { border-bottom-color: var(--line-soft); padding: 12px 0; }
+.fin-fund-toggle > span:first-child { min-width: 0; }
+.fund-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; white-space: nowrap; flex: none; }
+.fin-fund-toggle.is-on .fund-switch .small { color: var(--ok); font-weight: 600; }
+@media (max-width: 480px) { .fund-switch .small { display: none; } }
