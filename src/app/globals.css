@@ -2351,3 +2351,31 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .fin-partner .fin-details { margin-top: 2px; }
 .fin-print { max-width: 1060px; }
 .fin-print .fin-table th, .fin-print .fin-table td { padding-inline: 10px; }
+
+/* Budget and ledger, second pass: meters on the totals, a needs-attention filter, folding categories, a bar beside each share; ledger search, filters and month dividers */
+.fin-card > .fin-meter { margin: 8px 0 6px; }
+.budget-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.budget-fold { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.budget-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.budget-chev { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin: -3px 2px 0 2px; transition: transform 0.15s; }
+.budget-fold[aria-expanded="false"] .budget-chev { transform: rotate(-45deg); margin-top: 0; }
+.budget-count { font-weight: 600; background: var(--surface); border-radius: 999px; padding: 0 8px; }
+.budget-pct { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.budget-pct-bar { width: 52px; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; flex: none; }
+.fin-group .budget-pct-bar { background: var(--surface); }
+.budget-pct-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.budget-pct-bar.watch > span { background: var(--watch); }
+.budget-pct-bar.over > span, .budget-pct-bar.behind > span { background: var(--danger); }
+.budget-table tbody tr:not(.fin-group) .fin-health-on_track { background: transparent; color: var(--muted); font-weight: 600; padding-inline: 0; }
+@media (max-width: 640px) { .budget-pct-bar { display: none; } }
+.ledger-bank { display: grid; gap: 4px; align-content: start; }
+.ledger-bank-facts { margin: 6px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.ledger-bank-facts dt { font-size: 0.78rem; color: var(--muted); }
+.ledger-bank-facts dd { margin: 2px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ledger-filter { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; }
+.ledger-filter .search-field { flex: 1 1 260px; max-width: 420px; }
+.ledger-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ledger-month th { background: var(--surface-2); text-transform: none; letter-spacing: 0; font-size: 0.9rem; color: var(--fg); font-weight: 700; padding-top: 10px; padding-bottom: 10px; }
+.ledger-month th > span:first-child { margin-right: 12px; }
+.ledger-month-sum { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ledger-in { color: var(--ok); font-weight: 600; }

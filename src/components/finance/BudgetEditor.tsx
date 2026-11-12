@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import type { BudgetReport, BudgetRow } from "@/lib/finance/budget";
 import { dollars, parseMoney, wholeDollars } from "@/lib/finance/money";
 import type { BudgetLine } from "@/lib/finance/types";
-import { HealthPill } from "./Health";
+import { HealthPill, Meter } from "./Health";
 
 type Acct = { id: string; number: string; name: string; type: "asset" | "liability" | "income" | "expense"; group: string };
 type EditLine = { accountId: string; amount: string; basis: "annual" | "monthly"; timing: "even" | "seasonal"; note: string };
@@ -86,6 +86,17 @@ export function BudgetEditor({
   const unused = accounts.filter((a) => !draft.some((l) => l.accountId === a.id));
   const rowsByGroup = groupRows(report.rows);
   const elapsedPct = Math.round(report.elapsed * 100);
+  const [attention, setAttention] = useState(false);
+  const [closed, setClosed] = useState<Set<string>>(() => new Set());
+  const needs = report.rows.filter((r) => r.health !== "on_track").length;
+  const toggleGroup = (key: string) =>
+    setClosed((c) => {
+      const n = new Set(c);
+      if (n.has(key)) n.delete(key);
+      else n.add(key);
+      return n;
+    });
+  const pctOf = (a: number, b: number) => (b ? Math.round((a / b) * 100) : null);
 
   return (
     <div className="fin-stack">
@@ -145,6 +156,7 @@ export function BudgetEditor({
             <div className="fin-card">
               <span className="label">Income so far</span>
               <div className="fin-stat fin-stat-sm">{wholeDollars(report.totals.income.actual)}</div>
+              <Meter used={pctOf(report.totals.income.actual, report.totals.income.annual)} elapsed={report.elapsed} health={report.totals.income.actual >= report.totals.income.toDate ? "on_track" : "watch"} label={`${pctOf(report.totals.income.actual, report.totals.income.annual) ?? 0}% of the year's income received`} />
               <span className="small muted">
                 of {wholeDollars(report.totals.income.toDate)} budgeted to date ({wholeDollars(report.totals.income.annual)} for the year)
               </span>
@@ -152,6 +164,7 @@ export function BudgetEditor({
             <div className="fin-card">
               <span className="label">Expenses so far</span>
               <div className="fin-stat fin-stat-sm">{wholeDollars(report.totals.expense.actual)}</div>
+              <Meter used={pctOf(report.totals.expense.actual, report.totals.expense.annual)} elapsed={report.elapsed} health={report.totals.expense.actual <= report.totals.expense.toDate ? "on_track" : "watch"} label={`${pctOf(report.totals.expense.actual, report.totals.expense.annual) ?? 0}% of the year's expense budget spent`} />
               <span className="small muted">
                 of {wholeDollars(report.totals.expense.toDate)} budgeted to date ({wholeDollars(report.totals.expense.annual)} for the year)
               </span>
@@ -163,8 +176,22 @@ export function BudgetEditor({
             </div>
           </div>
 
+          <div className="budget-bar no-print">
+            <div className="seg" role="group" aria-label="Show">
+              <button type="button" aria-pressed={!attention} onClick={() => setAttention(false)}>
+                All lines
+              </button>
+              <button type="button" aria-pressed={attention} onClick={() => setAttention(true)}>
+                Needs attention ({needs})
+              </button>
+            </div>
+            <button type="button" className="btn btn-sm btn-quiet" onClick={() => setClosed(closed.size ? new Set() : new Set(rowsByGroup.map((g) => g.key)))}>
+              {closed.size ? "Open every category" : "Fold every category"}
+            </button>
+          </div>
+
           <div className="fin-table-wrap">
-            <table className="fin-table">
+            <table className="fin-table budget-table">
               <thead>
                 <tr>
                   <th>Line</th>
@@ -179,22 +206,31 @@ export function BudgetEditor({
               <tbody>
                 {rowsByGroup.map(({ key, kind, group, rows }) => {
                   const g = report.groups.find((x) => x.group === group && x.kind === kind)!;
+                  const shown = attention ? rows.filter((r) => r.health !== "on_track") : rows;
+                  if (attention && !shown.length && g.health === "on_track") return [];
+                  const open = !closed.has(key);
                   return [
                     <tr className="fin-group" key={key}>
                       <td>
-                        {group}
-                        {kind === "income" ? " (income)" : ""}
+                        <button type="button" className="budget-fold" aria-expanded={open} onClick={() => toggleGroup(key)}>
+                          <span className="budget-chev" aria-hidden="true" />
+                          {group}
+                          {kind === "income" ? " (income)" : ""}
+                          <span className="small muted budget-count">{shown.length}</span>
+                        </button>
                       </td>
                       <td className="num">{wholeDollars(g.annual)}</td>
                       <td className="num">{wholeDollars(g.toDate)}</td>
                       <td className="num">{wholeDollars(g.actual)}</td>
                       <td className={`num ${g.variance < 0 ? "fin-down" : ""}`}>{wholeDollars(g.variance)}</td>
-                      <td className="num">{g.pctUsed === null ? "–" : `${Math.round(g.pctUsed)}%`}</td>
+                      <td className="num">
+                        <PctCell pct={g.pctUsed} health={g.health} />
+                      </td>
                       <td>
                         <HealthPill health={g.health} />
                       </td>
                     </tr>,
-                    ...rows.map((r) => (
+                    ...(open ? shown : []).map((r) => (
                       <tr key={`${key}-${r.account.id}`}>
                         <td className="wide">
                           {r.account.number} {r.account.name}
@@ -206,7 +242,9 @@ export function BudgetEditor({
                         <td className="num">{dollars(r.toDate, { cents: false })}</td>
                         <td className="num">{dollars(r.actual, { cents: false })}</td>
                         <td className={`num ${r.variance < 0 ? "fin-down" : ""}`}>{dollars(r.variance, { cents: false })}</td>
-                        <td className="num">{r.pctUsed === null ? "–" : `${Math.round(r.pctUsed)}%`}</td>
+                        <td className="num">
+                          <PctCell pct={r.pctUsed} health={r.health} />
+                        </td>
                         <td>
                           <HealthPill health={r.health} />
                         </td>
@@ -343,6 +381,19 @@ export function BudgetEditor({
         </section>
       )}
     </div>
+  );
+}
+
+/** The share used as a number with a small bar beside it. */
+function PctCell({ pct, health }: { pct: number | null; health: string }) {
+  if (pct === null) return <>–</>;
+  return (
+    <span className="budget-pct">
+      <span className={`budget-pct-bar ${health}`} aria-hidden="true">
+        <span style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+      </span>
+      {Math.round(pct)}%
+    </span>
   );
 }
 

@@ -70,8 +70,35 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
   const [limit, setLimit] = useState(60);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState({ from, to });
+  const [q, setQ] = useState("");
+  const [kind, setKind] = useState<"all" | "in" | "out" | "open">("all");
   const acctName = useMemo(() => new Map(accounts.map((a) => [a.id, `${a.number} ${a.name}`])), [accounts]);
   const fundName = useMemo(() => new Map(funds.map((f) => [f.id, f.name])), [funds]);
+  const shown = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return transactions.filter((t) => {
+      if (kind === "in" && t.direction !== "in") return false;
+      if (kind === "out" && t.direction === "in") return false;
+      if (kind === "open" && (t.cleared || t.reconciliationId)) return false;
+      if (!needle) return true;
+      const hay = [t.description, t.reference ?? "", ...t.lines.map((l) => `${acctName.get(l.accountId) ?? ""} ${fundName.get(l.fundId) ?? ""} ${l.memo ?? ""}`)].join(" ").toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [transactions, q, kind, acctName, fundName]);
+  const monthTotals = useMemo(() => {
+    const m = new Map<string, { in: number; out: number }>();
+    for (const t of shown) {
+      const k = t.date.slice(0, 7);
+      const cur = m.get(k) ?? { in: 0, out: 0 };
+      const a = signed(t);
+      if (a > 0) cur.in += a;
+      else cur.out -= a;
+      m.set(k, cur);
+    }
+    return m;
+  }, [shown]);
+  const monthLabel = (ym: string) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const openCount = transactions.filter((t) => !t.cleared && !t.reconciliationId).length;
 
   async function act(body: unknown) {
     setError(null);
@@ -87,16 +114,25 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
     <>
       <div className="fin-grid">
         {banks.map((b) => (
-          <div className="fin-card" key={b.id}>
+          <div className="fin-card ledger-bank" key={b.id}>
             <span className="label">{b.name}</span>
             <div className="fin-stat fin-stat-sm">{dollars(b.balance)}</div>
-            <span className="small muted">Book balance today. Cleared at the bank: {dollars(b.cleared)}</span>
+            <dl className="ledger-bank-facts">
+              <div>
+                <dt>Cleared at the bank</dt>
+                <dd>{dollars(b.cleared)}</dd>
+              </div>
+              <div>
+                <dt>Still to clear</dt>
+                <dd>{Math.abs(b.balance - b.cleared) < 0.005 ? "Nothing" : `${dollars(Math.abs(b.balance - b.cleared))} ${b.balance < b.cleared ? "going out" : "coming in"}`}</dd>
+              </div>
+            </dl>
           </div>
         ))}
       </div>
 
       <form
-        className="row no-print"
+        className="row no-print ledger-range"
         onSubmit={(e) => {
           e.preventDefault();
           router.push(`/finance/accounts?view=transactions&from=${range.from}&to=${range.to}`);
@@ -126,8 +162,29 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
       )}
       {adding && <TxnForm today={today} accounts={accounts} funds={funds} banks={banks} partners={partners} onClose={() => setAdding(false)} />}
 
+      <div className="ledger-filter no-print">
+        <label className="search-field">
+          <span className="sr-only">Find a transaction</span>
+          <input type="search" placeholder="Find a payee, account or fund" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <div className="ledger-chips" role="group" aria-label="Show">
+          {(
+            [
+              ["all", "Everything"],
+              ["in", "Money in"],
+              ["out", "Money out"],
+              ["open", `Not cleared (${openCount})`],
+            ] as const
+          ).map(([k, label]) => (
+            <button key={k} type="button" className="filter-chip" aria-pressed={kind === k} onClick={() => setKind(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="fin-table-wrap">
-        <table className="fin-table">
+        <table className="fin-table ledger-table">
           <thead>
             <tr>
               <th>Date</th>
@@ -141,18 +198,34 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
             </tr>
           </thead>
           <tbody>
-            {transactions.length === 0 && (
+            {shown.length === 0 && (
               <tr>
                 <td colSpan={canEdit ? 8 : 7} className="muted">
-                  No transactions between {shortDate(from)} and {shortDate(to)}.
+                  {transactions.length ? "Nothing matches. Try another word, or show everything." : `No transactions between ${shortDate(from)} and ${shortDate(to)}.`}
                 </td>
               </tr>
             )}
-            {transactions.slice(0, limit).map((t) => {
+            {shown.slice(0, limit).flatMap((t, i, list) => {
               const amount = signed(t);
               const split = t.lines.length > 1;
               const fundsUsed = [...new Set(t.lines.map((l) => fundName.get(l.fundId) ?? l.fundId))];
-              return (
+              const ym = t.date.slice(0, 7);
+              const mt = monthTotals.get(ym);
+              const divider =
+                i === 0 || list[i - 1].date.slice(0, 7) !== ym ? (
+                  <tr className="ledger-month" key={`m-${ym}`}>
+                    <th colSpan={canEdit ? 8 : 7} scope="colgroup">
+                      <span>{monthLabel(ym)}</span>
+                      {mt && (
+                        <span className="small ledger-month-sum">
+                          In {dollars(mt.in)} · Out {dollars(mt.out)}
+                        </span>
+                      )}
+                    </th>
+                  </tr>
+                ) : null;
+              return [
+                divider,
                 <tr key={t.id}>
                   <td className="nowrap">{shortDate(t.date)}</td>
                   <td className="wide">
@@ -179,7 +252,7 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
                   </td>
                   <td>{split ? <span className="muted">Split</span> : acctName.get(t.lines[0]?.accountId ?? "")}</td>
                   <td>{fundsUsed.join(", ")}</td>
-                  <td className="num">{amount > 0 ? dollars(amount) : ""}</td>
+                  <td className="num ledger-in">{amount > 0 ? dollars(amount) : ""}</td>
                   <td className="num">{amount < 0 ? dollars(-amount) : ""}</td>
                   <td>
                     {t.reconciliationId ? (
@@ -205,15 +278,15 @@ function TransactionsPanel({ from, to, today, canEdit, accounts, funds, banks, t
                       )}
                     </td>
                   )}
-                </tr>
-              );
+                </tr>,
+              ];
             })}
           </tbody>
         </table>
       </div>
-      {transactions.length > limit && (
-        <button className="btn" type="button" onClick={() => setLimit((l) => l + 100)}>
-          Show more ({transactions.length - limit} more)
+      {shown.length > limit && (
+        <button className="btn fin-more" type="button" onClick={() => setLimit((l) => l + 100)}>
+          Show more ({shown.length - limit} more)
         </button>
       )}
     </>
