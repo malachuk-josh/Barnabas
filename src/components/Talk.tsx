@@ -181,6 +181,14 @@ export function Talk(props: TalkConfig & {
           <input id="off-record" type="checkbox" checked={offRecord} onChange={(e) => toggleOffRecord(e.target.checked)} />
           Off the record
         </label>
+        <details className="talk-options">
+          <summary>
+            {typedOnly ? "Language" : "Voice and language"}
+            <span className="talk-options-now">
+              {[!typedOnly ? (speak ? "Speaks replies" : "Quiet") : null, LANGS.find((l) => l.value === lang)?.label].filter(Boolean).join(" · ")}
+            </span>
+          </summary>
+          <div className="talk-options-body">
         {!typedOnly && <>
         <label>
           <input id="speak-replies" type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); if (!e.target.checked) session.stopSpeaking(); }} />
@@ -219,6 +227,8 @@ export function Talk(props: TalkConfig & {
             ))}
           </select>
         </label>
+          </div>
+        </details>
         {conversationId && (
           <button type="button" className="btn" onClick={() => void endConversation("button")} style={{ marginLeft: "auto" }}>
             End conversation

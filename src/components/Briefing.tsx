@@ -12,6 +12,16 @@ type Upcoming = { date: string; title: string; time: string };
 type BriefingData = { radar: RadarEntry[]; followUps: FollowUp[]; upcoming: Upcoming[] };
 type Status = { claude: boolean; storage: string; churchData: string; churchName: string };
 
+/** "Today" or "Tomorrow" by the device's own date, or nothing. */
+function relativeDay(iso: string): string | null {
+  const now = new Date();
+  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  if (iso === ymd(now)) return "Today";
+  const t = new Date(now);
+  t.setDate(t.getDate() + 1);
+  return iso === ymd(t) ? "Tomorrow" : null;
+}
+
 function day(iso: string) {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
@@ -178,8 +188,9 @@ export function Briefing({ todaysVerse }: { todaysVerse: VerseKey }) {
             <ul className="week-list">
               {data.upcoming.slice(0, 5).map((e) => {
                 const t = dateTile(e.date);
+                const soon = relativeDay(e.date);
                 return (
-                  <li key={`${e.date}-${e.title}`}>
+                  <li key={`${e.date}-${e.title}`} className={soon ? "is-soon" : undefined}>
                     <span className="date-tile" aria-hidden="true">
                       <small>{t.weekday}</small>
                       <strong>{t.num}</strong>
@@ -188,6 +199,8 @@ export function Briefing({ todaysVerse }: { todaysVerse: VerseKey }) {
                       <strong>{e.title}</strong>
                       <span className="small muted">
                         <span className="sr-only">{day(e.date)}</span>
+                        {soon && <span className="week-soon">{soon}</span>}
+                        {soon && e.time ? " · " : ""}
                         {e.time}
                       </span>
                     </span>
