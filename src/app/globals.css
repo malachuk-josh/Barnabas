@@ -2328,3 +2328,26 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .event-glance > div { padding: 10px 12px; }
   .event-glance dd { font-size: 1.15rem; }
 }
+
+/* Finance, second pass: bank balances in their own card, giving totals beside the trend, a shorter gift list, partners as cards, and a wider printed report */
+.fin-health-row { border-top-color: var(--line-soft); padding: 10px 0; }
+.fin-bank-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.fin-bank-list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.fin-bank-list li:first-child { border-top: 0; padding-top: 2px; }
+.fin-bank-list strong { font-size: 1.1rem; }
+.giving-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 16px; align-items: stretch; }
+@media (max-width: 1100px) { .giving-top { grid-template-columns: minmax(0, 1fr); } }
+.giving-totals { display: grid; gap: 4px; align-content: start; }
+.giving-splits { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 4px 20px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.giving-splits h3 { font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 2px; font-family: inherit; font-weight: 700; }
+.fin-more { justify-self: center; margin-top: 12px; display: block; margin-inline: auto; }
+.fin-partners { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 14px; }
+.fin-partners .fin-partner { border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px 16px; background: var(--surface); align-content: start; }
+.fin-partners .fin-partner:first-of-type { border-top: 1px solid var(--line-soft); padding-top: 14px; }
+.fin-partner .fin-partner-head { flex-wrap: nowrap; justify-content: flex-start; align-items: center; gap: 12px; }
+.fin-partner-mark { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 0.9rem; background: color-mix(in srgb, var(--sea-glass) 35%, transparent); color: var(--accent); }
+.fin-partner-name { display: grid; gap: 1px; min-width: 0; }
+.fin-partner-name strong { overflow-wrap: anywhere; }
+.fin-partner .fin-details { margin-top: 2px; }
+.fin-print { max-width: 1060px; }
+.fin-print .fin-table th, .fin-print .fin-table td { padding-inline: 10px; }

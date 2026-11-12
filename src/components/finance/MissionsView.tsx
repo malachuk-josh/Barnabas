@@ -103,9 +103,11 @@ export function MissionsView({ view, canEdit, canSeeDonors, today, people }: { v
           )}
         </div>
         {addingPartner && <PartnerForm today={today} onSave={(partner) => act({ action: "save-partner", partner }, () => setAddingPartner(false))} />}
-        {view.partners.map((p) => (
-          <Partner key={p.partner.id} status={p} canEdit={canEdit} today={today} onUpdate={(text, date) => act({ action: "add-update", partnerId: p.partner.id, text, date })} />
-        ))}
+        <div className="fin-partners">
+          {view.partners.map((p) => (
+            <Partner key={p.partner.id} status={p} canEdit={canEdit} today={today} onUpdate={(text, date) => act({ action: "add-update", partnerId: p.partner.id, text, date })} />
+          ))}
+        </div>
       </section>
 
       {canSeeDonors && view.pledges && (
@@ -125,9 +127,19 @@ function Partner({ status, canEdit, today, onUpdate }: { status: PartnerStatus; 
   return (
     <div className="fin-partner">
       <div className="fin-partner-head">
-        <strong>{partner.name}</strong>
-        <span className="small muted">
-          {partner.field} · {partner.type || (partner.kind === "missionary" ? "Missionary" : "Organization")}
+        <span className="fin-partner-mark" aria-hidden="true">
+          {partner.name
+            .split(/\s+/)
+            .filter((w) => /^[A-Z]/.test(w))
+            .slice(0, 2)
+            .map((w) => w[0])
+            .join("")}
+        </span>
+        <span className="fin-partner-name">
+          <strong>{partner.name}</strong>
+          <span className="small muted">
+            {partner.field} · {partner.type || (partner.kind === "missionary" ? "Missionary" : "Organization")}
+          </span>
         </span>
       </div>
       <div className="row small">
@@ -142,6 +154,11 @@ function Partner({ status, canEdit, today, onUpdate }: { status: PartnerStatus; 
         </span>
         {!partner.active && <span className="badge">ended</span>}
       </div>
+      {pctPaid !== null && (
+        <div className="fin-meter" aria-hidden="true">
+          <span style={{ width: `${Math.min(100, pctPaid)}%` }} />
+        </div>
+      )}
       <div className="fin-sub">
         <span>Paid this year</span>
         <span>
