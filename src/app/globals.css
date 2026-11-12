@@ -2409,3 +2409,31 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 .fund-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; white-space: nowrap; flex: none; }
 .fin-fund-toggle.is-on .fund-switch .small { color: var(--ok); font-weight: 600; }
 @media (max-width: 480px) { .fund-switch .small { display: none; } }
+
+/* Giving statements, second pass: who it's for beside a total box, a year switcher, and a contents list for a batch */
+.stmt-sheet { width: 100%; }
+.stmt-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: stretch; }
+.stmt-to { display: grid; align-content: center; gap: 2px; }
+.stmt-to-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.stmt-to-name { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
+.stmt-total { display: grid; gap: 2px; justify-items: end; text-align: right; padding: 14px 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); min-width: 200px; }
+.stmt-total strong { font-family: var(--font-display); font-size: 1.8rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stmt-funds .fin-total td { font-size: 1rem; }
+.stmt-gifts td:first-child { white-space: nowrap; }
+.stmt-years { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.stmt-years strong { font-variant-numeric: tabular-nums; padding: 0 4px; }
+.stmt-contents { max-width: 1060px; }
+.stmt-contents ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 0 24px; counter-reset: stmt; }
+.stmt-contents li { counter-increment: stmt; display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.stmt-contents li::before { content: counter(stmt); color: var(--muted); font-size: 0.85rem; min-width: 1.6em; font-variant-numeric: tabular-nums; }
+.stmt-contents li a { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.stmt-contents-amt { font-variant-numeric: tabular-nums; font-weight: 600; }
+.stmt-sheet { scroll-margin-top: 16px; }
+@media (max-width: 560px) {
+  .stmt-top { grid-template-columns: minmax(0, 1fr); }
+  .stmt-total { justify-items: start; text-align: left; min-width: 0; }
+}
+@media print {
+  .stmt-contents + .stmt-sheet { break-before: auto; }
+  .stmt-total { background: none; border: 1px solid #000; }
+}
