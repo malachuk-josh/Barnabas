@@ -25,25 +25,25 @@ export function SendLog() {
   const count = (s: string[]) => log.deliveries.filter((d) => s.includes(d.status)).length;
   return (
     <div className="stack" style={{ gap: 18 }}>
-      <div className="fin-grid">
-        <div className="fin-card">
-          <span className="label">Sent</span>
-          <span className="fin-stat">{count(["queued", "sent", "delivered"])}</span>
-          <span className="small muted">{count(["delivered"])} confirmed delivered</span>
+      <dl className="fact-strip send-stats">
+        <div>
+          <dt>Sent</dt>
+          <dd className="tabular">{count(["queued", "sent", "delivered"])}</dd>
+          <dd className="small muted">{count(["delivered"])} confirmed delivered</dd>
         </div>
-        <div className="fin-card">
-          <span className="label">Didn&apos;t go out</span>
-          <span className="fin-stat">{count(["failed", "undelivered", "bounced", "complained", "opted_out", "no_contact"])}</span>
-          <span className="small muted">Failed, bounced, opted out or no contact</span>
+        <div className={count(["failed", "undelivered", "bounced", "complained", "opted_out", "no_contact"]) ? "is-warn" : undefined}>
+          <dt>Didn&apos;t go out</dt>
+          <dd className="tabular">{count(["failed", "undelivered", "bounced", "complained", "opted_out", "no_contact"])}</dd>
+          <dd className="small muted">Failed, bounced, opted out or no contact</dd>
         </div>
-        <div className="fin-card">
-          <span className="label">Do-not-contact lists</span>
-          <span className="fin-stat">{log.optOuts.phones + log.optOuts.emails}</span>
-          <span className="small muted">
+        <div>
+          <dt>Do-not-contact lists</dt>
+          <dd className="tabular">{log.optOuts.phones + log.optOuts.emails}</dd>
+          <dd className="small muted">
             {log.optOuts.phones} replied STOP · {log.optOuts.emails} unsubscribed or bounced
-          </span>
+          </dd>
         </div>
-      </div>
+      </dl>
       {log.deliveries.length === 0 ? (
         <EmptyState title="Nothing has been sent yet" actions={[{ label: "Open drafts", href: "/drafts", primary: true }]}>
           When you tap Send on a draft, each person it goes to shows up here with what the carrier or mail server reported.

@@ -68,12 +68,20 @@ export default async function KidsRoomsPage({ searchParams }: { searchParams: Pr
           <section key={r.id} className={`fin-card kids-room${r.warning ? " warn" : ""}`}>
             <div className="fin-card-head">
               <h2>{r.name}</h2>
-              <span className="kids-count">{r.present}</span>
+              <span className="kids-count">
+                {r.present}
+                {r.capacity ? <small> of {r.capacity}</small> : null}
+              </span>
             </div>
             <span className="small muted">
               {r.ages} · {r.adults} adult{r.adults === 1 ? "" : "s"} · 1 to {r.ratio}
               {r.capacity ? ` · holds ${r.capacity}` : ""}
             </span>
+            {r.capacity ? (
+              <span className={`kids-fill${r.present >= r.capacity ? " is-full" : r.present >= r.capacity * 0.8 ? " is-near" : ""}`} aria-hidden="true">
+                <span style={{ width: `${Math.min(100, Math.round((r.present / r.capacity) * 100))}%` }} />
+              </span>
+            ) : null}
             {r.warning && <span className="kids-warning">{r.warning}</span>}
             {r.children.length ? (
               <ul className="kids-roster">

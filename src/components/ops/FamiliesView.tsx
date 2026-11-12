@@ -25,56 +25,91 @@ const fromHousehold = (h: Household): Draft => ({
 export function FamiliesView({ families, rooms, admin }: { families: Household[]; rooms: { id: string; name: string }[]; admin: boolean }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [adding, setAdding] = useState(families.length === 0);
   const shown = families.filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()) || f.children.some((c) => c.firstName.toLowerCase().includes(q.toLowerCase())));
+  const children = families.reduce((n, f) => n + f.children.length, 0);
+  const allergies = families.reduce((n, f) => n + f.children.filter((c) => c.allergies).length, 0);
   return (
-    <div className="fin-grid-2">
-      <section className="fin-card">
-        <div className="fin-card-head">
-          <h2>On file</h2>
-          <span className="small muted">
-            {families.length} famil{families.length === 1 ? "y" : "ies"}, {families.reduce((n, f) => n + f.children.length, 0)} children
-          </span>
-        </div>
-        {families.length === 0 ? (
-          <EmptyState title="No families yet" actions={admin ? [{ label: "Add your first family", href: "#new-family", primary: true }] : []}>
-            Add a family once and check-in is a quick search after that. Add families by hand, or at the desk on Sunday.
+    <div className="fam-wrap">
+      <div className="fam-bar">
+        {families.length > 0 && (
+          <label className="search-field fam-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <span className="sr-only">Find a family</span>
+            <input id="fam-find" type="search" placeholder="Find a family or a child" value={q} onChange={(e) => setQ(e.target.value)} />
+          </label>
+        )}
+        <span className="small muted fam-count">
+          {families.length} famil{families.length === 1 ? "y" : "ies"} · {children} {children === 1 ? "child" : "children"}
+          {allergies > 0 ? ` · ${allergies} with allergies` : ""}
+        </span>
+        {admin && !adding && (
+          <button className="btn btn-primary" type="button" onClick={() => setAdding(true)}>
+            Add a family
+          </button>
+        )}
+      </div>
+      {admin && adding && (
+        <section className="fin-card fam-add" id="new-family" aria-labelledby="fam-add-h">
+          <div className="fin-card-head">
+            <h2 id="fam-add-h">Add a family</h2>
+            {families.length > 0 && (
+              <button className="btn btn-sm btn-quiet" type="button" onClick={() => setAdding(false)}>
+                Close
+              </button>
+            )}
+          </div>
+          <FamilyForm initial={blank()} rooms={rooms} />
+        </section>
+      )}
+      {families.length === 0 ? (
+        !admin && (
+          <EmptyState title="No families yet">
+            Add a family once and check-in is a quick search after that. Kids admins add families here or at the desk on Sunday.
           </EmptyState>
-        ) : (
-          <>
-            <label className="sr-only" htmlFor="fam-find">
-              Find a family
-            </label>
-            <input id="fam-find" type="text" placeholder="Find a family" value={q} onChange={(e) => setQ(e.target.value)} />
-            <ul className="care-tasks">
-              {shown.map((f) => (
-                <li key={f.id}>
-                  <span>
-                    <strong>{f.name}</strong>
-                    <span className="small muted">
-                      {f.children.map((c) => c.firstName).join(", ") || "No children yet"} · {f.guardians.map((g) => g.name).join(", ")}
-                    </span>
-                    {f.children.some((c) => c.allergies) && <span className="kids-allergy">Allergy on file</span>}
+        )
+      ) : (
+        <section className="fin-card fam-list" aria-label="Families on file">
+          {shown.length === 0 && <p className="muted small">No family or child by that name.</p>}
+          <ul>
+            {shown.map((f) => (
+              <li key={f.id} className={editing === f.id ? "is-open" : undefined}>
+                <div className="fam-row">
+                  <span className="fam-mark" aria-hidden="true">
+                    {f.name.slice(0, 1).toUpperCase()}
                   </span>
+                  <div className="fam-text">
+                    <strong>{f.name}</strong>
+                    <ul className="fam-kids" aria-label="Children">
+                      {f.children.length === 0 && <li className="muted small">No children yet</li>}
+                      {f.children.map((c) => (
+                        <li key={c.id} className={c.allergies ? "has-allergy" : undefined}>
+                          {c.firstName}
+                          {c.grade ? <span className="muted"> · {c.grade}</span> : null}
+                          {c.allergies && <span className="sr-only"> (allergy on file)</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    <span className="small muted">{f.guardians.map((g) => g.name).join(", ") || "No guardian yet"}</span>
+                  </div>
+                  {f.children.some((c) => c.allergies) && <span className="kids-allergy fam-allergy">Allergy on file</span>}
                   {admin && (
-                    <button className="btn" type="button" onClick={() => setEditing(editing === f.id ? null : f.id)}>
+                    <button className="btn btn-sm" type="button" onClick={() => setEditing(editing === f.id ? null : f.id)}>
                       {editing === f.id ? "Close" : "Edit"}
                     </button>
                   )}
-                  {editing === f.id && (
-                    <div style={{ flexBasis: "100%" }}>
-                      <FamilyForm key={f.id} id={f.id} initial={fromHousehold(f)} rooms={rooms} onDone={() => setEditing(null)} />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-      {admin && (
-        <section className="fin-card" id="new-family">
-          <h2>Add a family</h2>
-          <FamilyForm initial={blank()} rooms={rooms} />
+                </div>
+                {editing === f.id && (
+                  <div className="fam-edit">
+                    <FamilyForm key={f.id} id={f.id} initial={fromHousehold(f)} rooms={rooms} onDone={() => setEditing(null)} />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </div>

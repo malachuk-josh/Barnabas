@@ -2191,3 +2191,60 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
 @media (max-width: 1100px) {
   .cal-upcoming { order: 1; }
 }
+
+/* Kids, second pass: families as one scannable list with the Add form folded, and a fill bar on each room */
+.fam-wrap { display: grid; gap: 16px; }
+.fam-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.fam-search { flex: 1 1 320px; min-width: 0; }
+.fam-count { flex: 0 1 auto; }
+.fam-bar > .btn:where(:not(.word-root *)) { margin-left: auto; }
+.fam-add .fin-card-head h2 { margin: 0; }
+.fam-list { padding: 6px 20px; }
+.fam-list > ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.fam-list > ul > li { border-top: 1px solid var(--line-soft); }
+.fam-list > ul > li:first-child { border-top: 0; }
+.fam-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px 14px; align-items: center; padding: 14px 0; }
+.fam-mark { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--sea-glass); color: var(--night); font-family: var(--font-display); font-size: 1.15rem; }
+.fam-text { display: grid; gap: 4px; min-width: 0; }
+.fam-text strong { font-size: 1.02rem; }
+.fam-kids { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.fam-kids li { font-size: 0.84rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); }
+.fam-kids li.has-allergy { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 55%, transparent); }
+.fam-kids li.has-allergy::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); margin-left: 6px; vertical-align: 1px; }
+.fam-allergy { white-space: nowrap; grid-column: 3; }
+.fam-row > .btn:where(:not(.word-root *)) { grid-column: 4; }
+.fam-edit { padding: 0 0 16px 54px; }
+.fam-list li.is-open .fam-row { padding-bottom: 8px; }
+
+.kids-count small { font-family: var(--font-body); font-size: 0.8rem; color: var(--muted); margin-left: 2px; }
+.kids-fill { display: block; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.kids-fill > span { display: block; height: 100%; border-radius: inherit; background: var(--ok); transition: width 0.3s ease; }
+.kids-fill.is-near > span { background: var(--brass); }
+.kids-fill.is-full > span { background: var(--danger); }
+
+@media (max-width: 640px) {
+  .fam-list { padding: 4px 16px; }
+  .fam-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .fam-allergy { grid-column: 2; grid-row: 2; justify-self: start; }
+  .fam-row > .btn:where(:not(.word-root *)) { grid-column: 3; grid-row: 1; }
+  .fam-edit { padding-left: 0; }
+  .fam-bar > .btn:where(:not(.word-root *)) { margin-left: 0; }
+}
+
+/* Drafts, second pass: who it's for beside the message, and the send log's numbers as one strip */
+.draft-side, .draft-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
+@media (min-width: 900px) {
+  .draft-card { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 16px 28px; padding: 20px 22px; }
+  .draft-side { padding-right: 24px; border-right: 1px solid var(--line-soft); }
+  .draft-side .draft-to { flex-direction: column; align-items: flex-start; }
+  .draft-main .draft-bubble { max-width: 640px; }
+  .draft-main .draft-actions { margin-top: auto; }
+}
+.send-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.send-stats dd + dd { margin-top: 2px; font-weight: 400; font-size: 0.82rem; }
+.send-stats .is-warn dd.tabular { color: var(--watch); }
+@media (max-width: 640px) {
+  .send-stats { grid-template-columns: minmax(0, 1fr); }
+  .send-stats > div { border-left: 0 !important; border-top: 1px solid var(--line-soft); }
+  .send-stats > div:first-child { border-top: 0; }
+}

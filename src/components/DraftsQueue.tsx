@@ -148,6 +148,7 @@ export function DraftsQueue() {
         const n = d.recipients.length;
         return (
           <article key={d.id} className="draft-card">
+            <div className="draft-side">
             <header className="draft-head">
               <span className={`draft-channel draft-${d.channel}`} aria-hidden="true">
                 {d.channel === "sms" ? <TextIcon /> : <MailIcon />}
@@ -180,6 +181,8 @@ export function DraftsQueue() {
                 <span className="muted">Subject</span> {d.subject}
               </p>
             )}
+            </div>
+            <div className="draft-main">
             {[...byLang.entries()].map(([lang, people]) => (
               <div key={lang} className="draft-message">
                 {byLang.size > 1 && (
@@ -230,11 +233,12 @@ export function DraftsQueue() {
               )}
             </footer>
             {!channelReady && d.canSend && (
-              <p id={`setup-${d.id}`} className="small muted draft-note">
+              <p id={`setup-${d.id}`} className="sr-only">
                 {d.channel === "sms" ? "Texting" : "Email"} isn&apos;t set up yet, so Send shows the setup steps.
               </p>
             )}
             {results?.id === d.id && <ResultList rows={results.rows} />}
+            </div>
           </article>
         );
       })}
