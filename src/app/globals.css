@@ -2230,3 +2230,21 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .fam-edit { padding-left: 0; }
   .fam-bar > .btn:where(:not(.word-root *)) { margin-left: 0; }
 }
+
+/* Drafts, second pass: who it's for beside the message, and the send log's numbers as one strip */
+.draft-side, .draft-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
+@media (min-width: 900px) {
+  .draft-card { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 16px 28px; padding: 20px 22px; }
+  .draft-side { padding-right: 24px; border-right: 1px solid var(--line-soft); }
+  .draft-side .draft-to { flex-direction: column; align-items: flex-start; }
+  .draft-main .draft-bubble { max-width: 640px; }
+  .draft-main .draft-actions { margin-top: auto; }
+}
+.send-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.send-stats dd + dd { margin-top: 2px; font-weight: 400; font-size: 0.82rem; }
+.send-stats .is-warn dd.tabular { color: var(--watch); }
+@media (max-width: 640px) {
+  .send-stats { grid-template-columns: minmax(0, 1fr); }
+  .send-stats > div { border-left: 0 !important; border-top: 1px solid var(--line-soft); }
+  .send-stats > div:first-child { border-top: 0; }
+}
