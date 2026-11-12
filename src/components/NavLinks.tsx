@@ -201,12 +201,14 @@ export function TabBar(access: NavAccess) {
   }
 
   // Team and Member levels: Today, Messages and Calendar as tabs, the rest under More, and no microphone.
-  const limitedTabs = ["/", "/inbox", "/word", "/calendar"];
-  const tabs = access.limited ? all.filter((n) => limitedTabs.includes(n.href)) : all.filter((n) => n.tab);
+  // Team and Member levels (no microphone): Today, Messages, Calendar, The Word.
+  const limitedTabs = ["/", "/inbox", "/calendar", "/word"];
+  const order = (list: NavItem[], hrefs: string[]) => [...list].sort((x, y) => hrefs.indexOf(x.href) - hrefs.indexOf(y.href));
+  const tabs = access.limited ? order(all.filter((n) => limitedTabs.includes(n.href)), limitedTabs) : all.filter((n) => n.tab);
   const overflow = all.filter((n) => !tabs.includes(n));
   const moreActive = overflow.some((n) => active(pathname, n.href));
-  // Today and The Word to the left of the microphone, Calendar and More to the right.
-  const left = tabs.filter((n) => n.href === "/" || n.href === "/word" || (access.limited && n.href === "/inbox"));
+  // Today and Calendar to the left of the microphone, The Word and More to the right.
+  const left = tabs.filter((n) => n.href === "/" || n.href === "/calendar" || (access.limited && n.href === "/inbox"));
   const right = tabs.filter((n) => !left.includes(n));
   const tab = ({ href, label, Icon }: NavItem) => (
     <Link key={href} href={href} aria-current={active(pathname, href) ? "page" : undefined}>
