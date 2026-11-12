@@ -113,8 +113,9 @@ export function CaseActions(props: {
         </div>
       </form>
 
+      <div className="need-manage">
       <form
-        className="fin-card fin-form"
+        className="fin-form need-manage-part"
         onSubmit={(e) => {
           e.preventDefault();
           void act({ action: "update", id: props.id, patch: { nextStep: next.text, due: next.due } });
@@ -148,7 +149,7 @@ export function CaseActions(props: {
         </div>
       </form>
 
-      <section className="fin-card fin-form">
+      <section className="fin-form need-manage-part">
         <h2>Who holds it</h2>
         {props.canAssign ? (
           <div className="row">
@@ -185,7 +186,7 @@ export function CaseActions(props: {
       </section>
 
       {props.canClose && (
-        <section className="fin-card">
+        <section className="need-manage-part need-manage-close">
           {closing ? (
             <div className="row">
               <span>Mark this need as met? It stays here, marked met.</span>
@@ -203,6 +204,7 @@ export function CaseActions(props: {
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }

@@ -77,9 +77,12 @@ export default async function DiscipleshipPage({ searchParams }: { searchParams:
               <p className="muted">No one is waiting on this step.</p>
             )
           )}
+          <details className="fin-source-fold">
+            <summary>How Barnabas decides who&apos;s ready</summary>
           <p className="fin-source">
             Each person&apos;s pathway dates. Discover Faith: came back a second time, or first visited 4+ weeks ago. Baptism: a salvation decision without baptism. Membership class: baptized, not a member. Membership: finished the class. Group: attending 3+ months, not in a Growth Group or Life Group. Serving: a member or in a group for 6+ months, not serving.
           </p>
+          </details>
         </section>
 
         <div className="fin-card-head">
@@ -95,42 +98,50 @@ export default async function DiscipleshipPage({ searchParams }: { searchParams:
             ))}
         </div>
 
-        <div className={ctx.canAssign ? "fin-grid-2" : undefined}>
-          <section className="fin-card">
-            <h2>Pathways</h2>
-            <div className="fin-table-wrap">
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    {PATHWAY_STEPS.map((s) => (
-                      <th key={s} scope="col" title={PATHWAY_LABELS[s]}>
-                        {SHORT[s]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {d.pathways.map((p) => (
-                    <tr key={p.key}>
-                      <td className="nowrap">
-                        {p.name}
-                        {p.guestId && <span className="badge">guest</span>}
-                      </td>
-                      {PATHWAY_STEPS.map((s) => (
-                        <td key={s} className={`nowrap small${furthestStep(p) === s ? " care-furthest" : ""}`}>
-                          {p.steps[s] ? shortDate(p.steps[s]!) : <span className="muted">·</span>}
-                        </td>
-                      ))}
-                    </tr>
+        <section className="fin-card path-card" aria-labelledby="path-h">
+          <div className="fin-card-head">
+            <h2 id="path-h">Pathways</h2>
+            <span className="small muted">
+              {d.pathways.length} {d.pathways.length === 1 ? "person" : "people"} · the brass ring is the furthest step so far
+            </span>
+          </div>
+          {d.pathways.length === 0 ? (
+            <p className="muted small">No one on a pathway yet. A guest card records a first visit; finishing a class records its step.</p>
+          ) : (
+            <div className="path-scroll">
+              <div className="path-grid" role="table" aria-label="Pathway steps by person" style={{ ["--path-steps" as string]: PATHWAY_STEPS.length }}>
+                <div className="path-row path-head" role="row">
+                  <span role="columnheader">Name</span>
+                  {PATHWAY_STEPS.map((s) => (
+                    <span key={s} role="columnheader" title={PATHWAY_LABELS[s]}>
+                      {SHORT[s]}
+                    </span>
                   ))}
-                </tbody>
-              </table>
+                </div>
+                {d.pathways.map((p) => (
+                  <div key={p.key} className="path-row" role="row">
+                    <span className="path-name" role="rowheader">
+                      {p.name}
+                      {p.guestId && <span className="badge">guest</span>}
+                    </span>
+                    {PATHWAY_STEPS.map((s) => (
+                      <span key={s} role="cell" className={`path-step${p.steps[s] ? " is-done" : ""}${furthestStep(p) === s ? " is-furthest" : ""}`}>
+                        <span className="path-dot" aria-hidden="true" />
+                        <span className="path-date">{p.steps[s] ? shortDate(p.steps[s]!) : <span className="sr-only">Not yet</span>}</span>
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="fin-source">Pathway dates recorded in Barnabas, by step. Classes record their step when someone finishes; guest cards record a first visit.</p>
-          </section>
-          {ctx.canAssign && <StepForm everyone={everyone} />}
-        </div>
+          )}
+          <p className="fin-source">Pathway dates recorded in Barnabas, by step. Classes record their step when someone finishes; guest cards record a first visit.</p>
+        </section>
+        {ctx.canAssign && (
+          <div className="path-record">
+            <StepForm everyone={everyone} />
+          </div>
+        )}
       </div>
     </CareFrame>
   );

@@ -2248,3 +2248,54 @@ p.draft-email:where(:not(.word-root *)) { color: var(--fg); padding: 14px 16px; 
   .send-stats > div { border-left: 0 !important; border-top: 1px solid var(--line-soft); }
   .send-stats > div:first-child { border-top: 0; }
 }
+
+/* Memory, second pass: how far Barnabas has got to know you, and a friendlier empty conversations list */
+.memory-know { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0 0 22px; padding: 16px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); border-left: 4px solid var(--brass); }
+.memory-know-text { display: grid; gap: 6px; flex: 1 1 320px; min-width: 0; }
+.memory-know h2 { margin: 0; font-size: 1.15rem; }
+.memory-know p { margin: 0; }
+.memory-know-bar { display: block; height: 6px; max-width: 420px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.memory-know-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--brass); }
+.memory-convs-empty { display: grid; gap: 6px; justify-items: start; }
+.memory-convs-empty p { margin: 0; }
+.memory-convs-empty .btn:where(:not(.word-root *)) { margin-top: 6px; }
+
+/* Settings, second pass: church-wide Barnabas settings in their own card, and how well Barnabas knows you as a bar */
+.ai-card { scroll-margin-top: 80px; border-left: 4px solid var(--accent); }
+.ai-card h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ai-admin-tag { font-family: var(--font-body); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.ai-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.settings-know { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+.settings-know-text { flex: 1 1 260px; min-width: 0; }
+.settings-know .memory-know-bar { flex: 1 1 140px; max-width: 220px; background: var(--surface); }
+@media (max-width: 640px) {
+  .ai-grid { grid-template-columns: minmax(0, 1fr); }
+  .settings-know .memory-know-bar { max-width: none; }
+}
+
+/* Shepherding, second pass: a need's next step, holder and close in one card, and pathways as a stepper */
+.need-manage { display: grid; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-card); min-width: 0; }
+.need-manage-part { padding: 18px 20px; border-top: 1px solid var(--line-soft); min-width: 0; }
+.need-manage-part:first-child { border-top: 0; }
+.need-manage-part h2 { font-size: 1.1rem; }
+.need-manage-close { display: flex; justify-content: flex-start; }
+.need-manage-close .btn:where(:not(.word-root *)) { width: auto; }
+
+.path-card { gap: 12px; }
+.path-scroll { overflow-x: auto; margin: 0 -4px; padding: 0 4px 4px; }
+.path-grid { display: grid; min-width: 660px; }
+.path-row { display: grid; grid-template-columns: minmax(150px, 1.3fr) repeat(var(--path-steps), minmax(56px, 1fr)); align-items: center; gap: 0 4px; padding: 10px 0; border-top: 1px solid var(--line-soft); position: relative; }
+.path-head { border-top: 0; padding: 0 0 6px; font-size: 0.66rem; line-height: 1.2; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.path-head > span:not(:first-child) { text-align: center; }
+.path-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; min-width: 0; white-space: nowrap; }
+.path-step { display: grid; justify-items: center; gap: 3px; position: relative; }
+/* A line through the steps, so a row reads left to right */
+.path-step::before { content: ""; position: absolute; top: 6px; left: -50%; right: 50%; height: 2px; background: var(--line-soft); z-index: 0; }
+.path-name + .path-step::before { display: none; }
+.path-step.is-done::before { background: color-mix(in srgb, var(--accent) 45%, var(--line-soft)); }
+.path-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--line); position: relative; z-index: 1; }
+.path-step.is-done .path-dot { background: var(--accent); box-shadow: none; }
+.path-step.is-furthest .path-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 55%, transparent); }
+.path-date { font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1em; }
+.path-step.is-done .path-date { color: var(--fg); font-weight: 600; }
+.path-record { max-width: 720px; }

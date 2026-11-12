@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useCallback, useEffect, useState } from "react";
 
 type File = { path: string; content: string };
@@ -203,7 +204,15 @@ export function MemoryManager() {
             Deleting a conversation erases its transcript and asks Barnabas to remove anything it learned from it. Off-the-record conversations are never kept.
           </p>
           {convs === null && <p className="muted">Loading…</p>}
-          {convs?.length === 0 && <div className="card muted">No saved conversations.</div>}
+          {convs?.length === 0 && (
+            <div className="card memory-convs-empty">
+              <p>No saved conversations yet.</p>
+              <p className="small muted">Talk with Barnabas and the conversation is kept here until you delete it, unless you go off the record.</p>
+              <Link className="btn btn-sm" href="/">
+                Talk to Barnabas
+              </Link>
+            </div>
+          )}
           {convs && convs.length > 0 && (
             <div className="list-card">
               {convs.map((c) => (

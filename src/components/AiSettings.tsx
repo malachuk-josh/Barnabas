@@ -18,8 +18,12 @@ function Wrap({ embedded, children }: { embedded: boolean; children: React.React
       </div>
     );
   return (
-    <section id="ai" className="card stack">
-      <h2>Barnabas AI</h2>
+    <section id="ai" className="card stack ai-card">
+      <div className="settings-head">
+        <h2>
+          Barnabas for everyone <span className="ai-admin-tag">Admins only</span>
+        </h2>
+      </div>
       {children}
     </section>
   );
@@ -82,6 +86,7 @@ export function AiSettings({ embedded = false }: { embedded?: boolean } = {}) {
       {!view && <p className="muted">Loading…</p>}
       {view && (
         <Form embedded={embedded} onSave={save}>
+          <div className="ai-grid">
           <div className="field">
             <label htmlFor="ai-text">Typed messages</label>
             <select id="ai-text" value={form.textModel} onChange={(e) => setForm({ ...form, textModel: e.target.value })}>
@@ -134,6 +139,7 @@ export function AiSettings({ embedded = false }: { embedded?: boolean } = {}) {
               {EFFORT_CHOICES.find((x) => x.id === (form.voiceEffort || view.defaults.voiceEffort))?.note} More thinking means a longer pause before Barnabas starts speaking.
             </span>
           </div>
+          </div>
           <div className="field">
             <label htmlFor="ai-tone">
               Tone: {toneLabel(tone ?? view.defaults.tone)}
@@ -180,7 +186,7 @@ export function AiSettings({ embedded = false }: { embedded?: boolean } = {}) {
           )}
           <div className="row">
             <button type={embedded ? "button" : "submit"} className="btn btn-primary" disabled={saving} onClick={embedded ? () => void save() : undefined}>
-              {saving ? "Saving…" : embedded ? "Save for everyone" : "Save"}
+              {saving ? "Saving…" : "Save for everyone"}
             </button>
             {view.updatedBy && (
               <span className="small muted">
