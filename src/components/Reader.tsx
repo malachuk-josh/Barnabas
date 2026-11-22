@@ -773,12 +773,14 @@ export default function Reader({
     // or React has already taken it away on the way out. Either way, writing
     // now would replace a good record with a chapter and no verse.
     if (shown.length === 0) return;
-    const nav = document.querySelector<HTMLElement>(".nav");
     // The same line placeAt() aligns to, and for the same reason: save by one
     // rule and restore by another and every trip through loses a verse. This
     // asks which verse placeAt() would have to put here to reproduce the
-    // page as it stands, so saving and restoring are inverses.
-    const edge = (nav?.getBoundingClientRect().height ?? 0) + 10;
+    // page as it stands, so saving and restoring are inverses. Communion
+    // measured from its header (.nav), which was the scroller's top there;
+    // Barnabas has no .nav, and measuring from the window's top saved the
+    // verse already scrolled out of sight above the toolbar.
+    const edge = scrollerTop() + 10;
     let verse: number | undefined;
     for (const el of shown) {
       // the first verse whose top has not yet passed under the header

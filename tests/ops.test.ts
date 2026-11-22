@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { Leader } from "@/lib/auth/session";
 
 // API routes read the signed-in leader from the session cookie; tests choose who is signed in.
@@ -369,6 +369,13 @@ describe("events and registrations", () => {
   });
 
   it("marks paid events due (the Stripe seam) and shows on the calendar with its status", async () => {
+    // Reverb is on Nov 13, 2026; registration closes once it has happened, so
+    // the clock is held the week before (only Date, so timers still run)
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-06T12:00:00Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const book = await loadEvents("demo");
     const reverb = book.events.find((e) => e.churchEventId === "mgbc-reverb")!;
     const r = await register("demo", reverb.id, { name: "Teen Test", email: "t@example.org", answers: { grade: "9th", guardian: "Parent Test", guardian_phone: "555-0102" } }, null);

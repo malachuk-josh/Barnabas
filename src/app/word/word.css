@@ -1475,6 +1475,13 @@
   color: var(--gold);
 }
 
+/* the verse being read, as the chapter being read is marked above it */
+.word-root .bn-v.current {
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .word-root .bn-v-wait {
   grid-column: 1 / -1;
   padding: 8px 6px;

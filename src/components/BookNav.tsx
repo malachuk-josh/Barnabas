@@ -3,13 +3,15 @@
 // The book-and-chapter navigator inside the reader's fold-out panel.
 // Testaments open and close; opening a book unfolds its chapters in place,
 // and opening a chapter unfolds its verses under it — so finding a passage
-// feels like turning to it rather than picking from three dropdowns.
+// feels like turning to it rather than picking from three dropdowns. It
+// opens already turned to the verse being read.
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { BOOKS, DEFAULT_TRANSLATION, LAST_OT_BOOK, getBook, isLicensed } from "@/lib/bible";
 import { readHistory, type Visit } from "@/lib/history";
 import { useI18n } from "@/lib/i18n";
 import { fetchBook } from "@/lib/scripture";
+import { scrollerTop } from "@/lib/scroller";
 
 /** Chapters to a row. Must match repeat(N) on .bn-ch-row in globals.css. */
 const PER_ROW = 5;
@@ -31,13 +33,19 @@ export default function BookNav({
   onVerse: (bookNr: number, chapter: number, verse: number) => void;
 }) {
   const { lang, t } = useI18n();
-  // Both testaments start folded, every time the panel opens: two rows to
-  // choose between rather than a long list already scrolled. The book being
-  // read is still marked open inside its testament, so unfolding it lands
-  // there.
-  const [openTestaments, setOpenTestaments] = useState({ ot: false, nt: false });
+  // It opens on the place being read, every time: the testament it is in
+  // unfolded, the book open, the chapter's verses showing, and the verse at
+  // the top of the page marked and brought into view. The other testament
+  // stays folded, one row out of the way.
+  const [openTestaments, setOpenTestaments] = useState({
+    ot: bookNr <= LAST_OT_BOOK,
+    nt: bookNr > LAST_OT_BOOK,
+  });
   const [openBook, setOpenBook] = useState<number | null>(bookNr);
-  const [openChapter, setOpenChapter] = useState<number | null>(null);
+  const [openChapter, setOpenChapter] = useState<number | null>(chapter);
+  /** the verse at the top of the page when the navigator opened */
+  const [verseHere, setVerseHere] = useState<number | null>(null);
+  const verseRef = useRef<HTMLButtonElement>(null);
   /** verse counts per chapter, by book — filled in as books are opened */
   const [counts, setCounts] = useState<Record<number, Record<number, number>>>(
     {}
@@ -56,16 +64,54 @@ export default function BookNav({
     setHistory(readHistory());
   }, []);
 
-  // Bring the open book a third of the way down the panel, but never scroll
-  // past the top — for Genesis that would push the search field out of view.
+  // Which verse is being read: the first of this chapter whose top has not
+  // gone up under the header — the line saveReading() in the reader keeps,
+  // read here once as the navigator opens. Its verse counts are asked for at
+  // the same time, so the grid is there to mark it in.
   useEffect(() => {
-    const el = currentRef.current;
+    loadCounts(bookNr);
+    // Communion measured from the bottom of its header; here the reader's
+    // toolbar is above the scroller rather than over it, so its top is the line.
+    const top = scrollerTop() + 6;
+    for (const el of document.querySelectorAll<HTMLElement>("[data-v]")) {
+      if (el.getBoundingClientRect().top < top) continue;
+      const [c, v] = (el.dataset.v ?? "").split(":").map(Number);
+      if (c === chapter) setVerseHere(v);
+      break;
+    }
+    // once, as it opens; it is put away again by any move it makes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Bring the place into view, a third of the way down the panel: the verse
+  // once the grid is there to hold it, the book until then. Never past the
+  // top — for Genesis that would push the search field out of view. Only
+  // while the navigator is settling in: later taps leave the scroll where
+  // the finger put it.
+  const placed = useRef<"none" | "book" | "verse">("none");
+  useEffect(() => {
+    if (placed.current === "verse") return;
+    const verse = verseRef.current;
+    const el = verse ?? (placed.current === "none" ? currentRef.current : null);
     const box = el?.closest<HTMLElement>(".sp-body");
     if (!el || !box) return;
     const delta = el.getBoundingClientRect().top - box.getBoundingClientRect().top;
     box.scrollTop = Math.max(0, box.scrollTop + delta - box.clientHeight / 3);
-    // only on mount: later taps should leave the scroll where the finger put it
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    placed.current = verse ? "verse" : "book";
+  });
+  // a tap anywhere in the panel ends the settling, so a late verse count
+  // never yanks the list from under a finger that has started looking
+  useEffect(() => {
+    const stop = () => {
+      placed.current = "verse";
+    };
+    const box = currentRef.current?.closest<HTMLElement>(".sp-body");
+    box?.addEventListener("pointerdown", stop, { once: true });
+    box?.addEventListener("wheel", stop, { once: true, passive: true });
+    return () => {
+      box?.removeEventListener("pointerdown", stop);
+      box?.removeEventListener("wheel", stop);
+    };
   }, []);
 
   /**
@@ -136,16 +182,21 @@ export default function BookNav({
     return (
       <div className="bn-verses" aria-label={`${t("reader.chapter")} ${c}`}>
         {n ? (
-          Array.from({ length: n }, (_, i) => i + 1).map((v) => (
-            <button
-              key={v}
-              type="button"
-              className="bn-v"
-              onClick={() => onVerse(book, c, v)}
-            >
-              {v}
-            </button>
-          ))
+          Array.from({ length: n }, (_, i) => i + 1).map((v) => {
+            const here = book === bookNr && c === chapter && v === verseHere;
+            return (
+              <button
+                key={v}
+                ref={here ? verseRef : undefined}
+                type="button"
+                className={`bn-v${here ? " current" : ""}`}
+                aria-current={here ? "location" : undefined}
+                onClick={() => onVerse(book, c, v)}
+              >
+                {v}
+              </button>
+            );
+          })
         ) : (
           <span className="bn-v-wait">
             {noCounts[book] ? t("reader.versesOffline") : t("common.loading")}
