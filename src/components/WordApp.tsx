@@ -17,15 +17,18 @@ import { ReadingProvider, useReading } from "@/lib/reading";
 import { readLocal } from "@/lib/storage";
 
 /**
- * The saved theme, applied before paint. Barnabas's default is Parchment
- * ("light"); "dark" (Illuminated) is no attribute at all. Storage can throw where it is blocked, and then the
- * default stands.
+ * The saved theme, applied before paint. Barnabas's default is Grey scale
+ * ("grey"); "light" is Parchment and "dark" (Illuminated) is no attribute at all. Storage can throw where it is
+ * blocked, and then the default stands.
  */
 const THEME_BOOT =
-  '(function(){var r=document.currentScript&&document.currentScript.parentElement;if(!r)return;var t;try{t=localStorage.getItem("barnabas.word.theme2");if(!t&&localStorage.getItem("barnabas.word.theme")==="dark")t="dark"}catch(e){t=null}if(t!=="dark"&&t!=="light"&&t!=="grey")t="light";if(t==="dark")delete r.dataset.theme;else r.dataset.theme=t})()';
+  '(function(){var r=document.currentScript&&document.currentScript.parentElement;if(!r)return;var t;try{t=localStorage.getItem("barnabas.word.theme3")}catch(e){t=null}if(t!=="dark"&&t!=="light"&&t!=="grey")t="grey";if(t==="dark")delete r.dataset.theme;else r.dataset.theme=t})()';
 
-/** Where The Word's theme choice is kept (Parchment is the default when there's none). */
-export const WORD_THEME_KEY = "barnabas.word.theme2";
+/**
+ * Where The Word's theme choice is kept (Grey scale is the default when there's none). Each new default has
+ * come with a new key so every device starts on it once: theme2 (Parchment) and theme before it are ignored.
+ */
+export const WORD_THEME_KEY = "barnabas.word.theme3";
 
 export interface WordAppProps {
   initialBook?: number;
@@ -43,12 +46,12 @@ export default function WordApp(props: WordAppProps) {
     if (!root) return;
     let saved: string | null = null;
     try {
-      // Parchment became the default with a new key: only an earlier Illuminated (dark) choice carries over.
-      saved = readLocal(WORD_THEME_KEY) ?? (readLocal("barnabas.word.theme") === "dark" ? "dark" : null);
+      // Grey scale became the default with a new key, so earlier choices don't carry over.
+      saved = readLocal(WORD_THEME_KEY);
     } catch {
       saved = null;
     }
-    const theme = saved === "dark" || saved === "light" || saved === "grey" ? saved : "light";
+    const theme = saved === "dark" || saved === "light" || saved === "grey" ? saved : "grey";
     if (theme === "dark") delete root.dataset.theme;
     else root.dataset.theme = theme;
   }, []);
@@ -72,7 +75,7 @@ export default function WordApp(props: WordAppProps) {
   return (
     // suppressHydrationWarning: the boot script may change data-theme before
     // React hydrates, and the attribute is the script's to own
-    <div ref={rootRef} className="word-root" data-theme="light" suppressHydrationWarning>
+    <div ref={rootRef} className="word-root" data-theme="grey" suppressHydrationWarning>
       <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
       <LanguageProvider>
         <ReadingProvider>
