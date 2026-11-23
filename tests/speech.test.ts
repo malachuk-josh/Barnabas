@@ -29,6 +29,13 @@ describe("sentence chunker", () => {
     const c = new SentenceChunker();
     expect(c.push("Dr. Okafor called. ")).toEqual(["Dr. Okafor called."]);
   });
+  it("doesn't split inside dotted abbreviations", () => {
+    // The regex match for "e.g." is only "g.", so checking the match alone never saw the abbreviation.
+    const c = new SentenceChunker();
+    expect(c.push("Bring a meal, e.g. soup or bread. Then call her. ")).toEqual(["Bring a meal, e.g. soup or bread.", "Then call her."]);
+    expect(c.push("Pray for the team, i.e. the Sunday crew. ")).toEqual(["Pray for the team, i.e. the Sunday crew."]);
+    expect(c.push("Missions in the U.S. grew this year. ")).toEqual(["Missions in the U.S. grew this year."]);
+  });
 });
 
 describe("pronunciations", () => {
