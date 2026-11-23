@@ -24,7 +24,8 @@ export class SentenceChunker {
       // Don't split "Dr." or "St." or a verse like "3:16." in the middle; require a space or end after the mark.
       const next = this.buffer[end];
       if (next !== undefined && !/\s/.test(next)) continue;
-      if (/\b(Dr|Mr|Mrs|Ms|St|Rev|Jr|Sr|vs|e\.g|i\.e)\.$/i.test(match[0].trim())) continue;
+      // Check the text up to the cut, not just this match: in "e.g." or "U.S." the match is only "g." or "S.".
+      if (/\b(Dr|Mr|Mrs|Ms|St|Rev|Jr|Sr|vs|e\.g|i\.e|U\.S)\.$/i.test(this.buffer.slice(0, end).trimEnd())) continue;
       if (next === undefined) break; // wait to see what follows
       const sentence = this.buffer.slice(consumed, end).trim();
       if (sentence) out.push(sentence);
